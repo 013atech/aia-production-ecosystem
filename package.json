@@ -1,0 +1,127 @@
+{
+  "name": "aia-production-ecosystem",
+  "version": "3.0.0",
+  "description": "AIA (Artificial Intelligence Assistant) Complete Production Ecosystem - Enterprise-grade AI agent orchestration platform with atomic-DKG integration",
+  "main": "aia_processing_client.py",
+  "bin": {
+    "aia": "./aia_cli.py"
+  },
+  "scripts": {
+    "start": "./start-complete-aia-system.sh",
+    "deploy": "./deploy-full-complexity-local-production.sh",
+    "dns": "./configure-optimal-dns-strategy.sh",
+    "dev": "docker-compose up -d",
+    "prod": "docker-compose -f docker-compose.production.yml up -d",
+    "stop": "docker-compose down",
+    "logs": "docker-compose logs -f",
+    "status": "docker-compose ps",
+    "test": "pytest tests/",
+    "test:frontend": "cd 01-CORE-PLATFORM/frontend-applications/frontend-main && npm test",
+    "build:frontend": "cd 01-CORE-PLATFORM/frontend-applications/frontend-main && npm run build",
+    "lint": "flake8 . --exclude=node_modules,venv",
+    "format": "black .",
+    "install:deps": "pip install -r requirements.txt",
+    "install:frontend": "cd 01-CORE-PLATFORM/frontend-applications/frontend-main && npm install",
+    "backup": "tar -czf aia-backup-$(date +%Y%m%d-%H%M%S).tar.gz --exclude=node_modules --exclude=__pycache__ --exclude=.git .",
+    "health": "python3 -c 'import asyncio; from aia_processing_client import get_system_health; asyncio.run(get_system_health())'",
+    "cli": "python3 aia_cli.py",
+    "agents": "python3 aia_cli.py agents",
+    "fortune500": "python3 aia_cli.py insights --fortune500"
+  },
+  "keywords": [
+    "ai",
+    "artificial-intelligence",
+    "agent-orchestration",
+    "multi-agent-system",
+    "knowledge-graph",
+    "dkg",
+    "enterprise",
+    "fortune500",
+    "cryptography",
+    "production",
+    "claude",
+    "llm",
+    "machine-learning",
+    "business-intelligence"
+  ],
+  "author": "AIA Development Team",
+  "license": "PROPRIETARY",
+  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/aia-enterprise/aia-production.git"
+  },
+  "homepage": "https://013a.tech",
+  "engines": {
+    "node": ">=18.0.0",
+    "python": ">=3.11.0"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "helmet": "^7.1.0",
+    "morgan": "^1.10.0",
+    "redis": "^4.6.10",
+    "ws": "^8.14.2",
+    "jsonwebtoken": "^9.0.2",
+    "bcrypt": "^5.1.1",
+    "winston": "^3.11.0",
+    "joi": "^17.11.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1",
+    "jest": "^29.7.0",
+    "supertest": "^6.3.3",
+    "eslint": "^8.53.0",
+    "prettier": "^3.0.3"
+  },
+  "optionalDependencies": {
+    "fsevents": "^2.3.3"
+  },
+  "workspaces": [
+    "01-CORE-PLATFORM/frontend-applications/frontend-main",
+    "api-gateway",
+    "dkg-service",
+    "ml-platform"
+  ],
+  "config": {
+    "backend_url": "http://localhost:8000",
+    "dkg_url": "http://localhost:8001",
+    "frontend_port": 3000,
+    "api_gateway_port": 8080
+  },
+  "aia": {
+    "version": "3.0.0",
+    "features": {
+      "multi_agent_system": true,
+      "atomic_dkg": true,
+      "cryptography_agent": true,
+      "orchestration": true,
+      "enterprise_ready": true,
+      "fortune500_integration": true,
+      "quantum_security": true,
+      "3d_visualization": true,
+      "real_time_analytics": true
+    },
+    "agents": {
+      "orchestrator": true,
+      "cryptography": true,
+      "software_development": true,
+      "ml_ops": true,
+      "three_js_optimizer": true,
+      "gcp_deployment": true,
+      "immersive_uiux": true,
+      "market_research": true,
+      "analytics": true
+    },
+    "infrastructure": {
+      "docker": true,
+      "kubernetes": true,
+      "cloudflare": true,
+      "gcp": true,
+      "ssl_tls": true,
+      "load_balancer": true,
+      "auto_scaling": true
+    }
+  }
+}

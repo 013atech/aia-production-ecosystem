@@ -1,0 +1,685 @@
+# AIA Enterprise Platform - Multi-Agent System
+# Complete agent orchestration with cryptography leadership
+version: '3.8'
+
+services:
+  # =============================================================================
+  # CORE AGENT INFRASTRUCTURE
+  # =============================================================================
+
+  agent-coordinator:
+    build:
+      context: ./infrastructure/agent-coordinator
+      dockerfile: Dockerfile
+    image: aia-system/agent-coordinator:latest
+    container_name: agent-coordinator
+    restart: unless-stopped
+    environment:
+      - SERVICE_NAME=agent-coordinator
+      - SERVICE_PORT=9000
+      - DATABASE_URL=postgresql://aia_user:${POSTGRES_PASSWORD:-aia-secure-2025}@postgres-primary:5432/aia_production
+      - REDIS_URL=redis://:${REDIS_PASSWORD:-redis-secure-2025}@redis-master:6379/8
+      - AGENT_REGISTRY_ENABLED=true
+      - LOAD_BALANCING=true
+      - AGENT_HEALTH_MONITORING=true
+    ports:
+      - "9000:9000"
+    volumes:
+      - ./logs/agent-coordinator:/app/logs
+      - agent_coordinator_data:/app/data
+    networks:
+      - aia-agents
+      - aia-backend
+      - aia-infrastructure
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  agent-communication:
+    build:
+      context: ./infrastructure/agent-communication
+      dockerfile: Dockerfile
+    image: aia-system/agent-communication:latest
+    container_name: agent-communication
+    restart: unless-stopped
+    environment:
+      - SERVICE_NAME=agent-communication
+      - SERVICE_PORT=9010
+      - KAFKA_BOOTSTRAP_SERVERS=kafka-broker:29092
+      - SECURE_COMMUNICATION=true
+      - ENCRYPTION_ENABLED=true
+      - MESSAGE_PERSISTENCE=true
+    ports:
+      - "9010:9010"
+    volumes:
+      - ./logs/agent-communication:/app/logs
+    networks:
+      - aia-agents
+      - aia-infrastructure
+    depends_on:
+      - kafka-broker
+      - agent-coordinator
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9010/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # =============================================================================
+  # TEAM LEADER AGENT
+  # =============================================================================
+
+  aia-agent-cryptography:
+    build:
+      context: ./aia/agents/cryptography
+      dockerfile: Dockerfile
+      args:
+        - AGENT_TYPE=cryptography
+        - AGENT_ROLE=team_leader
+    image: aia-system/agent-cryptography:latest
+    container_name: aia-agent-cryptography
+    restart: unless-stopped
+    environment:
+      - AGENT_NAME=cryptography
+      - AGENT_ROLE=team_leader
+      - AGENT_PORT=9001
+      - LEADERSHIP_MODE=true
+      - SECURITY_LEVEL=maximum
+      - QUANTUM_RESISTANCE=true
+      - DATABASE_URL=postgresql://aia_user:${POSTGRES_PASSWORD:-aia-secure-2025}@postgres-primary:5432/aia_production
+      - VAULT_ADDR=http://vault:8200
+      - VAULT_TOKEN=${VAULT_ROOT_TOKEN:-vault-root-token-2025}
+      - COORDINATOR_URL=http://agent-coordinator:9000
+      - COMMUNICATION_URL=http://agent-communication:9010
+    ports:
+      - "9001:9001"
+    volumes:
+      - ./logs/agent-cryptography:/app/logs
+      - ./aia/crypto:/app/crypto:ro
+      - agent_crypto_data:/app/data
+    networks:
+      - aia-agents
+      - aia-backend
+      - aia-infrastructure
+    depends_on:
+      - agent-coordinator
+      - agent-communication
+      - vault
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # =============================================================================
+  # CORE AGENTS
+  # =============================================================================
+
+  aia-agent-orchestrator:
+    build:
+      context: ./aia/agents/orchestrator
+      dockerfile: Dockerfile
+      args:
+        - AGENT_TYPE=orchestrator
+        - AGENT_ROLE=coordinator
+    image: aia-system/agent-orchestrator:latest
+    container_name: aia-agent-orchestrator
+    restart: unless-stopped
+    environment:
+      - AGENT_NAME=main-orchestrator
+      - AGENT_ROLE=coordinator
+      - AGENT_PORT=9002
+      - DATABASE_URL=postgresql://aia_user:${POSTGRES_PASSWORD:-aia-secure-2025}@postgres-primary:5432/aia_production
+      - COORDINATOR_URL=http://agent-coordinator:9000
+      - COMMUNICATION_URL=http://agent-communication:9010
+      - TEAM_LEADER_URL=http://aia-agent-cryptography:9001
+      - ORCHESTRATION_RULES=/app/rules/orchestration.yaml
+    ports:
+      - "9002:9002"
+    volumes:
+      - ./logs/agent-orchestrator:/app/logs
+      - ./config/agents/orchestration.yaml:/app/rules/orchestration.yaml:ro
+      - agent_orchestrator_data:/app/data
+    networks:
+      - aia-agents
+      - aia-backend
+    depends_on:
+      - aia-agent-cryptography
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  aia-agent-software-dev:
+    build:
+      context: ./aia/agents/software-development
+      dockerfile: Dockerfile
+      args:
+        - AGENT_TYPE=software_development
+        - AGENT_CAPABILITIES=code_generation,code_review,testing
+    image: aia-system/agent-software-dev:latest
+    container_name: aia-agent-software-dev
+    restart: unless-stopped
+    environment:
+      - AGENT_NAME=software-development
+      - AGENT_ROLE=developer
+      - AGENT_PORT=9003
+      - CODE_GENERATION=true
+      - CODE_ANALYSIS=true
+      - TESTING_FRAMEWORK=pytest,jest,go-test
+      - DATABASE_URL=postgresql://aia_user:${POSTGRES_PASSWORD:-aia-secure-2025}@postgres-primary:5432/aia_production
+      - COORDINATOR_URL=http://agent-coordinator:9000
+      - TEAM_LEADER_URL=http://aia-agent-cryptography:9001
+    ports:
+      - "9003:9003"
+    volumes:
+      - ./logs/agent-software-dev:/app/logs
+      - ./codebase:/app/workspace
+      - agent_software_dev_data:/app/data
+    networks:
+      - aia-agents
+      - aia-backend
+    depends_on:
+      - aia-agent-cryptography
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9003/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  aia-agent-code-reviewer:
+    build:
+      context: ./aia/agents/code-reviewer
+      dockerfile: Dockerfile
+      args:
+        - AGENT_TYPE=code_reviewer
+        - AGENT_CAPABILITIES=code_quality,security_analysis,performance_review
+    image: aia-system/agent-code-reviewer:latest
+    container_name: aia-agent-code-reviewer
+    restart: unless-stopped
+    environment:
+      - AGENT_NAME=code-reviewer
+      - AGENT_ROLE=quality_assurance
+      - AGENT_PORT=9004
+      - STATIC_ANALYSIS=true
+      - SECURITY_SCANNING=true
+      - PERFORMANCE_ANALYSIS=true
+      - QUALITY_GATES=true
+      - DATABASE_URL=postgresql://aia_user:${POSTGRES_PASSWORD:-aia-secure-2025}@postgres-primary:5432/aia_production
+      - COORDINATOR_URL=http://agent-coordinator:9000
+      - TEAM_LEADER_URL=http://aia-agent-cryptography:9001
+    ports:
+      - "9004:9004"
+    volumes:
+      - ./logs/agent-code-reviewer:/app/logs
+      - ./codebase:/app/workspace:ro
+      - agent_code_reviewer_data:/app/data
+    networks:
+      - aia-agents
+      - aia-backend
+    depends_on:
+      - aia-agent-cryptography
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9004/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  aia-agent-prod-readiness:
+    build:
+      context: ./aia/agents/production-readiness
+      dockerfile: Dockerfile
+      args:
+        - AGENT_TYPE=production_readiness
+        - AGENT_CAPABILITIES=deployment_validation,health_checks,monitoring
+    image: aia-system/agent-prod-readiness:latest
+    container_name: aia-agent-prod-readiness
+    restart: unless-stopped
+    environment:
+      - AGENT_NAME=production-readiness-assessor
+      - AGENT_ROLE=deployment_specialist
+      - AGENT_PORT=9005
+      - DEPLOYMENT_VALIDATION=true
+      - HEALTH_CHECK_VALIDATION=true
+      - MONITORING_SETUP=true
+      - PERFORMANCE_BENCHMARKS=true
+      - DATABASE_URL=postgresql://aia_user:${POSTGRES_PASSWORD:-aia-secure-2025}@postgres-primary:5432/aia_production
+      - COORDINATOR_URL=http://agent-coordinator:9000
+      - TEAM_LEADER_URL=http://aia-agent-cryptography:9001
+    ports:
+      - "9005:9005"
+    volumes:
+      - ./logs/agent-prod-readiness:/app/logs
+      - agent_prod_readiness_data:/app/data
+    networks:
+      - aia-agents
+      - aia-backend
+    depends_on:
+      - aia-agent-cryptography
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9005/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  aia-agent-gcp-deployment:
+    build:
+      context: ./aia/agents/gcp-deployment
+      dockerfile: Dockerfile
+      args:
+        - AGENT_TYPE=gcp_deployment
+        - AGENT_CAPABILITIES=kubernetes,cloud_build,load_balancing
+    image: aia-system/agent-gcp-deployment:latest
+    container_name: aia-agent-gcp-deployment
+    restart: unless-stopped
+    environment:
+      - AGENT_NAME=gcp-deployment-orchestrator
+      - AGENT_ROLE=infrastructure_manager
+      - AGENT_PORT=9006
+      - GCP_PROJECT_ID=${GCP_PROJECT_ID:-aia-475022}
+      - KUBERNETES_DEPLOYMENT=true
+      - CLOUD_BUILD_INTEGRATION=true
+      - LOAD_BALANCER_MANAGEMENT=true
+      - AUTO_SCALING=true
+      - DATABASE_URL=postgresql://aia_user:${POSTGRES_PASSWORD:-aia-secure-2025}@postgres-primary:5432/aia_production
+      - COORDINATOR_URL=http://agent-coordinator:9000
+      - TEAM_LEADER_URL=http://aia-agent-cryptography:9001
+    ports:
+      - "9006:9006"
+    volumes:
+      - ./logs/agent-gcp-deployment:/app/logs
+      - ~/.gcloud:/app/.gcloud:ro
+      - ~/.kube:/app/.kube:ro
+      - agent_gcp_deployment_data:/app/data
+    networks:
+      - aia-agents
+      - aia-backend
+    depends_on:
+      - aia-agent-cryptography
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9006/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  aia-agent-mlops:
+    build:
+      context: ./aia/agents/mlops
+      dockerfile: Dockerfile
+      args:
+        - AGENT_TYPE=mlops
+        - AGENT_CAPABILITIES=model_training,deployment,monitoring
+    image: aia-system/agent-mlops:latest
+    container_name: aia-agent-mlops
+    restart: unless-stopped
+    environment:
+      - AGENT_NAME=mlops-specialist
+      - AGENT_ROLE=ml_operations
+      - AGENT_PORT=9007
+      - MODEL_TRAINING=true
+      - MODEL_DEPLOYMENT=true
+      - MODEL_MONITORING=true
+      - DRIFT_DETECTION=true
+      - DATABASE_URL=postgresql://aia_user:${POSTGRES_PASSWORD:-aia-secure-2025}@postgres-primary:5432/aia_production
+      - COORDINATOR_URL=http://agent-coordinator:9000
+      - TEAM_LEADER_URL=http://aia-agent-cryptography:9001
+      - ML_MODEL_REGISTRY=http://aia-ai:8060
+    ports:
+      - "9007:9007"
+    volumes:
+      - ./logs/agent-mlops:/app/logs
+      - ./models:/app/models
+      - agent_mlops_data:/app/data
+    networks:
+      - aia-agents
+      - aia-backend
+    # GPU support for ML operations
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    depends_on:
+      - aia-agent-cryptography
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9007/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  aia-agent-threejs:
+    build:
+      context: ./aia/agents/threejs-optimizer
+      dockerfile: Dockerfile
+      args:
+        - AGENT_TYPE=threejs_optimizer
+        - AGENT_CAPABILITIES=3d_optimization,webxr,performance_tuning
+    image: aia-system/agent-threejs:latest
+    container_name: aia-agent-threejs
+    restart: unless-stopped
+    environment:
+      - AGENT_NAME=threejs-ui-optimizer
+      - AGENT_ROLE=3d_interface_specialist
+      - AGENT_PORT=9008
+      - THREEJS_OPTIMIZATION=true
+      - WEBXR_SUPPORT=true
+      - PERFORMANCE_TUNING=true
+      - IMMERSIVE_ANALYTICS=true
+      - DATABASE_URL=postgresql://aia_user:${POSTGRES_PASSWORD:-aia-secure-2025}@postgres-primary:5432/aia_production
+      - COORDINATOR_URL=http://agent-coordinator:9000
+      - TEAM_LEADER_URL=http://aia-agent-cryptography:9001
+    ports:
+      - "9008:9008"
+    volumes:
+      - ./logs/agent-threejs:/app/logs
+      - ./assets/3d:/app/3d-assets
+      - agent_threejs_data:/app/data
+    networks:
+      - aia-agents
+      - aia-backend
+      - aia-frontend
+    # GPU support for 3D operations
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    depends_on:
+      - aia-agent-cryptography
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9008/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # =============================================================================
+  # SPECIALIZED AGENTS
+  # =============================================================================
+
+  aia-agent-market-intelligence:
+    build:
+      context: ./aia/agents/market-intelligence
+      dockerfile: Dockerfile
+      args:
+        - AGENT_TYPE=market_intelligence
+        - AGENT_CAPABILITIES=market_analysis,forecasting,competitive_intelligence
+    image: aia-system/agent-market-intelligence:latest
+    container_name: aia-agent-market-intelligence
+    restart: unless-stopped
+    environment:
+      - AGENT_NAME=market-intelligence
+      - AGENT_ROLE=market_analyst
+      - AGENT_PORT=9020
+      - MARKET_ANALYSIS=true
+      - FORECASTING_MODELS=arima,lstm,prophet
+      - COMPETITIVE_INTELLIGENCE=true
+      - DATABASE_URL=postgresql://aia_user:${POSTGRES_PASSWORD:-aia-secure-2025}@postgres-primary:5432/aia_production
+      - COORDINATOR_URL=http://agent-coordinator:9000
+      - TEAM_LEADER_URL=http://aia-agent-cryptography:9001
+    ports:
+      - "9020:9020"
+    volumes:
+      - ./logs/agent-market-intelligence:/app/logs
+      - agent_market_intelligence_data:/app/data
+    networks:
+      - aia-agents
+      - aia-backend
+    depends_on:
+      - aia-agent-cryptography
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9020/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  aia-agent-analytics:
+    build:
+      context: ./aia/agents/analytics
+      dockerfile: Dockerfile
+      args:
+        - AGENT_TYPE=analytics
+        - AGENT_CAPABILITIES=data_analysis,insights_generation,visualization
+    image: aia-system/agent-analytics:latest
+    container_name: aia-agent-analytics
+    restart: unless-stopped
+    environment:
+      - AGENT_NAME=analytics
+      - AGENT_ROLE=data_analyst
+      - AGENT_PORT=9021
+      - DATA_ANALYSIS=true
+      - INSIGHTS_GENERATION=true
+      - VISUALIZATION=true
+      - REAL_TIME_ANALYTICS=true
+      - DATABASE_URL=postgresql://aia_analytics:analytics-secure-2025@postgres-primary:5432/aia_analytics
+      - COORDINATOR_URL=http://agent-coordinator:9000
+      - TEAM_LEADER_URL=http://aia-agent-cryptography:9001
+    ports:
+      - "9021:9021"
+    volumes:
+      - ./logs/agent-analytics:/app/logs
+      - agent_analytics_data:/app/data
+    networks:
+      - aia-agents
+      - aia-backend
+      - aia-infrastructure
+    depends_on:
+      - aia-agent-cryptography
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9021/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  aia-agent-enterprise-integration:
+    build:
+      context: ./aia/agents/enterprise-integration
+      dockerfile: Dockerfile
+      args:
+        - AGENT_TYPE=enterprise_integration
+        - AGENT_CAPABILITIES=fortune500_partnerships,api_management,workflow_automation
+    image: aia-system/agent-enterprise-integration:latest
+    container_name: aia-agent-enterprise-integration
+    restart: unless-stopped
+    environment:
+      - AGENT_NAME=enterprise-integration
+      - AGENT_ROLE=partnership_manager
+      - AGENT_PORT=9022
+      - FORTUNE500_PARTNERSHIPS=true
+      - API_MANAGEMENT=true
+      - WORKFLOW_AUTOMATION=true
+      - SSO_INTEGRATION=true
+      - DATABASE_URL=postgresql://aia_enterprise:enterprise-secure-2025@postgres-primary:5432/aia_enterprise
+      - COORDINATOR_URL=http://agent-coordinator:9000
+      - TEAM_LEADER_URL=http://aia-agent-cryptography:9001
+    ports:
+      - "9022:9022"
+    volumes:
+      - ./logs/agent-enterprise-integration:/app/logs
+      - ./config/fortune500:/app/config/partnerships:ro
+      - agent_enterprise_integration_data:/app/data
+    networks:
+      - aia-agents
+      - aia-backend
+    depends_on:
+      - aia-agent-cryptography
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9022/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  aia-agent-security-compliance:
+    build:
+      context: ./aia/agents/security-compliance
+      dockerfile: Dockerfile
+      args:
+        - AGENT_TYPE=security_compliance
+        - AGENT_CAPABILITIES=compliance_monitoring,security_audits,regulatory_reporting
+    image: aia-system/agent-security-compliance:latest
+    container_name: aia-agent-security-compliance
+    restart: unless-stopped
+    environment:
+      - AGENT_NAME=security-compliance
+      - AGENT_ROLE=compliance_officer
+      - AGENT_PORT=9023
+      - COMPLIANCE_MONITORING=true
+      - SECURITY_AUDITS=true
+      - REGULATORY_REPORTING=true
+      - STANDARDS=SOC2,GDPR,ISO27001,HIPAA,PCI_DSS
+      - DATABASE_URL=postgresql://aia_user:${POSTGRES_PASSWORD:-aia-secure-2025}@postgres-primary:5432/aia_production
+      - COORDINATOR_URL=http://agent-coordinator:9000
+      - TEAM_LEADER_URL=http://aia-agent-cryptography:9001
+    ports:
+      - "9023:9023"
+    volumes:
+      - ./logs/agent-security-compliance:/app/logs
+      - agent_security_compliance_data:/app/data
+    networks:
+      - aia-agents
+      - aia-backend
+    depends_on:
+      - aia-agent-cryptography
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9023/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  aia-agent-performance-optimization:
+    build:
+      context: ./aia/agents/performance-optimization
+      dockerfile: Dockerfile
+      args:
+        - AGENT_TYPE=performance_optimization
+        - AGENT_CAPABILITIES=performance_tuning,resource_optimization,scaling
+    image: aia-system/agent-performance-optimization:latest
+    container_name: aia-agent-performance-optimization
+    restart: unless-stopped
+    environment:
+      - AGENT_NAME=performance-optimization
+      - AGENT_ROLE=performance_engineer
+      - AGENT_PORT=9024
+      - PERFORMANCE_TUNING=true
+      - RESOURCE_OPTIMIZATION=true
+      - AUTO_SCALING=true
+      - LOAD_BALANCING=true
+      - DATABASE_URL=postgresql://aia_user:${POSTGRES_PASSWORD:-aia-secure-2025}@postgres-primary:5432/aia_production
+      - COORDINATOR_URL=http://agent-coordinator:9000
+      - TEAM_LEADER_URL=http://aia-agent-cryptography:9001
+    ports:
+      - "9024:9024"
+    volumes:
+      - ./logs/agent-performance-optimization:/app/logs
+      - agent_performance_optimization_data:/app/data
+    networks:
+      - aia-agents
+      - aia-backend
+      - aia-infrastructure
+    depends_on:
+      - aia-agent-cryptography
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9024/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  aia-agent-customer-success:
+    build:
+      context: ./aia/agents/customer-success
+      dockerfile: Dockerfile
+      args:
+        - AGENT_TYPE=customer_success
+        - AGENT_CAPABILITIES=onboarding,support_automation,satisfaction_monitoring
+    image: aia-system/agent-customer-success:latest
+    container_name: aia-agent-customer-success
+    restart: unless-stopped
+    environment:
+      - AGENT_NAME=customer-success
+      - AGENT_ROLE=customer_success_manager
+      - AGENT_PORT=9025
+      - CUSTOMER_ONBOARDING=true
+      - SUPPORT_AUTOMATION=true
+      - SATISFACTION_MONITORING=true
+      - NLP_SUPPORT=true
+      - DATABASE_URL=postgresql://aia_enterprise:enterprise-secure-2025@postgres-primary:5432/aia_enterprise
+      - COORDINATOR_URL=http://agent-coordinator:9000
+      - TEAM_LEADER_URL=http://aia-agent-cryptography:9001
+    ports:
+      - "9025:9025"
+    volumes:
+      - ./logs/agent-customer-success:/app/logs
+      - agent_customer_success_data:/app/data
+    networks:
+      - aia-agents
+      - aia-backend
+    depends_on:
+      - aia-agent-cryptography
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9025/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+# =============================================================================
+# VOLUMES
+# =============================================================================
+volumes:
+  # Core agent infrastructure
+  agent_coordinator_data:
+    driver: local
+
+  # Core agent data
+  agent_crypto_data:
+    driver: local
+  agent_orchestrator_data:
+    driver: local
+  agent_software_dev_data:
+    driver: local
+  agent_code_reviewer_data:
+    driver: local
+  agent_prod_readiness_data:
+    driver: local
+  agent_gcp_deployment_data:
+    driver: local
+  agent_mlops_data:
+    driver: local
+  agent_threejs_data:
+    driver: local
+
+  # Specialized agent data
+  agent_market_intelligence_data:
+    driver: local
+  agent_analytics_data:
+    driver: local
+  agent_enterprise_integration_data:
+    driver: local
+  agent_security_compliance_data:
+    driver: local
+  agent_performance_optimization_data:
+    driver: local
+  agent_customer_success_data:
+    driver: local
+
+# =============================================================================
+# NETWORKS
+# =============================================================================
+networks:
+  aia-agents:
+    name: aia-agents
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.23.0.0/16
+  aia-backend:
+    external: true
+  aia-frontend:
+    external: true
+  aia-infrastructure:
+    external: true

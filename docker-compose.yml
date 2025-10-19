@@ -1,0 +1,131 @@
+version: '3.8'
+
+services:
+  # AIA DKG Service - Knowledge Graph Processing
+  aia-dkg:
+    build:
+      context: ./dkg-service
+      dockerfile: Dockerfile
+    container_name: aia-dkg-service
+    restart: unless-stopped
+    ports:
+      - "8001:8001"
+    environment:
+      - NODE_ENV=development
+      - DKG_PORT=8001
+      - KNOWLEDGE_ATOMS=7000000
+      - GPU_OPTIMIZATION=true
+    volumes:
+      - ./atom-DKG:/app/atom-DKG
+      - ./dkg-service/data:/app/data
+      - ./logs:/app/logs
+    networks:
+      - aia-network
+
+  # AIA Backend Service - Main API and Processing
+  aia-backend:
+    build:
+      context: ./01-CORE-PLATFORM/backend-services
+      dockerfile: Dockerfile
+    container_name: aia-backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - ENVIRONMENT=development
+      - BACKEND_PORT=8000
+      - DKG_URL=http://aia-dkg:8001
+      - MULTI_AGENT_MODE=true
+      - ORCHESTRATION_ENABLED=true
+    depends_on:
+      - aia-dkg
+      - redis
+    volumes:
+      - ./01-CORE-PLATFORM/backend-services:/app
+      - ./aia:/app/aia
+      - ./logs:/app/logs
+    networks:
+      - aia-network
+
+  # Redis for caching and session management
+  redis:
+    image: redis:7-alpine
+    container_name: aia-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - aia-network
+
+  # API Gateway - Route management and load balancing
+  api-gateway:
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+    container_name: aia-api-gateway
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      - NODE_ENV=development
+      - BACKEND_URL=http://aia-backend:8000
+      - DKG_URL=http://aia-dkg:8001
+    depends_on:
+      - aia-backend
+      - aia-dkg
+    volumes:
+      - ./api-gateway:/app
+      - ./logs:/app/logs
+    networks:
+      - aia-network
+
+  # Frontend Development Server
+  frontend:
+    build:
+      context: ./01-CORE-PLATFORM/frontend-applications/frontend-main
+      dockerfile: Dockerfile.dev
+    container_name: aia-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - REACT_APP_API_URL=http://localhost:8080
+      - REACT_APP_WS_URL=ws://localhost:8080
+      - REACT_APP_3D_ENABLED=true
+      - CHOKIDAR_USEPOLLING=true
+    depends_on:
+      - api-gateway
+    volumes:
+      - ./01-CORE-PLATFORM/frontend-applications/frontend-main:/app
+      - /app/node_modules
+    networks:
+      - aia-network
+
+  # ML Platform Service
+  ml-platform:
+    build:
+      context: ./ml-platform
+      dockerfile: Dockerfile
+    container_name: aia-ml-platform
+    restart: unless-stopped
+    ports:
+      - "8002:8002"
+    environment:
+      - ML_PORT=8002
+      - MODEL_PATH=/app/models
+      - GPU_ENABLED=false
+    volumes:
+      - ./ml-platform:/app
+      - ./ml-platform/models:/app/models
+      - ./logs:/app/logs
+    networks:
+      - aia-network
+
+volumes:
+  redis_data:
+
+networks:
+  aia-network:
+    driver: bridge

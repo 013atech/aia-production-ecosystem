@@ -1,0 +1,518 @@
+# AIA Enterprise Platform - Atomic-DKG System
+# 7M+ knowledge atoms with GPU-accelerated processing
+version: '3.8'
+
+services:
+  # =============================================================================
+  # ATOMIC-DKG CORE SERVICES
+  # =============================================================================
+
+  aia-dkg-orchestrator:
+    build:
+      context: ./infrastructure/atomic-dkg/orchestrator
+      dockerfile: Dockerfile
+      args:
+        - GPU_SUPPORT=true
+        - M4_MAX_OPTIMIZATION=true
+    image: aia-system/dkg-orchestrator:latest
+    container_name: aia-dkg-orchestrator
+    restart: unless-stopped
+    environment:
+      - SERVICE_NAME=dkg-orchestrator
+      - SERVICE_PORT=9100
+      - KNOWLEDGE_ATOMS_COUNT=7077461
+      - CHECKPOINT_FILES_COUNT=890
+      - GPU_ACCELERATION=true
+      - M4_MAX_CORES=32
+      - DATABASE_URL=postgresql://aia_knowledge:knowledge-secure-2025@postgres-primary:5432/aia_knowledge
+      - NEO4J_URI=bolt://neo4j-enterprise:7687
+      - NEO4J_PASSWORD=${NEO4J_PASSWORD:-neo4j-secure-2025}
+      - REDIS_URL=redis://:${REDIS_PASSWORD:-redis-secure-2025}@redis-master:6379/9
+    ports:
+      - "9100:9100"
+    volumes:
+      - ./logs/dkg-orchestrator:/app/logs
+      - ./atom-DKG:/app/atom-DKG:ro
+      - dkg_orchestrator_data:/app/data
+      - dkg_models:/app/models
+    networks:
+      - aia-atomic-dkg
+      - aia-backend
+      - aia-infrastructure
+    # GPU support for M4 Max optimization
+    deploy:
+      resources:
+        limits:
+          memory: 32G
+        reservations:
+          memory: 16G
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9100/health"]
+      interval: 30s
+      timeout: 15s
+      retries: 3
+
+  aia-dkg-processor:
+    build:
+      context: ./infrastructure/atomic-dkg/processor
+      dockerfile: Dockerfile
+      args:
+        - GPU_SUPPORT=true
+        - CUDA_VERSION=12.0
+    image: aia-system/dkg-processor:latest
+    container_name: aia-dkg-processor
+    restart: unless-stopped
+    environment:
+      - SERVICE_NAME=dkg-processor
+      - SERVICE_PORT=9101
+      - PROCESSING_MODE=realtime
+      - BATCH_SIZE=10000
+      - GPU_MEMORY_ALLOCATION=24GB
+      - PARALLEL_PROCESSING=true
+      - DATABASE_URL=postgresql://aia_knowledge:knowledge-secure-2025@postgres-primary:5432/aia_knowledge
+      - ORCHESTRATOR_URL=http://aia-dkg-orchestrator:9100
+    ports:
+      - "9101:9101"
+    volumes:
+      - ./logs/dkg-processor:/app/logs
+      - ./atom-DKG:/app/atom-DKG:ro
+      - dkg_processor_data:/app/data
+      - dkg_temp:/tmp/dkg-processing
+    networks:
+      - aia-atomic-dkg
+      - aia-infrastructure
+    # GPU support for processing
+    deploy:
+      resources:
+        limits:
+          memory: 28G
+        reservations:
+          memory: 14G
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    depends_on:
+      - aia-dkg-orchestrator
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9101/health"]
+      interval: 30s
+      timeout: 15s
+      retries: 3
+
+  aia-dkg-knowledge-base:
+    build:
+      context: ./infrastructure/atomic-dkg/knowledge-base
+      dockerfile: Dockerfile
+    image: aia-system/dkg-knowledge-base:latest
+    container_name: aia-dkg-knowledge-base
+    restart: unless-stopped
+    environment:
+      - SERVICE_NAME=dkg-knowledge-base
+      - SERVICE_PORT=9102
+      - KNOWLEDGE_STORAGE_MODE=persistent
+      - CHECKPOINT_LOADING=progressive
+      - HIERARCHICAL_LEVELS=7
+      - RELATIONSHIP_MAPPING=true
+      - DATABASE_URL=postgresql://aia_knowledge:knowledge-secure-2025@postgres-primary:5432/aia_knowledge
+      - NEO4J_URI=bolt://neo4j-enterprise:7687
+      - NEO4J_PASSWORD=${NEO4J_PASSWORD:-neo4j-secure-2025}
+      - ORCHESTRATOR_URL=http://aia-dkg-orchestrator:9100
+    ports:
+      - "9102:9102"
+    volumes:
+      - ./logs/dkg-knowledge-base:/app/logs
+      - ./atom-DKG:/app/atom-DKG:ro
+      - dkg_knowledge_base_data:/app/data
+      - dkg_indexes:/app/indexes
+    networks:
+      - aia-atomic-dkg
+      - aia-infrastructure
+    depends_on:
+      - aia-dkg-orchestrator
+      - neo4j-enterprise
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9102/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  aia-dkg-query-engine:
+    build:
+      context: ./infrastructure/atomic-dkg/query-engine
+      dockerfile: Dockerfile
+      args:
+        - NLP_SUPPORT=true
+        - VECTOR_SEARCH=true
+    image: aia-system/dkg-query-engine:latest
+    container_name: aia-dkg-query-engine
+    restart: unless-stopped
+    environment:
+      - SERVICE_NAME=dkg-query-engine
+      - SERVICE_PORT=9103
+      - NATURAL_LANGUAGE_QUERIES=true
+      - VECTOR_SEARCH_ENABLED=true
+      - SEMANTIC_SEARCH=true
+      - QUERY_OPTIMIZATION=true
+      - DATABASE_URL=postgresql://aia_knowledge:knowledge-secure-2025@postgres-primary:5432/aia_knowledge
+      - NEO4J_URI=bolt://neo4j-enterprise:7687
+      - NEO4J_PASSWORD=${NEO4J_PASSWORD:-neo4j-secure-2025}
+      - KNOWLEDGE_BASE_URL=http://aia-dkg-knowledge-base:9102
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+    ports:
+      - "9103:9103"
+    volumes:
+      - ./logs/dkg-query-engine:/app/logs
+      - dkg_query_engine_data:/app/data
+      - dkg_embeddings:/app/embeddings
+    networks:
+      - aia-atomic-dkg
+      - aia-backend
+      - aia-infrastructure
+    depends_on:
+      - aia-dkg-knowledge-base
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9103/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  aia-dkg-synthesis:
+    build:
+      context: ./infrastructure/atomic-dkg/synthesis
+      dockerfile: Dockerfile
+      args:
+        - ML_MODELS=transformers,sentence_transformers
+        - GPU_SUPPORT=true
+    image: aia-system/dkg-synthesis:latest
+    container_name: aia-dkg-synthesis
+    restart: unless-stopped
+    environment:
+      - SERVICE_NAME=dkg-synthesis
+      - SERVICE_PORT=9104
+      - KNOWLEDGE_SYNTHESIS=true
+      - DYNAMIC_GENERATION=true
+      - CONTEXT_AWARENESS=true
+      - REASONING_ENGINE=true
+      - DATABASE_URL=postgresql://aia_knowledge:knowledge-secure-2025@postgres-primary:5432/aia_knowledge
+      - KNOWLEDGE_BASE_URL=http://aia-dkg-knowledge-base:9102
+      - QUERY_ENGINE_URL=http://aia-dkg-query-engine:9103
+      - HUGGINGFACE_TOKEN=${HUGGINGFACE_TOKEN}
+    ports:
+      - "9104:9104"
+    volumes:
+      - ./logs/dkg-synthesis:/app/logs
+      - dkg_synthesis_data:/app/data
+      - dkg_models:/app/models
+    networks:
+      - aia-atomic-dkg
+      - aia-backend
+    # GPU support for ML models
+    deploy:
+      resources:
+        limits:
+          memory: 24G
+        reservations:
+          memory: 12G
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    depends_on:
+      - aia-dkg-query-engine
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9104/health"]
+      interval: 30s
+      timeout: 15s
+      retries: 3
+
+  # =============================================================================
+  # DKG VISUALIZATION & ANALYTICS
+  # =============================================================================
+
+  aia-dkg-visualization:
+    build:
+      context: ./infrastructure/atomic-dkg/visualization
+      dockerfile: Dockerfile
+      args:
+        - D3_VERSION=7.0.0
+        - THREE_JS_VERSION=0.158.0
+    image: aia-system/dkg-visualization:latest
+    container_name: aia-dkg-visualization
+    restart: unless-stopped
+    environment:
+      - SERVICE_NAME=dkg-visualization
+      - SERVICE_PORT=9105
+      - GRAPH_VISUALIZATION=true
+      - INTERACTIVE_EXPLORATION=true
+      - 3D_KNOWLEDGE_GRAPHS=true
+      - WEBGL_ACCELERATION=true
+      - KNOWLEDGE_BASE_URL=http://aia-dkg-knowledge-base:9102
+      - NEO4J_URI=bolt://neo4j-enterprise:7687
+      - NEO4J_PASSWORD=${NEO4J_PASSWORD:-neo4j-secure-2025}
+    ports:
+      - "9105:9105"
+    volumes:
+      - ./logs/dkg-visualization:/app/logs
+      - dkg_visualization_data:/app/data
+      - ./assets/visualization:/app/assets
+    networks:
+      - aia-atomic-dkg
+      - aia-frontend
+    depends_on:
+      - aia-dkg-knowledge-base
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9105/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  aia-dkg-analytics:
+    build:
+      context: ./infrastructure/atomic-dkg/analytics
+      dockerfile: Dockerfile
+    image: aia-system/dkg-analytics:latest
+    container_name: aia-dkg-analytics
+    restart: unless-stopped
+    environment:
+      - SERVICE_NAME=dkg-analytics
+      - SERVICE_PORT=9106
+      - KNOWLEDGE_ANALYTICS=true
+      - USAGE_STATISTICS=true
+      - PERFORMANCE_METRICS=true
+      - RELATIONSHIP_ANALYSIS=true
+      - DATABASE_URL=postgresql://aia_knowledge:knowledge-secure-2025@postgres-primary:5432/aia_knowledge
+      - CLICKHOUSE_URL=http://clickhouse-server:8123
+      - ORCHESTRATOR_URL=http://aia-dkg-orchestrator:9100
+    ports:
+      - "9106:9106"
+    volumes:
+      - ./logs/dkg-analytics:/app/logs
+      - dkg_analytics_data:/app/data
+    networks:
+      - aia-atomic-dkg
+      - aia-infrastructure
+    depends_on:
+      - aia-dkg-orchestrator
+      - clickhouse-server
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9106/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # =============================================================================
+  # DKG DATA MANAGEMENT
+  # =============================================================================
+
+  aia-dkg-backup:
+    build:
+      context: ./infrastructure/atomic-dkg/backup
+      dockerfile: Dockerfile
+    image: aia-system/dkg-backup:latest
+    container_name: aia-dkg-backup
+    restart: unless-stopped
+    environment:
+      - SERVICE_NAME=dkg-backup
+      - SERVICE_PORT=9107
+      - BACKUP_SCHEDULE=daily
+      - INCREMENTAL_BACKUP=true
+      - COMPRESSION=gzip
+      - ENCRYPTION=true
+      - BACKUP_RETENTION=30_days
+      - DATABASE_URL=postgresql://aia_knowledge:knowledge-secure-2025@postgres-primary:5432/aia_knowledge
+      - NEO4J_URI=bolt://neo4j-enterprise:7687
+      - MINIO_ENDPOINT=minio:9000
+      - MINIO_ACCESS_KEY=${MINIO_ROOT_USER:-aia_storage_admin}
+      - MINIO_SECRET_KEY=${MINIO_ROOT_PASSWORD:-minio-secure-2025}
+    ports:
+      - "9107:9107"
+    volumes:
+      - ./logs/dkg-backup:/app/logs
+      - ./atom-DKG:/app/atom-DKG:ro
+      - dkg_backup_data:/app/data
+      - dkg_backups:/app/backups
+    networks:
+      - aia-atomic-dkg
+      - aia-infrastructure
+    depends_on:
+      - aia-dkg-orchestrator
+      - minio
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9107/health"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+
+  aia-dkg-restore:
+    build:
+      context: ./infrastructure/atomic-dkg/restore
+      dockerfile: Dockerfile
+    image: aia-system/dkg-restore:latest
+    container_name: aia-dkg-restore
+    restart: "no"
+    environment:
+      - SERVICE_NAME=dkg-restore
+      - SERVICE_PORT=9108
+      - RESTORE_VALIDATION=true
+      - INTEGRITY_CHECK=true
+      - PARALLEL_RESTORE=true
+      - DATABASE_URL=postgresql://aia_knowledge:knowledge-secure-2025@postgres-primary:5432/aia_knowledge
+      - NEO4J_URI=bolt://neo4j-enterprise:7687
+      - MINIO_ENDPOINT=minio:9000
+    ports:
+      - "9108:9108"
+    volumes:
+      - ./logs/dkg-restore:/app/logs
+      - ./atom-DKG:/app/atom-DKG
+      - dkg_restore_data:/app/data
+      - dkg_backups:/app/backups:ro
+    networks:
+      - aia-atomic-dkg
+      - aia-infrastructure
+    depends_on:
+      - aia-dkg-backup
+    command: ["sh", "-c", "sleep 3600"]  # Keep container running for manual restore operations
+
+  # =============================================================================
+  # DKG API GATEWAY
+  # =============================================================================
+
+  aia-dkg-api-gateway:
+    build:
+      context: ./infrastructure/atomic-dkg/api-gateway
+      dockerfile: Dockerfile
+    image: aia-system/dkg-api-gateway:latest
+    container_name: aia-dkg-api-gateway
+    restart: unless-stopped
+    environment:
+      - SERVICE_NAME=dkg-api-gateway
+      - SERVICE_PORT=9110
+      - RATE_LIMITING=true
+      - AUTHENTICATION_REQUIRED=true
+      - API_VERSIONING=true
+      - REQUEST_LOGGING=true
+      - ORCHESTRATOR_URL=http://aia-dkg-orchestrator:9100
+      - QUERY_ENGINE_URL=http://aia-dkg-query-engine:9103
+      - SYNTHESIS_URL=http://aia-dkg-synthesis:9104
+      - VISUALIZATION_URL=http://aia-dkg-visualization:9105
+      - DATABASE_URL=postgresql://aia_user:${POSTGRES_PASSWORD:-aia-secure-2025}@postgres-primary:5432/aia_production
+    ports:
+      - "9110:9110"
+    volumes:
+      - ./logs/dkg-api-gateway:/app/logs
+    networks:
+      - aia-atomic-dkg
+      - aia-backend
+    depends_on:
+      - aia-dkg-orchestrator
+      - aia-dkg-query-engine
+      - aia-dkg-synthesis
+      - aia-dkg-visualization
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9110/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # =============================================================================
+  # DKG MONITORING & HEALTH
+  # =============================================================================
+
+  aia-dkg-monitoring:
+    build:
+      context: ./infrastructure/atomic-dkg/monitoring
+      dockerfile: Dockerfile
+    image: aia-system/dkg-monitoring:latest
+    container_name: aia-dkg-monitoring
+    restart: unless-stopped
+    environment:
+      - SERVICE_NAME=dkg-monitoring
+      - SERVICE_PORT=9111
+      - SYSTEM_MONITORING=true
+      - PERFORMANCE_TRACKING=true
+      - HEALTH_CHECKS=true
+      - ALERT_MANAGEMENT=true
+      - PROMETHEUS_URL=http://prometheus:9090
+      - GRAFANA_URL=http://grafana:3000
+    ports:
+      - "9111:9111"
+    volumes:
+      - ./logs/dkg-monitoring:/app/logs
+      - dkg_monitoring_data:/app/data
+    networks:
+      - aia-atomic-dkg
+      - aia-infrastructure
+    depends_on:
+      - prometheus
+      - grafana
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9111/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+# =============================================================================
+# VOLUMES
+# =============================================================================
+volumes:
+  # Core DKG volumes
+  dkg_orchestrator_data:
+    driver: local
+  dkg_processor_data:
+    driver: local
+  dkg_knowledge_base_data:
+    driver: local
+  dkg_query_engine_data:
+    driver: local
+  dkg_synthesis_data:
+    driver: local
+
+  # Visualization and analytics
+  dkg_visualization_data:
+    driver: local
+  dkg_analytics_data:
+    driver: local
+
+  # Data management
+  dkg_backup_data:
+    driver: local
+  dkg_restore_data:
+    driver: local
+  dkg_backups:
+    driver: local
+
+  # Monitoring
+  dkg_monitoring_data:
+    driver: local
+
+  # Shared volumes
+  dkg_models:
+    driver: local
+  dkg_embeddings:
+    driver: local
+  dkg_indexes:
+    driver: local
+  dkg_temp:
+    driver: local
+
+# =============================================================================
+# NETWORKS
+# =============================================================================
+networks:
+  aia-atomic-dkg:
+    name: aia-atomic-dkg
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.24.0.0/16
+  aia-backend:
+    external: true
+  aia-frontend:
+    external: true
+  aia-infrastructure:
+    external: true

@@ -1,0 +1,147 @@
+# AIA Enterprise Platform - Master Orchestration
+# Complete system orchestration with all components
+version: '3.8'
+
+# =============================================================================
+# MASTER ORCHESTRATION SERVICES
+# =============================================================================
+services:
+  # System Health Monitor
+  aia-system-monitor:
+    build:
+      context: ./infrastructure/system-monitor
+      dockerfile: Dockerfile
+    image: aia-system/system-monitor:latest
+    container_name: aia-system-monitor
+    restart: unless-stopped
+    environment:
+      - SERVICE_NAME=system-monitor
+      - SERVICE_PORT=9999
+      - MONITORING_SCOPE=complete_system
+      - HEALTH_CHECK_ALL=true
+      - COMPONENT_COUNT=100+
+      - ALERT_MANAGEMENT=true
+    ports:
+      - "9999:9999"
+    volumes:
+      - ./logs/system-monitor:/app/logs
+      - system_monitor_data:/app/data
+    networks:
+      - aia-master
+      - aia-infrastructure
+      - aia-backend
+      - aia-frontend
+      - aia-agents
+      - aia-atomic-dkg
+      - aia-fortune500
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9999/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+# =============================================================================
+# VOLUMES
+# =============================================================================
+volumes:
+  system_monitor_data:
+    driver: local
+
+# =============================================================================
+# NETWORKS
+# =============================================================================
+networks:
+  # Master network for system coordination
+  aia-master:
+    name: aia-master
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.26.0.0/16
+
+  # Reference existing networks
+  aia-infrastructure:
+    external: true
+  aia-backend:
+    external: true
+  aia-frontend:
+    external: true
+  aia-agents:
+    external: true
+  aia-atomic-dkg:
+    external: true
+  aia-fortune500:
+    external: true
+
+# =============================================================================
+# CONFIGURATION EXTENSIONS
+# =============================================================================
+
+# Include all component compositions
+include:
+  - docker-compose.infrastructure.yml    # Core infrastructure (databases, monitoring, security)
+  - docker-compose.backend.yml          # Backend services (44 production services)
+  - docker-compose.backend-extended.yml # Extended backend services
+  - docker-compose.frontend.yml         # Frontend applications (3 main apps + support)
+  - docker-compose.agents.yml           # Multi-agent system (12+ agents)
+  - docker-compose.atomic-dkg.yml       # Atomic-DKG system (7M+ atoms)
+  - docker-compose.fortune500.yml       # Fortune 500 integrations (5 partners)
+
+# =============================================================================
+# PRODUCTION PROFILES
+# =============================================================================
+
+# Profile: Complete Development Environment
+# Usage: docker compose --profile development up
+x-development-services: &development-services
+  profiles:
+    - development
+    - complete
+
+# Profile: Production Infrastructure Only
+# Usage: docker compose --profile infrastructure up
+x-infrastructure-services: &infrastructure-services
+  profiles:
+    - infrastructure
+    - production
+    - complete
+
+# Profile: Backend Services Only
+# Usage: docker compose --profile backend up
+x-backend-services: &backend-services
+  profiles:
+    - backend
+    - production
+    - complete
+
+# Profile: Frontend Services Only
+# Usage: docker compose --profile frontend up
+x-frontend-services: &frontend-services
+  profiles:
+    - frontend
+    - production
+    - complete
+
+# Profile: AI/ML Services (Agents + DKG)
+# Usage: docker compose --profile ai-ml up
+x-ai-ml-services: &ai-ml-services
+  profiles:
+    - ai-ml
+    - production
+    - complete
+
+# Profile: Enterprise Integrations
+# Usage: docker compose --profile enterprise up
+x-enterprise-services: &enterprise-services
+  profiles:
+    - enterprise
+    - production
+    - complete
+
+# Profile: Complete Production System
+# Usage: docker compose --profile production up
+# or:    docker compose --profile complete up
+x-production-services: &production-services
+  profiles:
+    - production
+    - complete

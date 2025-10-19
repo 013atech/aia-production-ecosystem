@@ -1,0 +1,617 @@
+# AIA Enterprise Platform - Fortune 500 Integrations
+# Microsoft, Google, AWS, Salesforce, and Stripe partnerships
+version: '3.8'
+
+services:
+  # =============================================================================
+  # INTEGRATION ORCHESTRATOR
+  # =============================================================================
+
+  aia-fortune500-orchestrator:
+    build:
+      context: ./infrastructure/fortune500-orchestrator
+      dockerfile: Dockerfile
+    image: aia-system/fortune500-orchestrator:latest
+    container_name: aia-fortune500-orchestrator
+    restart: unless-stopped
+    environment:
+      - SERVICE_NAME=fortune500-orchestrator
+      - SERVICE_PORT=8500
+      - PARTNERSHIP_COUNT=5
+      - INTEGRATION_HEALTH_MONITORING=true
+      - AUTO_FAILOVER=true
+      - LOAD_BALANCING=true
+      - DATABASE_URL=postgresql://aia_enterprise:enterprise-secure-2025@postgres-primary:5432/aia_enterprise
+      - REDIS_URL=redis://:${REDIS_PASSWORD:-redis-secure-2025}@redis-master:6379/10
+    ports:
+      - "8500:8500"
+    volumes:
+      - ./logs/fortune500-orchestrator:/app/logs
+      - ./config/fortune500:/app/config:ro
+      - fortune500_orchestrator_data:/app/data
+    networks:
+      - aia-fortune500
+      - aia-backend
+      - aia-infrastructure
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8500/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # =============================================================================
+  # MICROSOFT INTEGRATION
+  # =============================================================================
+
+  aia-microsoft-integration:
+    build:
+      context: ./infrastructure/integrations/microsoft
+      dockerfile: Dockerfile
+      args:
+        - MICROSOFT_GRAPH_VERSION=v1.0
+        - AZURE_SDK_VERSION=latest
+    image: aia-system/microsoft-integration:latest
+    container_name: aia-microsoft-integration
+    restart: unless-stopped
+    environment:
+      - SERVICE_NAME=microsoft-integration
+      - SERVICE_PORT=8501
+      - COMPANY_NAME=Microsoft Corporation
+      - COMPANY_CODE=MSFT
+      - INTEGRATION_TYPE=azure_active_directory
+      - API_ENDPOINT=https://graph.microsoft.com/v1.0
+      - AUTHENTICATION_TYPE=oauth2
+      - SERVICES=azure,office365,teams,dynamics
+      - DATABASE_URL=postgresql://aia_enterprise:enterprise-secure-2025@postgres-primary:5432/aia_enterprise
+      - ORCHESTRATOR_URL=http://aia-fortune500-orchestrator:8500
+      # Microsoft credentials (to be set via secrets)
+      - AZURE_TENANT_ID=${MICROSOFT_TENANT_ID}
+      - AZURE_CLIENT_ID=${MICROSOFT_CLIENT_ID}
+      - AZURE_CLIENT_SECRET=${MICROSOFT_CLIENT_SECRET}
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./logs/microsoft-integration:/app/logs
+      - ./config/microsoft:/app/config:ro
+      - microsoft_integration_data:/app/data
+    networks:
+      - aia-fortune500
+      - aia-backend
+    depends_on:
+      - aia-fortune500-orchestrator
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8501/health"]
+      interval: 30s
+      timeout: 15s
+      retries: 3
+
+  aia-microsoft-graph:
+    build:
+      context: ./infrastructure/integrations/microsoft/graph
+      dockerfile: Dockerfile
+    image: aia-system/microsoft-graph:latest
+    container_name: aia-microsoft-graph
+    restart: unless-stopped
+    environment:
+      - SERVICE_NAME=microsoft-graph
+      - SERVICE_PORT=8502
+      - GRAPH_API_VERSION=v1.0
+      - SUPPORTED_ENDPOINTS=users,groups,applications,calendars,mail,drives
+      - SCOPES=User.Read,Group.Read.All,Application.Read.All,Calendars.Read,Mail.Read,Files.Read.All
+      - MICROSOFT_INTEGRATION_URL=http://aia-microsoft-integration:8501
+    ports:
+      - "8502:8502"
+    volumes:
+      - ./logs/microsoft-graph:/app/logs
+    networks:
+      - aia-fortune500
+    depends_on:
+      - aia-microsoft-integration
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8502/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # =============================================================================
+  # GOOGLE INTEGRATION
+  # =============================================================================
+
+  aia-google-integration:
+    build:
+      context: ./infrastructure/integrations/google
+      dockerfile: Dockerfile
+      args:
+        - GOOGLE_CLIENT_VERSION=latest
+        - GCP_SDK_VERSION=latest
+    image: aia-system/google-integration:latest
+    container_name: aia-google-integration
+    restart: unless-stopped
+    environment:
+      - SERVICE_NAME=google-integration
+      - SERVICE_PORT=8510
+      - COMPANY_NAME=Google LLC
+      - COMPANY_CODE=GOOGL
+      - INTEGRATION_TYPE=google_workspace
+      - API_ENDPOINT=https://www.googleapis.com/workspace/v1
+      - AUTHENTICATION_TYPE=oauth2
+      - SERVICES=workspace,gcp,analytics,ads
+      - DATABASE_URL=postgresql://aia_enterprise:enterprise-secure-2025@postgres-primary:5432/aia_enterprise
+      - ORCHESTRATOR_URL=http://aia-fortune500-orchestrator:8500
+      # Google credentials (to be set via secrets)
+      - GOOGLE_PROJECT_ID=${GOOGLE_PROJECT_ID}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      - GOOGLE_SERVICE_ACCOUNT_KEY=${GOOGLE_SERVICE_ACCOUNT_KEY}
+    ports:
+      - "8510:8510"
+    volumes:
+      - ./logs/google-integration:/app/logs
+      - ./config/google:/app/config:ro
+      - ./credentials/google-service-account.json:/app/credentials/service-account.json:ro
+      - google_integration_data:/app/data
+    networks:
+      - aia-fortune500
+      - aia-backend
+    depends_on:
+      - aia-fortune500-orchestrator
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8510/health"]
+      interval: 30s
+      timeout: 15s
+      retries: 3
+
+  aia-google-workspace:
+    build:
+      context: ./infrastructure/integrations/google/workspace
+      dockerfile: Dockerfile
+    image: aia-system/google-workspace:latest
+    container_name: aia-google-workspace
+    restart: unless-stopped
+    environment:
+      - SERVICE_NAME=google-workspace
+      - SERVICE_PORT=8511
+      - WORKSPACE_APIS=admin,calendar,drive,gmail,sheets,docs,slides
+      - SCOPES=https://www.googleapis.com/auth/admin.directory.user.readonly,https://www.googleapis.com/auth/calendar,https://www.googleapis.com/auth/drive
+      - GOOGLE_INTEGRATION_URL=http://aia-google-integration:8510
+    ports:
+      - "8511:8511"
+    volumes:
+      - ./logs/google-workspace:/app/logs
+    networks:
+      - aia-fortune500
+    depends_on:
+      - aia-google-integration
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8511/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  aia-google-cloud-platform:
+    build:
+      context: ./infrastructure/integrations/google/gcp
+      dockerfile: Dockerfile
+    image: aia-system/google-cloud-platform:latest
+    container_name: aia-google-cloud-platform
+    restart: unless-stopped
+    environment:
+      - SERVICE_NAME=google-cloud-platform
+      - SERVICE_PORT=8512
+      - GCP_SERVICES=compute,storage,bigquery,ai_platform,cloud_sql
+      - MONITORING_ENABLED=true
+      - COST_ANALYTICS=true
+      - GOOGLE_INTEGRATION_URL=http://aia-google-integration:8510
+    ports:
+      - "8512:8512"
+    volumes:
+      - ./logs/google-cloud-platform:/app/logs
+    networks:
+      - aia-fortune500
+    depends_on:
+      - aia-google-integration
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8512/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # =============================================================================
+  # AWS INTEGRATION
+  # =============================================================================
+
+  aia-aws-integration:
+    build:
+      context: ./infrastructure/integrations/aws
+      dockerfile: Dockerfile
+      args:
+        - AWS_CLI_VERSION=latest
+        - BOTO3_VERSION=latest
+    image: aia-system/aws-integration:latest
+    container_name: aia-aws-integration
+    restart: unless-stopped
+    environment:
+      - SERVICE_NAME=aws-integration
+      - SERVICE_PORT=8520
+      - COMPANY_NAME=Amazon Web Services
+      - COMPANY_CODE=AMZN
+      - INTEGRATION_TYPE=aws_enterprise_services
+      - API_ENDPOINT=https://aws.amazon.com/api
+      - AUTHENTICATION_TYPE=aws_signature
+      - SERVICES=ec2,s3,rds,lambda,sagemaker,bedrock
+      - DATABASE_URL=postgresql://aia_enterprise:enterprise-secure-2025@postgres-primary:5432/aia_enterprise
+      - ORCHESTRATOR_URL=http://aia-fortune500-orchestrator:8500
+      # AWS credentials (to be set via secrets)
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_REGION=${AWS_REGION:-us-east-1}
+      - AWS_ACCOUNT_ID=${AWS_ACCOUNT_ID}
+    ports:
+      - "8520:8520"
+    volumes:
+      - ./logs/aws-integration:/app/logs
+      - ./config/aws:/app/config:ro
+      - ~/.aws:/app/.aws:ro
+      - aws_integration_data:/app/data
+    networks:
+      - aia-fortune500
+      - aia-backend
+    depends_on:
+      - aia-fortune500-orchestrator
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8520/health"]
+      interval: 30s
+      timeout: 15s
+      retries: 3
+
+  aia-aws-compute:
+    build:
+      context: ./infrastructure/integrations/aws/compute
+      dockerfile: Dockerfile
+    image: aia-system/aws-compute:latest
+    container_name: aia-aws-compute
+    restart: unless-stopped
+    environment:
+      - SERVICE_NAME=aws-compute
+      - SERVICE_PORT=8521
+      - AWS_SERVICES=ec2,ecs,eks,lambda,batch
+      - MONITORING_ENABLED=true
+      - COST_OPTIMIZATION=true
+      - AWS_INTEGRATION_URL=http://aia-aws-integration:8520
+    ports:
+      - "8521:8521"
+    volumes:
+      - ./logs/aws-compute:/app/logs
+    networks:
+      - aia-fortune500
+    depends_on:
+      - aia-aws-integration
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8521/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  aia-aws-ai-ml:
+    build:
+      context: ./infrastructure/integrations/aws/ai-ml
+      dockerfile: Dockerfile
+    image: aia-system/aws-ai-ml:latest
+    container_name: aia-aws-ai-ml
+    restart: unless-stopped
+    environment:
+      - SERVICE_NAME=aws-ai-ml
+      - SERVICE_PORT=8522
+      - AWS_AI_SERVICES=sagemaker,bedrock,comprehend,rekognition,textract
+      - MODEL_DEPLOYMENT=true
+      - INFERENCE_ENDPOINTS=true
+      - AWS_INTEGRATION_URL=http://aia-aws-integration:8520
+    ports:
+      - "8522:8522"
+    volumes:
+      - ./logs/aws-ai-ml:/app/logs
+    networks:
+      - aia-fortune500
+    depends_on:
+      - aia-aws-integration
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8522/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # =============================================================================
+  # SALESFORCE INTEGRATION
+  # =============================================================================
+
+  aia-salesforce-integration:
+    build:
+      context: ./infrastructure/integrations/salesforce
+      dockerfile: Dockerfile
+      args:
+        - SALESFORCE_API_VERSION=v55.0
+    image: aia-system/salesforce-integration:latest
+    container_name: aia-salesforce-integration
+    restart: unless-stopped
+    environment:
+      - SERVICE_NAME=salesforce-integration
+      - SERVICE_PORT=8530
+      - COMPANY_NAME=Salesforce Inc
+      - COMPANY_CODE=CRM
+      - INTEGRATION_TYPE=crm_integration
+      - API_ENDPOINT=https://api.salesforce.com/services/data/v55.0
+      - AUTHENTICATION_TYPE=oauth2
+      - SERVICES=sales_cloud,service_cloud,marketing_cloud,commerce_cloud
+      - DATABASE_URL=postgresql://aia_enterprise:enterprise-secure-2025@postgres-primary:5432/aia_enterprise
+      - ORCHESTRATOR_URL=http://aia-fortune500-orchestrator:8500
+      # Salesforce credentials (to be set via secrets)
+      - SALESFORCE_CLIENT_ID=${SALESFORCE_CLIENT_ID}
+      - SALESFORCE_CLIENT_SECRET=${SALESFORCE_CLIENT_SECRET}
+      - SALESFORCE_USERNAME=${SALESFORCE_USERNAME}
+      - SALESFORCE_PASSWORD=${SALESFORCE_PASSWORD}
+      - SALESFORCE_SECURITY_TOKEN=${SALESFORCE_SECURITY_TOKEN}
+    ports:
+      - "8530:8530"
+    volumes:
+      - ./logs/salesforce-integration:/app/logs
+      - ./config/salesforce:/app/config:ro
+      - salesforce_integration_data:/app/data
+    networks:
+      - aia-fortune500
+      - aia-backend
+    depends_on:
+      - aia-fortune500-orchestrator
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8530/health"]
+      interval: 30s
+      timeout: 15s
+      retries: 3
+
+  aia-salesforce-crm:
+    build:
+      context: ./infrastructure/integrations/salesforce/crm
+      dockerfile: Dockerfile
+    image: aia-system/salesforce-crm:latest
+    container_name: aia-salesforce-crm
+    restart: unless-stopped
+    environment:
+      - SERVICE_NAME=salesforce-crm
+      - SERVICE_PORT=8531
+      - CRM_OBJECTS=Account,Contact,Lead,Opportunity,Case,Campaign
+      - BULK_API_ENABLED=true
+      - STREAMING_API_ENABLED=true
+      - SALESFORCE_INTEGRATION_URL=http://aia-salesforce-integration:8530
+    ports:
+      - "8531:8531"
+    volumes:
+      - ./logs/salesforce-crm:/app/logs
+    networks:
+      - aia-fortune500
+    depends_on:
+      - aia-salesforce-integration
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8531/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # =============================================================================
+  # STRIPE INTEGRATION
+  # =============================================================================
+
+  aia-stripe-integration:
+    build:
+      context: ./infrastructure/integrations/stripe
+      dockerfile: Dockerfile
+      args:
+        - STRIPE_API_VERSION=2023-10-16
+    image: aia-system/stripe-integration:latest
+    container_name: aia-stripe-integration
+    restart: unless-stopped
+    environment:
+      - SERVICE_NAME=stripe-integration
+      - SERVICE_PORT=8540
+      - COMPANY_NAME=Stripe Inc
+      - COMPANY_CODE=STRIPE
+      - INTEGRATION_TYPE=payment_processing
+      - API_ENDPOINT=https://api.stripe.com/v1
+      - AUTHENTICATION_TYPE=bearer_token
+      - SERVICES=payments,billing,connect,radar
+      - DATABASE_URL=postgresql://aia_enterprise:enterprise-secure-2025@postgres-primary:5432/aia_enterprise
+      - ORCHESTRATOR_URL=http://aia-fortune500-orchestrator:8500
+      # Stripe credentials (to be set via secrets)
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
+      - STRIPE_PUBLIC_KEY=${STRIPE_PUBLIC_KEY}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
+    ports:
+      - "8540:8540"
+    volumes:
+      - ./logs/stripe-integration:/app/logs
+      - ./config/stripe:/app/config:ro
+      - stripe_integration_data:/app/data
+    networks:
+      - aia-fortune500
+      - aia-backend
+    depends_on:
+      - aia-fortune500-orchestrator
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8540/health"]
+      interval: 30s
+      timeout: 15s
+      retries: 3
+
+  aia-stripe-payments:
+    build:
+      context: ./infrastructure/integrations/stripe/payments
+      dockerfile: Dockerfile
+    image: aia-system/stripe-payments:latest
+    container_name: aia-stripe-payments
+    restart: unless-stopped
+    environment:
+      - SERVICE_NAME=stripe-payments
+      - SERVICE_PORT=8541
+      - PAYMENT_METHODS=card,bank_account,apple_pay,google_pay,crypto
+      - PAYMENT_FLOWS=checkout,payment_intents,setup_intents
+      - WEBHOOK_HANDLING=true
+      - STRIPE_INTEGRATION_URL=http://aia-stripe-integration:8540
+    ports:
+      - "8541:8541"
+    volumes:
+      - ./logs/stripe-payments:/app/logs
+    networks:
+      - aia-fortune500
+    depends_on:
+      - aia-stripe-integration
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8541/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  aia-stripe-billing:
+    build:
+      context: ./infrastructure/integrations/stripe/billing
+      dockerfile: Dockerfile
+    image: aia-system/stripe-billing:latest
+    container_name: aia-stripe-billing
+    restart: unless-stopped
+    environment:
+      - SERVICE_NAME=stripe-billing
+      - SERVICE_PORT=8542
+      - SUBSCRIPTION_MANAGEMENT=true
+      - INVOICE_AUTOMATION=true
+      - TAX_CALCULATION=true
+      - METERED_BILLING=true
+      - STRIPE_INTEGRATION_URL=http://aia-stripe-integration:8540
+    ports:
+      - "8542:8542"
+    volumes:
+      - ./logs/stripe-billing:/app/logs
+    networks:
+      - aia-fortune500
+    depends_on:
+      - aia-stripe-integration
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8542/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # =============================================================================
+  # INTEGRATION MONITORING & ANALYTICS
+  # =============================================================================
+
+  aia-integration-monitoring:
+    build:
+      context: ./infrastructure/integration-monitoring
+      dockerfile: Dockerfile
+    image: aia-system/integration-monitoring:latest
+    container_name: aia-integration-monitoring
+    restart: unless-stopped
+    environment:
+      - SERVICE_NAME=integration-monitoring
+      - SERVICE_PORT=8550
+      - MONITORING_PARTNERS=microsoft,google,aws,salesforce,stripe
+      - HEALTH_CHECK_INTERVAL=60s
+      - SLA_MONITORING=true
+      - PERFORMANCE_TRACKING=true
+      - DATABASE_URL=postgresql://aia_enterprise:enterprise-secure-2025@postgres-primary:5432/aia_enterprise
+      - PROMETHEUS_URL=http://prometheus:9090
+    ports:
+      - "8550:8550"
+    volumes:
+      - ./logs/integration-monitoring:/app/logs
+      - integration_monitoring_data:/app/data
+    networks:
+      - aia-fortune500
+      - aia-infrastructure
+    depends_on:
+      - aia-fortune500-orchestrator
+      - prometheus
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8550/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  aia-integration-analytics:
+    build:
+      context: ./infrastructure/integration-analytics
+      dockerfile: Dockerfile
+    image: aia-system/integration-analytics:latest
+    container_name: aia-integration-analytics
+    restart: unless-stopped
+    environment:
+      - SERVICE_NAME=integration-analytics
+      - SERVICE_PORT=8551
+      - USAGE_ANALYTICS=true
+      - COST_ANALYTICS=true
+      - PERFORMANCE_ANALYTICS=true
+      - ROI_TRACKING=true
+      - DATABASE_URL=postgresql://aia_enterprise:enterprise-secure-2025@postgres-primary:5432/aia_enterprise
+      - CLICKHOUSE_URL=http://clickhouse-server:8123
+    ports:
+      - "8551:8551"
+    volumes:
+      - ./logs/integration-analytics:/app/logs
+      - integration_analytics_data:/app/data
+    networks:
+      - aia-fortune500
+      - aia-infrastructure
+    depends_on:
+      - aia-integration-monitoring
+      - clickhouse-server
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8551/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+# =============================================================================
+# VOLUMES
+# =============================================================================
+volumes:
+  # Orchestrator
+  fortune500_orchestrator_data:
+    driver: local
+
+  # Microsoft volumes
+  microsoft_integration_data:
+    driver: local
+
+  # Google volumes
+  google_integration_data:
+    driver: local
+
+  # AWS volumes
+  aws_integration_data:
+    driver: local
+
+  # Salesforce volumes
+  salesforce_integration_data:
+    driver: local
+
+  # Stripe volumes
+  stripe_integration_data:
+    driver: local
+
+  # Monitoring & Analytics
+  integration_monitoring_data:
+    driver: local
+  integration_analytics_data:
+    driver: local
+
+# =============================================================================
+# NETWORKS
+# =============================================================================
+networks:
+  aia-fortune500:
+    name: aia-fortune500
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.25.0.0/16
+  aia-backend:
+    external: true
+  aia-infrastructure:
+    external: true

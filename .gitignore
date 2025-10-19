@@ -1,0 +1,169 @@
+# AIA Production Ecosystem - Git Ignore Configuration
+
+# Environment and Configuration Files
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+*.env
+
+# Logs and temporary files
+logs/
+*.log
+*.log.*
+temp/
+tmp/
+*.tmp
+
+# Node.js dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+*.egg-info/
+dist/
+build/
+
+# IDE and Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.sublime-project
+.sublime-workspace
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Docker
+.dockerignore
+Dockerfile.local
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# SSL Certificates (keep template, ignore actual certs)
+ssl/*.key
+ssl/*.crt
+ssl/*.csr
+ssl/*.pem
+!ssl/.gitkeep
+
+# Backup directories
+*-backup-*/
+deployment-backups/
+.backup/
+backups/
+
+# Cache directories
+.cache/
+.aia_dkg_cache/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Build artifacts
+build/
+dist/
+*.tar.gz
+*.zip
+
+# Terraform
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+
+# Kubernetes
+*.kubeconfig
+
+# Cloud provider credentials
+gcp-credentials.json
+aws-credentials.json
+azure-credentials.json
+
+# Monitoring and metrics
+prometheus_data/
+grafana_data/
+
+# Machine Learning
+models/*.pkl
+models/*.joblib
+*.h5
+*.pb
+
+# Large data files
+*.csv
+*.json.gz
+*.parquet
+data/raw/
+data/processed/
+
+# Documentation build
+docs/_build/
+site/
+
+# Test coverage
+.coverage
+.nyc_output
+coverage/
+
+# Jupyter Notebooks checkpoints
+.ipynb_checkpoints
+
+# React build
+build/
+.next/
+out/
+
+# Package manager files
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Local configuration overrides
+config.local.json
+settings.local.json
+
+# Secrets and credentials (extra safety)
+secrets.json
+credentials.json
+private-keys/
+tokens.txt
+*.secret
+
+# Performance and debugging
+*.prof
+*.heap
+*.cpuprofile
+
+# Generated documentation
+api-docs/
+swagger-docs/
+
+# Temporary processing files
+processing-temp/
+upload-temp/

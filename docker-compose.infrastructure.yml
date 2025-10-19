@@ -1,0 +1,525 @@
+# AIA Enterprise Platform - Core Infrastructure
+# Complete database cluster, message queue, and monitoring stack
+version: '3.8'
+
+services:
+  # =============================================================================
+  # DATABASE CLUSTER
+  # =============================================================================
+
+  # PostgreSQL Primary Database
+  postgres-primary:
+    image: postgres:15-alpine
+    container_name: aia-postgres-primary
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: aia_production
+      POSTGRES_USER: aia_user
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-aia-secure-2025}
+      POSTGRES_MAX_CONNECTIONS: 500
+      POSTGRES_SHARED_BUFFERS: 512MB
+      POSTGRES_EFFECTIVE_CACHE_SIZE: 2GB
+      POSTGRES_WAL_BUFFERS: 16MB
+      POSTGRES_CHECKPOINT_COMPLETION_TARGET: 0.9
+    volumes:
+      - postgres_primary_data:/var/lib/postgresql/data
+      - ./infrastructure/postgres/init-primary.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./infrastructure/postgres/postgresql.conf:/etc/postgresql/postgresql.conf
+    ports:
+      - "5432:5432"
+    networks:
+      - aia-infrastructure
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aia_user -d aia_production"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    command: postgres -c config_file=/etc/postgresql/postgresql.conf
+
+  # PostgreSQL Read Replica
+  postgres-replica:
+    image: postgres:15-alpine
+    container_name: aia-postgres-replica
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: aia_production
+      POSTGRES_USER: aia_user
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-aia-secure-2025}
+      POSTGRES_MASTER_SERVICE: postgres-primary
+      POSTGRES_REPLICATION_USER: replicator
+      POSTGRES_REPLICATION_PASSWORD: ${POSTGRES_REPLICATION_PASSWORD:-repl-secure-2025}
+    volumes:
+      - postgres_replica_data:/var/lib/postgresql/data
+      - ./infrastructure/postgres/setup-replica.sh:/docker-entrypoint-initdb.d/setup-replica.sh
+    ports:
+      - "5433:5432"
+    networks:
+      - aia-infrastructure
+    depends_on:
+      - postgres-primary
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aia_user -d aia_production"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
+  # Redis Cluster (Master)
+  redis-master:
+    image: redis:7-alpine
+    container_name: aia-redis-master
+    restart: unless-stopped
+    command: >
+      redis-server
+      --requirepass ${REDIS_PASSWORD:-redis-secure-2025}
+      --maxmemory 2gb
+      --maxmemory-policy allkeys-lru
+      --appendonly yes
+      --appendfsync everysec
+      --save 900 1
+      --save 300 10
+      --save 60 10000
+    volumes:
+      - redis_master_data:/data
+      - ./infrastructure/redis/redis.conf:/usr/local/etc/redis/redis.conf
+    ports:
+      - "6379:6379"
+    networks:
+      - aia-infrastructure
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-redis-secure-2025}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # Redis Sentinel for High Availability
+  redis-sentinel:
+    image: redis:7-alpine
+    container_name: aia-redis-sentinel
+    restart: unless-stopped
+    command: redis-sentinel /usr/local/etc/redis/sentinel.conf
+    volumes:
+      - ./infrastructure/redis/sentinel.conf:/usr/local/etc/redis/sentinel.conf
+    ports:
+      - "26379:26379"
+    networks:
+      - aia-infrastructure
+    depends_on:
+      - redis-master
+
+  # MongoDB Cluster (Primary)
+  mongodb-primary:
+    image: mongo:7
+    container_name: aia-mongodb-primary
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:-mongo-secure-2025}
+      MONGO_INITDB_DATABASE: aia_system
+      MONGO_REPLICA_SET_NAME: aia-replica-set
+    volumes:
+      - mongodb_primary_data:/data/db
+      - mongodb_config:/data/configdb
+      - ./infrastructure/mongodb/init-replica.js:/docker-entrypoint-initdb.d/init-replica.js
+      - ./infrastructure/mongodb/mongod.conf:/etc/mongod.conf
+    ports:
+      - "27017:27017"
+    networks:
+      - aia-infrastructure
+    command: mongod --replSet aia-replica-set --bind_ip_all --config /etc/mongod.conf
+    healthcheck:
+      test: |
+        echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  # Neo4j Graph Database
+  neo4j-enterprise:
+    image: neo4j:5-enterprise
+    container_name: aia-neo4j-enterprise
+    restart: unless-stopped
+    environment:
+      NEO4J_AUTH: neo4j/${NEO4J_PASSWORD:-neo4j-secure-2025}
+      NEO4J_ACCEPT_LICENSE_AGREEMENT: 'yes'
+      NEO4J_PLUGINS: '["apoc", "graph-data-science", "n10s"]'
+      NEO4J_dbms_memory_pagecache_size: 2G
+      NEO4J_dbms_memory_heap_max__size: 4G
+      NEO4J_dbms_security_procedures_unrestricted: 'apoc.*,gds.*,n10s.*'
+      NEO4J_dbms_security_procedures_allowlist: 'apoc.*,gds.*,n10s.*'
+      NEO4J_dbms_connector_bolt_listen__address: '0.0.0.0:7687'
+      NEO4J_dbms_connector_http_listen__address: '0.0.0.0:7474'
+    volumes:
+      - neo4j_data:/data
+      - neo4j_logs:/logs
+      - neo4j_import:/import
+      - ./infrastructure/neo4j/plugins:/plugins
+    ports:
+      - "7474:7474"   # HTTP
+      - "7687:7687"   # Bolt
+    networks:
+      - aia-infrastructure
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:7474 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ClickHouse for Analytics
+  clickhouse-server:
+    image: clickhouse/clickhouse-server:latest
+    container_name: aia-clickhouse-server
+    restart: unless-stopped
+    environment:
+      CLICKHOUSE_DB: aia_analytics
+      CLICKHOUSE_USER: aia_user
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:-clickhouse-secure-2025}
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1
+    volumes:
+      - clickhouse_data:/var/lib/clickhouse
+      - clickhouse_logs:/var/log/clickhouse-server
+      - ./infrastructure/clickhouse/config.xml:/etc/clickhouse-server/config.xml
+      - ./infrastructure/clickhouse/users.xml:/etc/clickhouse-server/users.xml
+    ports:
+      - "8123:8123"   # HTTP
+      - "9000:9000"   # Native
+    networks:
+      - aia-infrastructure
+    healthcheck:
+      test: ["CMD", "clickhouse-client", "--query", "SELECT 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # =============================================================================
+  # MESSAGE QUEUE & STREAMING
+  # =============================================================================
+
+  # Zookeeper for Kafka
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: aia-zookeeper
+    restart: unless-stopped
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+      ZOOKEEPER_MAX_CLIENT_CNXNS: 0
+      ZOOKEEPER_ADMIN_ENABLE_SERVER: 'true'
+      ZOOKEEPER_ADMIN_SERVER_PORT: 8080
+    volumes:
+      - zookeeper_data:/var/lib/zookeeper/data
+      - zookeeper_logs:/var/lib/zookeeper/log
+    ports:
+      - "2181:2181"
+      - "8080:8080"
+    networks:
+      - aia-infrastructure
+    healthcheck:
+      test: ["CMD", "echo", "ruok", "|", "nc", "localhost", "2181", "|", "grep", "imok"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Kafka Broker
+  kafka-broker:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: aia-kafka-broker
+    restart: unless-stopped
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,INTERNAL://kafka-broker:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,INTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
+      KAFKA_LOG_RETENTION_HOURS: 168
+      KAFKA_LOG_SEGMENT_BYTES: 1073741824
+      KAFKA_LOG_RETENTION_CHECK_INTERVAL_MS: 300000
+      KAFKA_NUM_PARTITIONS: 8
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 1
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    ports:
+      - "9092:9092"
+    networks:
+      - aia-infrastructure
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-topics --bootstrap-server localhost:9092 --list"]
+      interval: 30s
+      timeout: 15s
+      retries: 3
+
+  # RabbitMQ Message Queue
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: aia-rabbitmq
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-aia_user}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-rabbitmq-secure-2025}
+      RABBITMQ_DEFAULT_VHOST: aia
+      RABBITMQ_VM_MEMORY_HIGH_WATERMARK: 0.8
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+      - ./infrastructure/rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf
+      - ./infrastructure/rabbitmq/definitions.json:/etc/rabbitmq/definitions.json
+    ports:
+      - "5672:5672"   # AMQP
+      - "15672:15672" # Management UI
+    networks:
+      - aia-infrastructure
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # =============================================================================
+  # MONITORING & OBSERVABILITY
+  # =============================================================================
+
+  # Prometheus Monitoring
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: aia-prometheus
+    restart: unless-stopped
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+      - '--web.enable-lifecycle'
+      - '--web.enable-admin-api'
+      - '--storage.tsdb.retention.time=30d'
+      - '--storage.tsdb.retention.size=10GB'
+    volumes:
+      - prometheus_data:/prometheus
+      - ./infrastructure/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./infrastructure/monitoring/rules:/etc/prometheus/rules
+    ports:
+      - "9090:9090"
+    networks:
+      - aia-infrastructure
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9090/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Grafana Dashboards
+  grafana:
+    image: grafana/grafana-enterprise:latest
+    container_name: aia-grafana
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-grafana-secure-2025}
+      GF_INSTALL_PLUGINS: redis-datasource,neo4j-datasource,clickhouse-datasource
+      GF_FEATURE_TOGGLES_ENABLE: 'publicDashboards'
+      GF_DATABASE_TYPE: postgres
+      GF_DATABASE_HOST: postgres-primary:5432
+      GF_DATABASE_NAME: grafana
+      GF_DATABASE_USER: aia_user
+      GF_DATABASE_PASSWORD: ${POSTGRES_PASSWORD:-aia-secure-2025}
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./infrastructure/monitoring/grafana/provisioning:/etc/grafana/provisioning
+      - ./infrastructure/monitoring/grafana/dashboards:/var/lib/grafana/dashboards
+    ports:
+      - "3000:3000"
+    networks:
+      - aia-infrastructure
+    depends_on:
+      - prometheus
+      - postgres-primary
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Jaeger Distributed Tracing
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: aia-jaeger
+    restart: unless-stopped
+    environment:
+      COLLECTOR_ZIPKIN_HOST_PORT: ':9411'
+      COLLECTOR_OTLP_ENABLED: 'true'
+      SPAN_STORAGE_TYPE: badger
+      BADGER_EPHEMERAL: 'false'
+      BADGER_DIRECTORY_VALUE: /badger/data
+      BADGER_DIRECTORY_KEY: /badger/key
+    volumes:
+      - jaeger_data:/badger
+    ports:
+      - "5775:5775/udp"  # Thrift compact
+      - "6831:6831/udp"  # Thrift compact
+      - "6832:6832/udp"  # Thrift binary
+      - "5778:5778"      # Config
+      - "16686:16686"    # Web UI
+      - "4317:4317"      # OTLP gRPC
+      - "4318:4318"      # OTLP HTTP
+      - "14250:14250"    # gRPC
+      - "14268:14268"    # HTTP
+      - "9411:9411"      # Zipkin
+    networks:
+      - aia-infrastructure
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:16686/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Elasticsearch for Logging
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+    container_name: aia-elasticsearch
+    restart: unless-stopped
+    environment:
+      discovery.type: single-node
+      ES_JAVA_OPTS: '-Xms2g -Xmx2g'
+      xpack.security.enabled: 'false'
+      xpack.security.enrollment.enabled: 'false'
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    networks:
+      - aia-infrastructure
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Kibana Log Analysis
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.11.0
+    container_name: aia-kibana
+    restart: unless-stopped
+    environment:
+      ELASTICSEARCH_HOSTS: http://elasticsearch:9200
+      SERVER_NAME: kibana
+      SERVER_HOST: '0.0.0.0'
+    ports:
+      - "5601:5601"
+    networks:
+      - aia-infrastructure
+    depends_on:
+      - elasticsearch
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5601/api/status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # =============================================================================
+  # SECURITY INFRASTRUCTURE
+  # =============================================================================
+
+  # HashiCorp Vault for Secrets Management
+  vault:
+    image: vault:latest
+    container_name: aia-vault
+    restart: unless-stopped
+    cap_add:
+      - IPC_LOCK
+    environment:
+      VAULT_DEV_ROOT_TOKEN_ID: ${VAULT_ROOT_TOKEN:-vault-root-token-2025}
+      VAULT_DEV_LISTEN_ADDRESS: '0.0.0.0:8200'
+      VAULT_API_ADDR: 'http://0.0.0.0:8200'
+    volumes:
+      - vault_data:/vault/data
+      - ./infrastructure/vault/config.hcl:/vault/config/config.hcl
+    ports:
+      - "8200:8200"
+    networks:
+      - aia-infrastructure
+    command: vault server -config=/vault/config/config.hcl
+    healthcheck:
+      test: ["CMD", "vault", "status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # =============================================================================
+  # STORAGE & CDN
+  # =============================================================================
+
+  # MinIO Object Storage (S3-compatible)
+  minio:
+    image: minio/minio:latest
+    container_name: aia-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-aia_storage_admin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minio-secure-2025}
+      MINIO_REGION_NAME: us-east-1
+      MINIO_BROWSER_REDIRECT_URL: http://localhost:9001
+    volumes:
+      - minio_data:/data
+      - ./infrastructure/minio/policy:/policy
+    ports:
+      - "9000:9000"  # API
+      - "9001:9001"  # Console
+    networks:
+      - aia-infrastructure
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+# =============================================================================
+# VOLUMES
+# =============================================================================
+volumes:
+  # Database volumes
+  postgres_primary_data:
+  postgres_replica_data:
+  redis_master_data:
+  mongodb_primary_data:
+  mongodb_config:
+  neo4j_data:
+  neo4j_logs:
+  neo4j_import:
+  clickhouse_data:
+  clickhouse_logs:
+
+  # Message queue volumes
+  zookeeper_data:
+  zookeeper_logs:
+  kafka_data:
+  rabbitmq_data:
+
+  # Monitoring volumes
+  prometheus_data:
+  grafana_data:
+  jaeger_data:
+  elasticsearch_data:
+
+  # Security volumes
+  vault_data:
+
+  # Storage volumes
+  minio_data:
+
+# =============================================================================
+# NETWORKS
+# =============================================================================
+networks:
+  aia-infrastructure:
+    name: aia-infrastructure
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

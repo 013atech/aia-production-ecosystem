@@ -1,0 +1,432 @@
+# AIA Enterprise Platform - Frontend Applications
+# React-based applications with enterprise-grade optimization
+version: '3.8'
+
+services:
+  # =============================================================================
+  # MAIN FRONTEND APPLICATIONS
+  # =============================================================================
+
+  aia-frontend-main:
+    build:
+      context: ./01-CORE-PLATFORM/frontend-applications/frontend-main
+      dockerfile: Dockerfile
+      args:
+        - NODE_ENV=production
+        - REACT_APP_VERSION=4.0.0
+        - REACT_APP_API_URL=${API_URL:-https://api.013a.tech}
+        - REACT_APP_WS_URL=${WS_URL:-wss://api.013a.tech}
+        - REACT_APP_ENVIRONMENT=production
+        - REACT_APP_ATOMIC_DKG_ENABLED=true
+        - REACT_APP_ENTERPRISE_MODE=true
+        - REACT_APP_WEBXR_ENABLED=true
+        - REACT_APP_FORTUNE500_WORKFLOWS=true
+    image: aia-system/frontend-main:latest
+    container_name: aia-frontend-main
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - NGINX_WORKER_PROCESSES=auto
+      - NGINX_WORKER_CONNECTIONS=4096
+      - CLIENT_MAX_BODY_SIZE=100M
+      - ENABLE_PERFORMANCE_MONITORING=true
+      - ENABLE_3D_OPTIMIZATION=true
+      - WEBXR_SUPPORT=true
+    ports:
+      - "3000:80"
+      - "3443:443"
+    volumes:
+      - ./ssl/frontend:/etc/ssl/certs:ro
+      - ./logs/frontend-main:/var/log/nginx
+      - ./config/nginx/frontend-main.conf:/etc/nginx/conf.d/default.conf:ro
+      - frontend_cache:/var/cache/nginx
+    networks:
+      - aia-frontend
+      - aia-backend
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.frontend-main.rule=Host(`aia.013a.tech`)"
+      - "traefik.http.routers.frontend-main.entrypoints=websecure"
+      - "traefik.http.routers.frontend-main.tls.certresolver=letsencrypt"
+      - "traefik.http.services.frontend-main.loadbalancer.server.port=80"
+
+  aia-founder-dashboard:
+    build:
+      context: ./01-CORE-PLATFORM/frontend-applications/secure-founder-dashboard/frontend
+      dockerfile: Dockerfile
+      args:
+        - NODE_ENV=production
+        - REACT_APP_API_URL=${API_URL:-https://api.013a.tech}
+        - REACT_APP_DASHBOARD_TYPE=founder
+        - REACT_APP_ENTERPRISE_FEATURES=true
+    image: aia-system/founder-dashboard:latest
+    container_name: aia-founder-dashboard
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - DASHBOARD_TYPE=founder
+      - ANALYTICS_ENABLED=true
+      - FINANCIAL_REPORTING=true
+      - PARTNERSHIP_MANAGEMENT=true
+    ports:
+      - "3001:80"
+    volumes:
+      - ./logs/founder-dashboard:/var/log/nginx
+      - ./config/nginx/founder-dashboard.conf:/etc/nginx/conf.d/default.conf:ro
+      - founder_dashboard_cache:/var/cache/nginx
+    networks:
+      - aia-frontend
+      - aia-backend
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.founder-dashboard.rule=Host(`founder.013a.tech`)"
+      - "traefik.http.routers.founder-dashboard.entrypoints=websecure"
+      - "traefik.http.routers.founder-dashboard.tls.certresolver=letsencrypt"
+
+  aia-enhanced-dashboard:
+    build:
+      context: ./01-CORE-PLATFORM/frontend-applications/secure-founder-dashboard-enhanced/frontend
+      dockerfile: Dockerfile
+      args:
+        - NODE_ENV=production
+        - REACT_APP_API_URL=${API_URL:-https://api.013a.tech}
+        - REACT_APP_ENHANCED_ANALYTICS=true
+        - REACT_APP_ML_INSIGHTS=true
+        - REACT_APP_PREDICTIVE_ANALYTICS=true
+    image: aia-system/enhanced-dashboard:latest
+    container_name: aia-enhanced-dashboard
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - ENHANCED_FEATURES=true
+      - ML_INSIGHTS=true
+      - PREDICTIVE_ANALYTICS=true
+      - CUSTOM_VISUALIZATIONS=true
+    ports:
+      - "3002:80"
+    volumes:
+      - ./logs/enhanced-dashboard:/var/log/nginx
+      - ./config/nginx/enhanced-dashboard.conf:/etc/nginx/conf.d/default.conf:ro
+      - enhanced_dashboard_cache:/var/cache/nginx
+    networks:
+      - aia-frontend
+      - aia-backend
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.enhanced-dashboard.rule=Host(`analytics.013a.tech`)"
+      - "traefik.http.routers.enhanced-dashboard.entrypoints=websecure"
+      - "traefik.http.routers.enhanced-dashboard.tls.certresolver=letsencrypt"
+
+  # =============================================================================
+  # FRONTEND SUPPORT SERVICES
+  # =============================================================================
+
+  frontend-cdn:
+    image: nginx:alpine
+    container_name: frontend-cdn
+    restart: unless-stopped
+    volumes:
+      - ./config/nginx/cdn.conf:/etc/nginx/nginx.conf:ro
+      - ./assets/static:/usr/share/nginx/html/static:ro
+      - ./assets/media:/usr/share/nginx/html/media:ro
+      - ./logs/cdn:/var/log/nginx
+      - cdn_cache:/var/cache/nginx
+    ports:
+      - "8080:80"
+    networks:
+      - aia-frontend
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  frontend-proxy:
+    image: nginx:alpine
+    container_name: frontend-proxy
+    restart: unless-stopped
+    volumes:
+      - ./config/nginx/proxy.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl/proxy:/etc/ssl/certs:ro
+      - ./logs/proxy:/var/log/nginx
+      - proxy_cache:/var/cache/nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    networks:
+      - aia-frontend
+      - aia-backend
+    depends_on:
+      - aia-frontend-main
+      - aia-founder-dashboard
+      - aia-enhanced-dashboard
+    healthcheck:
+      test: ["CMD", "nginx", "-t"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+
+  # =============================================================================
+  # FRONTEND MONITORING & OPTIMIZATION
+  # =============================================================================
+
+  frontend-monitoring:
+    build:
+      context: ./infrastructure/frontend-monitoring
+      dockerfile: Dockerfile
+    image: aia-system/frontend-monitoring:latest
+    container_name: frontend-monitoring
+    restart: unless-stopped
+    environment:
+      - SERVICE_NAME=frontend-monitoring
+      - FRONTEND_APPS=main,founder,enhanced
+      - PERFORMANCE_TRACKING=true
+      - ERROR_TRACKING=true
+      - USER_ANALYTICS=true
+    ports:
+      - "9200:9200"
+    volumes:
+      - ./logs/frontend-monitoring:/app/logs
+      - frontend_monitoring_data:/app/data
+    networks:
+      - aia-frontend
+      - aia-infrastructure
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9200/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  frontend-optimizer:
+    build:
+      context: ./infrastructure/frontend-optimizer
+      dockerfile: Dockerfile
+    image: aia-system/frontend-optimizer:latest
+    container_name: frontend-optimizer
+    restart: unless-stopped
+    environment:
+      - SERVICE_NAME=frontend-optimizer
+      - ASSET_OPTIMIZATION=true
+      - IMAGE_COMPRESSION=true
+      - CODE_SPLITTING=true
+      - LAZY_LOADING=true
+    ports:
+      - "9201:9201"
+    volumes:
+      - ./logs/frontend-optimizer:/app/logs
+      - ./assets:/app/assets
+    networks:
+      - aia-frontend
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9201/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # =============================================================================
+  # 3D WEBXR SERVICES
+  # =============================================================================
+
+  webxr-service:
+    build:
+      context: ./infrastructure/webxr-service
+      dockerfile: Dockerfile
+      args:
+        - THREE_JS_VERSION=0.158.0
+        - WEBXR_POLYFILL=true
+    image: aia-system/webxr-service:latest
+    container_name: webxr-service
+    restart: unless-stopped
+    environment:
+      - SERVICE_NAME=webxr-service
+      - WEBXR_SUPPORT=true
+      - VR_ENABLED=true
+      - AR_ENABLED=true
+      - IMMERSIVE_ANALYTICS=true
+      - GPU_ACCELERATION=true
+    ports:
+      - "9300:9300"
+    volumes:
+      - ./logs/webxr-service:/app/logs
+      - ./assets/3d-models:/app/models:ro
+    networks:
+      - aia-frontend
+      - aia-backend
+    # GPU support for 3D rendering
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9300/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  threejs-optimizer:
+    build:
+      context: ./infrastructure/threejs-optimizer
+      dockerfile: Dockerfile
+    image: aia-system/threejs-optimizer:latest
+    container_name: threejs-optimizer
+    restart: unless-stopped
+    environment:
+      - SERVICE_NAME=threejs-optimizer
+      - GEOMETRY_OPTIMIZATION=true
+      - TEXTURE_COMPRESSION=true
+      - LOD_GENERATION=true
+      - PERFORMANCE_PROFILING=true
+    ports:
+      - "9301:9301"
+    volumes:
+      - ./logs/threejs-optimizer:/app/logs
+      - ./assets/3d-optimized:/app/optimized
+    networks:
+      - aia-frontend
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9301/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # =============================================================================
+  # PROGRESSIVE WEB APP SERVICES
+  # =============================================================================
+
+  pwa-service:
+    build:
+      context: ./infrastructure/pwa-service
+      dockerfile: Dockerfile
+    image: aia-system/pwa-service:latest
+    container_name: pwa-service
+    restart: unless-stopped
+    environment:
+      - SERVICE_NAME=pwa-service
+      - SERVICE_WORKER_ENABLED=true
+      - OFFLINE_SUPPORT=true
+      - PUSH_NOTIFICATIONS=true
+      - BACKGROUND_SYNC=true
+    ports:
+      - "9400:9400"
+    volumes:
+      - ./logs/pwa-service:/app/logs
+      - pwa_cache:/app/cache
+    networks:
+      - aia-frontend
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9400/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # =============================================================================
+  # TESTING & QUALITY ASSURANCE
+  # =============================================================================
+
+  e2e-testing:
+    build:
+      context: ./testing/e2e
+      dockerfile: Dockerfile
+      args:
+        - PLAYWRIGHT_VERSION=latest
+    image: aia-system/e2e-testing:latest
+    container_name: e2e-testing
+    restart: "no"
+    environment:
+      - TEST_ENVIRONMENT=production
+      - HEADLESS=true
+      - PARALLEL_TESTS=4
+      - BROWSER_CONTEXTS=chromium,firefox,webkit
+    volumes:
+      - ./logs/e2e-testing:/app/logs
+      - ./tests/e2e:/app/tests:ro
+      - e2e_results:/app/results
+    networks:
+      - aia-frontend
+    depends_on:
+      - aia-frontend-main
+      - aia-founder-dashboard
+      - aia-enhanced-dashboard
+    command: npm run test:e2e:production
+
+  performance-testing:
+    build:
+      context: ./testing/performance
+      dockerfile: Dockerfile
+    image: aia-system/performance-testing:latest
+    container_name: performance-testing
+    restart: "no"
+    environment:
+      - LOAD_TEST_USERS=1000
+      - PERFORMANCE_BUDGET=2s
+      - LIGHTHOUSE_TESTS=true
+      - WEB_VITALS_MONITORING=true
+    volumes:
+      - ./logs/performance-testing:/app/logs
+      - ./tests/performance:/app/tests:ro
+      - performance_results:/app/results
+    networks:
+      - aia-frontend
+    command: npm run test:performance:production
+
+# =============================================================================
+# VOLUMES
+# =============================================================================
+volumes:
+  # Frontend cache volumes
+  frontend_cache:
+    driver: local
+  founder_dashboard_cache:
+    driver: local
+  enhanced_dashboard_cache:
+    driver: local
+  cdn_cache:
+    driver: local
+  proxy_cache:
+    driver: local
+
+  # Service data volumes
+  frontend_monitoring_data:
+    driver: local
+  pwa_cache:
+    driver: local
+
+  # Testing result volumes
+  e2e_results:
+    driver: local
+  performance_results:
+    driver: local
+
+# =============================================================================
+# NETWORKS
+# =============================================================================
+networks:
+  aia-frontend:
+    name: aia-frontend
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.22.0.0/16
+  aia-backend:
+    external: true
+  aia-infrastructure:
+    external: true

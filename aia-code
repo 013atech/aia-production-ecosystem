@@ -1,0 +1,41 @@
+#!/usr/bin/env python3
+"""
+AIA Code CLI - Enterprise Executable
+===================================
+
+Quick launcher for the AIA Code CLI system.
+This is the main entry point that users will execute.
+
+Usage:
+  aia-code                    # Interactive mode
+  aia-code analyze            # Analyze current project
+  aia-code generate "prompt"  # Generate code
+  aia-code review file.py     # Review code
+  aia-code help               # Show help
+
+Author: AIA Multi-Agent System (Cryptography Agent Lead)
+Version: 1.0.0 Enterprise
+"""
+
+import sys
+import subprocess
+from pathlib import Path
+
+def main():
+    # Get the directory of this script
+    script_dir = Path(__file__).parent
+    launcher_script = script_dir / "start_aia_code_cli.py"
+
+    # Pass all arguments to the main launcher
+    cmd = [sys.executable, str(launcher_script)] + sys.argv[1:]
+
+    try:
+        subprocess.run(cmd, check=False)
+    except KeyboardInterrupt:
+        print("\n👋 Goodbye!")
+    except Exception as e:
+        print(f"❌ Error launching AIA Code CLI: {e}")
+        sys.exit(1)
+
+if __name__ == "__main__":
+    main()

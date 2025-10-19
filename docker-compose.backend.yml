@@ -1,0 +1,597 @@
+# AIA Enterprise Platform - Backend Services
+# All 44 production services containerized and orchestrated
+version: '3.8'
+
+services:
+  # =============================================================================
+  # CORE INFRASTRUCTURE LAYER (8001-8008)
+  # =============================================================================
+
+  aia-main:
+    build:
+      context: ./01-CORE-PLATFORM/backend-services/aia_1
+      dockerfile: Dockerfile
+      args:
+        - BUILD_ENV=production
+        - SERVICE_NAME=aia-main
+    image: aia-system/aia-main:latest
+    container_name: aia-main
+    restart: unless-stopped
+    environment:
+      - SERVICE_NAME=aia-main
+      - SERVICE_PORT=8001
+      - DATABASE_URL=postgresql://aia_user:${POSTGRES_PASSWORD:-aia-secure-2025}@postgres-primary:5432/aia_production
+      - REDIS_URL=redis://:${REDIS_PASSWORD:-redis-secure-2025}@redis-master:6379/0
+      - MONGODB_URL=mongodb://admin:${MONGO_PASSWORD:-mongo-secure-2025}@mongodb-primary:27017/aia_system
+      - NEO4J_URI=bolt://neo4j-enterprise:7687
+      - NEO4J_PASSWORD=${NEO4J_PASSWORD:-neo4j-secure-2025}
+      - KAFKA_BOOTSTRAP_SERVERS=kafka-broker:29092
+      - VAULT_ADDR=http://vault:8200
+      - VAULT_TOKEN=${VAULT_ROOT_TOKEN:-vault-root-token-2025}
+      - ATOMIC_DKG_ENDPOINT=http://aia-dkg:8022
+      - MULTI_AGENT_ORCHESTRATOR=http://aia-orchestration:8004
+    ports:
+      - "8001:8001"
+    volumes:
+      - ./logs/aia-main:/app/logs
+      - ./atom-DKG:/app/atom-DKG:ro
+    networks:
+      - aia-backend
+      - aia-infrastructure
+    depends_on:
+      - postgres-primary
+      - redis-master
+      - mongodb-primary
+      - neo4j-enterprise
+      - kafka-broker
+      - vault
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  aia-core:
+    build:
+      context: ./01-CORE-PLATFORM/backend-services/aia_1/core
+      dockerfile: Dockerfile
+    image: aia-system/aia-core:latest
+    container_name: aia-core
+    restart: unless-stopped
+    environment:
+      - SERVICE_NAME=aia-core
+      - SERVICE_PORT=8002
+      - DATABASE_URL=postgresql://aia_user:${POSTGRES_PASSWORD:-aia-secure-2025}@postgres-primary:5432/aia_production
+      - REDIS_URL=redis://:${REDIS_PASSWORD:-redis-secure-2025}@redis-master:6379/1
+      - VAULT_ADDR=http://vault:8200
+    ports:
+      - "8002:8002"
+    volumes:
+      - ./logs/aia-core:/app/logs
+    networks:
+      - aia-backend
+      - aia-infrastructure
+    depends_on:
+      - aia-main
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  aia-infrastructure:
+    build:
+      context: ./01-CORE-PLATFORM/backend-services/infrastructure_1
+      dockerfile: Dockerfile
+    image: aia-system/aia-infrastructure:latest
+    container_name: aia-infrastructure
+    restart: unless-stopped
+    environment:
+      - SERVICE_NAME=aia-infrastructure
+      - SERVICE_PORT=8003
+      - GCP_PROJECT_ID=${GCP_PROJECT_ID:-aia-475022}
+      - KUBERNETES_SERVICE_HOST=kubernetes.default.svc
+      - DATABASE_URL=postgresql://aia_user:${POSTGRES_PASSWORD:-aia-secure-2025}@postgres-primary:5432/aia_production
+    ports:
+      - "8003:8003"
+    volumes:
+      - ./logs/aia-infrastructure:/app/logs
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - aia-backend
+      - aia-infrastructure
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8003/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  aia-orchestration:
+    build:
+      context: ./01-CORE-PLATFORM/backend-services/aia_1/orchestration
+      dockerfile: Dockerfile
+    image: aia-system/aia-orchestration:latest
+    container_name: aia-orchestration
+    restart: unless-stopped
+    environment:
+      - SERVICE_NAME=aia-orchestration
+      - SERVICE_PORT=8004
+      - DATABASE_URL=postgresql://aia_user:${POSTGRES_PASSWORD:-aia-secure-2025}@postgres-primary:5432/aia_production
+      - REDIS_URL=redis://:${REDIS_PASSWORD:-redis-secure-2025}@redis-master:6379/2
+      - KAFKA_BOOTSTRAP_SERVERS=kafka-broker:29092
+      - MULTI_AGENT_SYSTEM_ENABLED=true
+    ports:
+      - "8004:8004"
+    volumes:
+      - ./logs/aia-orchestration:/app/logs
+    networks:
+      - aia-backend
+      - aia-infrastructure
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8004/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  aia-config:
+    build:
+      context: ./infrastructure/config-service
+      dockerfile: Dockerfile
+    image: aia-system/aia-config:latest
+    container_name: aia-config
+    restart: unless-stopped
+    environment:
+      - SERVICE_NAME=aia-config
+      - SERVICE_PORT=8005
+      - VAULT_ADDR=http://vault:8200
+      - VAULT_TOKEN=${VAULT_ROOT_TOKEN:-vault-root-token-2025}
+      - DATABASE_URL=postgresql://aia_user:${POSTGRES_PASSWORD:-aia-secure-2025}@postgres-primary:5432/aia_production
+    ports:
+      - "8005:8005"
+    volumes:
+      - ./logs/aia-config:/app/logs
+      - ./config:/app/config:ro
+    networks:
+      - aia-backend
+      - aia-infrastructure
+    depends_on:
+      - vault
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8005/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  aia-database:
+    build:
+      context: ./infrastructure/database-service
+      dockerfile: Dockerfile
+    image: aia-system/aia-database:latest
+    container_name: aia-database
+    restart: unless-stopped
+    environment:
+      - SERVICE_NAME=aia-database
+      - SERVICE_PORT=8006
+      - POSTGRES_PRIMARY_URL=postgresql://aia_user:${POSTGRES_PASSWORD:-aia-secure-2025}@postgres-primary:5432/aia_production
+      - POSTGRES_REPLICA_URL=postgresql://aia_user:${POSTGRES_PASSWORD:-aia-secure-2025}@postgres-replica:5432/aia_production
+      - MONGODB_URL=mongodb://admin:${MONGO_PASSWORD:-mongo-secure-2025}@mongodb-primary:27017/aia_system
+      - NEO4J_URI=bolt://neo4j-enterprise:7687
+      - CLICKHOUSE_URL=http://clickhouse-server:8123
+    ports:
+      - "8006:8006"
+    volumes:
+      - ./logs/aia-database:/app/logs
+    networks:
+      - aia-backend
+      - aia-infrastructure
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8006/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  aia-storage:
+    build:
+      context: ./infrastructure/storage-service
+      dockerfile: Dockerfile
+    image: aia-system/aia-storage:latest
+    container_name: aia-storage
+    restart: unless-stopped
+    environment:
+      - SERVICE_NAME=aia-storage
+      - SERVICE_PORT=8007
+      - MINIO_ENDPOINT=minio:9000
+      - MINIO_ACCESS_KEY=${MINIO_ROOT_USER:-aia_storage_admin}
+      - MINIO_SECRET_KEY=${MINIO_ROOT_PASSWORD:-minio-secure-2025}
+      - DATABASE_URL=postgresql://aia_user:${POSTGRES_PASSWORD:-aia-secure-2025}@postgres-primary:5432/aia_production
+    ports:
+      - "8007:8007"
+    volumes:
+      - ./logs/aia-storage:/app/logs
+    networks:
+      - aia-backend
+      - aia-infrastructure
+    depends_on:
+      - minio
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8007/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  aia-k8s:
+    build:
+      context: ./infrastructure/k8s-service
+      dockerfile: Dockerfile
+    image: aia-system/aia-k8s:latest
+    container_name: aia-k8s
+    restart: unless-stopped
+    environment:
+      - SERVICE_NAME=aia-k8s
+      - SERVICE_PORT=8008
+      - KUBERNETES_SERVICE_HOST=kubernetes.default.svc
+      - GCP_PROJECT_ID=${GCP_PROJECT_ID:-aia-475022}
+      - DATABASE_URL=postgresql://aia_user:${POSTGRES_PASSWORD:-aia-secure-2025}@postgres-primary:5432/aia_production
+    ports:
+      - "8008:8008"
+    volumes:
+      - ./logs/aia-k8s:/app/logs
+      - ~/.kube:/app/.kube:ro
+    networks:
+      - aia-backend
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8008/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # =============================================================================
+  # SECURITY & AUTHENTICATION LAYER (8010-8015)
+  # =============================================================================
+
+  aia-auth:
+    build:
+      context: ./01-CORE-PLATFORM/backend-services/aia_1/security
+      dockerfile: Dockerfile.auth
+    image: aia-system/aia-auth:latest
+    container_name: aia-auth
+    restart: unless-stopped
+    environment:
+      - SERVICE_NAME=aia-auth
+      - SERVICE_PORT=8010
+      - DATABASE_URL=postgresql://aia_user:${POSTGRES_PASSWORD:-aia-secure-2025}@postgres-primary:5432/aia_production
+      - REDIS_URL=redis://:${REDIS_PASSWORD:-redis-secure-2025}@redis-master:6379/3
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-aia-jwt-secret-2025}
+      - OAUTH2_PROVIDERS=microsoft,google,apple
+    ports:
+      - "8010:8010"
+    volumes:
+      - ./logs/aia-auth:/app/logs
+    networks:
+      - aia-backend
+      - aia-infrastructure
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8010/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  aia-security:
+    build:
+      context: ./01-CORE-PLATFORM/backend-services/aia_1/security
+      dockerfile: Dockerfile.security
+    image: aia-system/aia-security:latest
+    container_name: aia-security
+    restart: unless-stopped
+    environment:
+      - SERVICE_NAME=aia-security
+      - SERVICE_PORT=8011
+      - DATABASE_URL=postgresql://aia_user:${POSTGRES_PASSWORD:-aia-secure-2025}@postgres-primary:5432/aia_production
+      - VAULT_ADDR=http://vault:8200
+      - SECURITY_SCAN_ENABLED=true
+    ports:
+      - "8011:8011"
+    volumes:
+      - ./logs/aia-security:/app/logs
+    networks:
+      - aia-backend
+      - aia-infrastructure
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8011/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  aia-crypto:
+    build:
+      context: ./01-CORE-PLATFORM/backend-services/aia_1/crypto
+      dockerfile: Dockerfile
+    image: aia-system/aia-crypto:latest
+    container_name: aia-crypto
+    restart: unless-stopped
+    environment:
+      - SERVICE_NAME=aia-crypto
+      - SERVICE_PORT=8012
+      - DATABASE_URL=postgresql://aia_user:${POSTGRES_PASSWORD:-aia-secure-2025}@postgres-primary:5432/aia_production
+      - QUANTUM_RESISTANT_ENABLED=true
+      - VAULT_ADDR=http://vault:8200
+    ports:
+      - "8012:8012"
+    volumes:
+      - ./logs/aia-crypto:/app/logs
+    networks:
+      - aia-backend
+      - aia-infrastructure
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8012/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  aia-compliance:
+    build:
+      context: ./infrastructure/compliance-service
+      dockerfile: Dockerfile
+    image: aia-system/aia-compliance:latest
+    container_name: aia-compliance
+    restart: unless-stopped
+    environment:
+      - SERVICE_NAME=aia-compliance
+      - SERVICE_PORT=8013
+      - DATABASE_URL=postgresql://aia_user:${POSTGRES_PASSWORD:-aia-secure-2025}@postgres-primary:5432/aia_production
+      - COMPLIANCE_STANDARDS=SOC2,GDPR,ISO27001,HIPAA
+    ports:
+      - "8013:8013"
+    volumes:
+      - ./logs/aia-compliance:/app/logs
+    networks:
+      - aia-backend
+      - aia-infrastructure
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8013/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  aia-quantum:
+    build:
+      context: ./infrastructure/quantum-service
+      dockerfile: Dockerfile
+    image: aia-system/aia-quantum:latest
+    container_name: aia-quantum
+    restart: unless-stopped
+    environment:
+      - SERVICE_NAME=aia-quantum
+      - SERVICE_PORT=8014
+      - QUANTUM_ALGORITHMS=KYBER,DILITHIUM,FALCON,SPHINCS
+      - DATABASE_URL=postgresql://aia_user:${POSTGRES_PASSWORD:-aia-secure-2025}@postgres-primary:5432/aia_production
+    ports:
+      - "8014:8014"
+    volumes:
+      - ./logs/aia-quantum:/app/logs
+    networks:
+      - aia-backend
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8014/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  aia-consensus:
+    build:
+      context: ./infrastructure/consensus-service
+      dockerfile: Dockerfile
+    image: aia-system/aia-consensus:latest
+    container_name: aia-consensus
+    restart: unless-stopped
+    environment:
+      - SERVICE_NAME=aia-consensus
+      - SERVICE_PORT=8015
+      - DATABASE_URL=postgresql://aia_user:${POSTGRES_PASSWORD:-aia-secure-2025}@postgres-primary:5432/aia_production
+      - CONSENSUS_ALGORITHM=RAFT
+      - CLUSTER_SIZE=3
+    ports:
+      - "8015:8015"
+    volumes:
+      - ./logs/aia-consensus:/app/logs
+    networks:
+      - aia-backend
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8015/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # =============================================================================
+  # ANALYTICS & INTELLIGENCE LAYER (8020-8024)
+  # =============================================================================
+
+  aia-analytics:
+    build:
+      context: ./01-CORE-PLATFORM/backend-services/aia_1/analytics
+      dockerfile: Dockerfile
+    image: aia-system/aia-analytics:latest
+    container_name: aia-analytics
+    restart: unless-stopped
+    environment:
+      - SERVICE_NAME=aia-analytics
+      - SERVICE_PORT=8020
+      - DATABASE_URL=postgresql://aia_analytics:analytics-secure-2025@postgres-primary:5432/aia_analytics
+      - CLICKHOUSE_URL=http://clickhouse-server:8123
+      - REDIS_URL=redis://:${REDIS_PASSWORD:-redis-secure-2025}@redis-master:6379/4
+      - ML_MODEL_REGISTRY=http://aia-ai:8060
+    ports:
+      - "8020:8020"
+    volumes:
+      - ./logs/aia-analytics:/app/logs
+    networks:
+      - aia-backend
+      - aia-infrastructure
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8020/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  aia-knowledge:
+    build:
+      context: ./infrastructure/knowledge-service
+      dockerfile: Dockerfile
+    image: aia-system/aia-knowledge:latest
+    container_name: aia-knowledge
+    restart: unless-stopped
+    environment:
+      - SERVICE_NAME=aia-knowledge
+      - SERVICE_PORT=8021
+      - DATABASE_URL=postgresql://aia_knowledge:knowledge-secure-2025@postgres-primary:5432/aia_knowledge
+      - NEO4J_URI=bolt://neo4j-enterprise:7687
+      - NEO4J_PASSWORD=${NEO4J_PASSWORD:-neo4j-secure-2025}
+      - ATOMIC_DKG_ENDPOINT=http://aia-dkg:8022
+    ports:
+      - "8021:8021"
+    volumes:
+      - ./logs/aia-knowledge:/app/logs
+      - ./atom-DKG:/app/atom-DKG:ro
+    networks:
+      - aia-backend
+      - aia-infrastructure
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8021/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  aia-dkg:
+    build:
+      context: ./infrastructure/atomic-dkg-service
+      dockerfile: Dockerfile
+      args:
+        - GPU_SUPPORT=true
+    image: aia-system/aia-dkg:latest
+    container_name: aia-dkg
+    restart: unless-stopped
+    environment:
+      - SERVICE_NAME=aia-dkg
+      - SERVICE_PORT=8022
+      - DATABASE_URL=postgresql://aia_knowledge:knowledge-secure-2025@postgres-primary:5432/aia_knowledge
+      - DKG_DATA_PATH=/app/atom-DKG
+      - GPU_ACCELERATION=true
+      - KNOWLEDGE_ATOMS_COUNT=7077461
+    ports:
+      - "8022:8022"
+    volumes:
+      - ./logs/aia-dkg:/app/logs
+      - ./atom-DKG:/app/atom-DKG:ro
+    networks:
+      - aia-backend
+      - aia-infrastructure
+    # GPU support for M4 Max optimization
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8022/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  aia-llm:
+    build:
+      context: ./infrastructure/llm-service
+      dockerfile: Dockerfile
+    image: aia-system/aia-llm:latest
+    container_name: aia-llm
+    restart: unless-stopped
+    environment:
+      - SERVICE_NAME=aia-llm
+      - SERVICE_PORT=8023
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      - DATABASE_URL=postgresql://aia_user:${POSTGRES_PASSWORD:-aia-secure-2025}@postgres-primary:5432/aia_production
+    ports:
+      - "8023:8023"
+    volumes:
+      - ./logs/aia-llm:/app/logs
+    networks:
+      - aia-backend
+      - aia-infrastructure
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8023/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  aia-monitoring:
+    build:
+      context: ./infrastructure/monitoring-service
+      dockerfile: Dockerfile
+    image: aia-system/aia-monitoring:latest
+    container_name: aia-monitoring
+    restart: unless-stopped
+    environment:
+      - SERVICE_NAME=aia-monitoring
+      - SERVICE_PORT=8024
+      - DATABASE_URL=postgresql://aia_monitoring:monitoring-secure-2025@postgres-primary:5432/aia_monitoring
+      - PROMETHEUS_URL=http://prometheus:9090
+      - GRAFANA_URL=http://grafana:3000
+      - JAEGER_URL=http://jaeger:16686
+    ports:
+      - "8024:8024"
+    volumes:
+      - ./logs/aia-monitoring:/app/logs
+    networks:
+      - aia-backend
+      - aia-infrastructure
+    depends_on:
+      - prometheus
+      - grafana
+      - jaeger
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8024/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+# =============================================================================
+# VOLUMES
+# =============================================================================
+volumes:
+  # Log volumes for each service
+  aia_main_logs:
+  aia_core_logs:
+  aia_infrastructure_logs:
+  aia_orchestration_logs:
+  aia_config_logs:
+  aia_database_logs:
+  aia_storage_logs:
+  aia_k8s_logs:
+  aia_auth_logs:
+  aia_security_logs:
+  aia_crypto_logs:
+  aia_compliance_logs:
+  aia_quantum_logs:
+  aia_consensus_logs:
+  aia_analytics_logs:
+  aia_knowledge_logs:
+  aia_dkg_logs:
+  aia_llm_logs:
+  aia_monitoring_logs:
+
+# =============================================================================
+# NETWORKS
+# =============================================================================
+networks:
+  aia-backend:
+    name: aia-backend
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.21.0.0/16
+  aia-infrastructure:
+    external: true
+    name: aia-infrastructure
