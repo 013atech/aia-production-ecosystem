@@ -1,0 +1,1685 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AIA - Strategic Ecosystem Mapping</title>
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://unpkg.com/three@0.162.0/build/three.module.js",
+            "three/addons/": "https://unpkg.com/three@0.162.0/examples/jsm/"
+        }
+    }
+    </script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            color: #f5f5dc;
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        .ecosystem-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+        }
+
+        .legend-panel {
+            position: absolute;
+            top: 30px;
+            left: 30px;
+            width: 280px;
+            background: rgba(26, 26, 26, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(0, 255, 255, 0.2);
+            border-radius: 20px;
+            padding: 25px;
+            z-index: 100;
+            max-height: calc(100vh - 120px);
+            overflow-y: auto;
+        }
+
+        .legend-title {
+            font-size: 1.5rem;
+            color: #00ffff;
+            margin-bottom: 20px;
+            text-align: center;
+            background: linear-gradient(45deg, #00ffff, #ffff00);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .ecosystem-category {
+            margin-bottom: 25px;
+        }
+
+        .category-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #ffff00;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid rgba(255, 255, 0, 0.2);
+        }
+
+        .partner-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            padding: 8px 12px;
+            background: rgba(0, 255, 255, 0.05);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 1px solid transparent;
+        }
+
+        .partner-item:hover {
+            background: rgba(0, 255, 255, 0.1);
+            border-color: rgba(0, 255, 255, 0.3);
+            transform: translateX(5px);
+        }
+
+        .partner-item.active {
+            background: rgba(0, 255, 255, 0.2);
+            border-color: #00ffff;
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.3);
+        }
+
+        .partner-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 10px;
+            flex-shrink: 0;
+        }
+
+        .partner-info {
+            flex: 1;
+        }
+
+        .partner-name {
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: #f5f5dc;
+            margin-bottom: 2px;
+        }
+
+        .partner-type {
+            font-size: 0.75rem;
+            color: #f5f5dc;
+            opacity: 0.7;
+        }
+
+        .visualization-area {
+            flex: 1;
+            position: relative;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+        }
+
+        .controls-panel {
+            position: absolute;
+            top: 30px;
+            right: 30px;
+            z-index: 200;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .control-group {
+            background: rgba(26, 26, 26, 0.9);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(0, 255, 255, 0.2);
+            border-radius: 15px;
+            padding: 20px;
+        }
+
+        .control-title {
+            font-size: 0.9rem;
+            color: #00ffff;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .control-button {
+            background: rgba(0, 255, 255, 0.1);
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            color: #f5f5dc;
+            padding: 10px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.8rem;
+            margin-bottom: 8px;
+            text-align: center;
+        }
+
+        .control-button:hover {
+            background: rgba(0, 255, 255, 0.2);
+            transform: translateY(-1px);
+        }
+
+        .control-button.active {
+            background: rgba(0, 255, 255, 0.3);
+            color: #00ffff;
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.2);
+        }
+
+        .slider-control {
+            margin-bottom: 15px;
+        }
+
+        .slider-label {
+            font-size: 0.8rem;
+            color: #f5f5dc;
+            margin-bottom: 5px;
+        }
+
+        .slider {
+            width: 100%;
+            height: 4px;
+            background: rgba(0, 255, 255, 0.2);
+            border-radius: 2px;
+            outline: none;
+            appearance: none;
+        }
+
+        .slider::-webkit-slider-thumb {
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            background: linear-gradient(45deg, #00ffff, #ffff00);
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .info-display {
+            position: absolute;
+            bottom: 30px;
+            left: 30px;
+            right: 30px;
+            background: rgba(26, 26, 26, 0.9);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(0, 255, 255, 0.2);
+            border-radius: 20px;
+            padding: 25px;
+            z-index: 100;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .info-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .info-title {
+            font-size: 1.3rem;
+            color: #00ffff;
+        }
+
+        .connection-strength {
+            font-size: 0.9rem;
+            color: #ffff00;
+            padding: 5px 15px;
+            background: rgba(255, 255, 0, 0.1);
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 0, 0.3);
+        }
+
+        .info-content {
+            font-size: 1rem;
+            line-height: 1.6;
+            color: #f5f5dc;
+            opacity: 0.9;
+        }
+
+        .metrics-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid rgba(0, 255, 255, 0.2);
+        }
+
+        .metric-item {
+            text-align: center;
+        }
+
+        .metric-value {
+            font-size: 1.1rem;
+            font-weight: 600;
+            background: linear-gradient(45deg, #00ffff, #ffff00);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .metric-label {
+            font-size: 0.75rem;
+            color: #f5f5dc;
+            opacity: 0.8;
+            margin-top: 3px;
+        }
+
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(26, 26, 26, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            transition: opacity 0.5s ease;
+        }
+
+        .loading-content {
+            text-align: center;
+        }
+
+        .loading-spinner {
+            width: 60px;
+            height: 60px;
+            border: 3px solid rgba(0, 255, 255, 0.3);
+            border-top: 3px solid #00ffff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        .loading-text {
+            font-size: 1.1rem;
+            color: #00ffff;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .connection-line {
+            position: absolute;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #00ffff, transparent);
+            z-index: 50;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 1; }
+        }
+
+        .floating-tooltip {
+            position: absolute;
+            background: rgba(26, 26, 26, 0.95);
+            border: 1px solid rgba(0, 255, 255, 0.5);
+            border-radius: 10px;
+            padding: 12px;
+            color: #f5f5dc;
+            font-size: 0.9rem;
+            max-width: 250px;
+            z-index: 1000;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            transform: translate(-50%, -100%);
+        }
+
+        .floating-tooltip.show {
+            opacity: 1;
+        }
+
+        @media (max-width: 1024px) {
+            .legend-panel {
+                width: 240px;
+                padding: 20px;
+                top: 20px;
+                left: 20px;
+            }
+            .controls-panel {
+                top: 20px;
+                right: 20px;
+            }
+            .info-display {
+                bottom: 20px;
+                left: 20px;
+                right: 20px;
+                padding: 20px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .ecosystem-container {
+                flex-direction: column;
+            }
+            .legend-panel {
+                position: relative;
+                width: 100%;
+                height: 150px;
+                border-radius: 0;
+                top: 0;
+                left: 0;
+                overflow-x: auto;
+                display: flex;
+                gap: 20px;
+                padding: 15px;
+            }
+            .ecosystem-category {
+                min-width: 200px;
+                margin-bottom: 0;
+            }
+            .controls-panel {
+                top: 10px;
+                right: 10px;
+                flex-direction: row;
+                gap: 10px;
+            }
+            .info-display {
+                position: relative;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                margin: 10px;
+                max-height: 120px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="ecosystem-container">
+        <div class="legend-panel">
+            <h3 class="legend-title">Ecosystem Partners</h3>
+
+            <div class="ecosystem-category">
+                <div class="category-title">Strategic Partners</div>
+                <div class="partner-item active" data-partner="ey">
+                    <div class="partner-indicator" style="background: #ffff00;"></div>
+                    <div class="partner-info">
+                        <div class="partner-name">Ernst & Young (EY)</div>
+                        <div class="partner-type">Advisory & Implementation</div>
+                    </div>
+                </div>
+                <div class="partner-item" data-partner="jpmorgan">
+                    <div class="partner-indicator" style="background: #00ff00;"></div>
+                    <div class="partner-info">
+                        <div class="partner-name">JPMorgan Chase</div>
+                        <div class="partner-type">Financial Services</div>
+                    </div>
+                </div>
+                <div class="partner-item" data-partner="apple">
+                    <div class="partner-indicator" style="background: #ff8800;"></div>
+                    <div class="partner-info">
+                        <div class="partner-name">Apple Vision Pro</div>
+                        <div class="partner-type">AR/VR Integration</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="ecosystem-category">
+                <div class="category-title">Technology Partners</div>
+                <div class="partner-item" data-partner="google">
+                    <div class="partner-indicator" style="background: #ff0088;"></div>
+                    <div class="partner-info">
+                        <div class="partner-name">Google Cloud</div>
+                        <div class="partner-type">Infrastructure & AI</div>
+                    </div>
+                </div>
+                <div class="partner-item" data-partner="nvidia">
+                    <div class="partner-indicator" style="background: #8800ff;"></div>
+                    <div class="partner-info">
+                        <div class="partner-name">NVIDIA</div>
+                        <div class="partner-type">GPU & AI Compute</div>
+                    </div>
+                </div>
+                <div class="partner-item" data-partner="openai">
+                    <div class="partner-indicator" style="background: #00ffff;"></div>
+                    <div class="partner-info">
+                        <div class="partner-name">OpenAI</div>
+                        <div class="partner-type">LLM Integration</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="ecosystem-category">
+                <div class="category-title">Industry Partners</div>
+                <div class="partner-item" data-partner="aws">
+                    <div class="partner-indicator" style="background: #ff4444;"></div>
+                    <div class="partner-info">
+                        <div class="partner-name">Amazon AWS</div>
+                        <div class="partner-type">Cloud Services</div>
+                    </div>
+                </div>
+                <div class="partner-item" data-partner="microsoft">
+                    <div class="partner-indicator" style="background: #4488ff;"></div>
+                    <div class="partner-info">
+                        <div class="partner-name">Microsoft Azure</div>
+                        <div class="partner-type">Enterprise Solutions</div>
+                    </div>
+                </div>
+                <div class="partner-item" data-partner="salesforce">
+                    <div class="partner-indicator" style="background: #44ff88;"></div>
+                    <div class="partner-info">
+                        <div class="partner-name">Salesforce</div>
+                        <div class="partner-type">CRM Integration</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="ecosystem-category">
+                <div class="category-title">Research Partners</div>
+                <div class="partner-item" data-partner="mit">
+                    <div class="partner-indicator" style="background: #ff88ff;"></div>
+                    <div class="partner-info">
+                        <div class="partner-name">MIT CSAIL</div>
+                        <div class="partner-type">AI Research</div>
+                    </div>
+                </div>
+                <div class="partner-item" data-partner="stanford">
+                    <div class="partner-indicator" style="background: #88ffff;"></div>
+                    <div class="partner-info">
+                        <div class="partner-name">Stanford HAI</div>
+                        <div class="partner-type">Human-AI Research</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="visualization-area">
+            <div class="loading-overlay" id="loadingOverlay">
+                <div class="loading-content">
+                    <div class="loading-spinner"></div>
+                    <div class="loading-text">Analyzing Ecosystem Relationships...</div>
+                </div>
+            </div>
+
+            <div class="controls-panel">
+                <div class="control-group">
+                    <div class="control-title">View Mode</div>
+                    <div class="control-button active" data-mode="network">Network</div>
+                    <div class="control-button" data-mode="hierarchy">Hierarchy</div>
+                    <div class="control-button" data-mode="force">Force Graph</div>
+                    <div class="control-button" data-mode="cluster">Clusters</div>
+                </div>
+
+                <div class="control-group">
+                    <div class="control-title">Filters</div>
+                    <div class="control-button" data-filter="all">All Partners</div>
+                    <div class="control-button" data-filter="strategic">Strategic</div>
+                    <div class="control-button" data-filter="technology">Technology</div>
+                    <div class="control-button" data-filter="financial">Financial</div>
+                </div>
+
+                <div class="control-group">
+                    <div class="slider-control">
+                        <div class="slider-label">Connection Strength</div>
+                        <input type="range" class="slider" id="strengthSlider" min="0" max="100" value="50">
+                    </div>
+                    <div class="slider-control">
+                        <div class="slider-label">Animation Speed</div>
+                        <input type="range" class="slider" id="speedSlider" min="0" max="100" value="50">
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <div class="control-title">Actions</div>
+                    <div class="control-button" onclick="exportEcosystem()">Export</div>
+                    <div class="control-button" onclick="resetView()">Reset</div>
+                    <div class="control-button" onclick="toggleFullscreen()">Fullscreen</div>
+                </div>
+            </div>
+
+            <canvas id="ecosystemCanvas"></canvas>
+
+            <div class="info-display" id="infoDisplay">
+                <div class="info-header">
+                    <div class="info-title">Ernst & Young (EY)</div>
+                    <div class="connection-strength">Strength: 95%</div>
+                </div>
+                <div class="info-content">
+                    Strategic partnership for enterprise AI implementation, providing advisory services and Fortune 500 client access. Combined expertise in digital transformation and autonomous intelligence deployment across multiple industries.
+                </div>
+                <div class="metrics-row">
+                    <div class="metric-item">
+                        <div class="metric-value">250+</div>
+                        <div class="metric-label">Joint Projects</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-value">$180M</div>
+                        <div class="metric-label">Combined Revenue</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-value">45</div>
+                        <div class="metric-label">Countries</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-value">98%</div>
+                        <div class="metric-label">Success Rate</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="floating-tooltip" id="tooltip"></div>
+        </div>
+    </div>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+        import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+
+        class EcosystemMapping {
+            constructor() {
+                this.currentMode = 'network';
+                this.currentFilter = 'all';
+                this.selectedPartner = 'ey';
+                this.animationSpeed = 0.5;
+                this.connectionStrength = 0.5;
+
+                // Partner data with detailed relationships
+                this.partners = {
+                    aia: {
+                        name: 'AIA Platform',
+                        category: 'core',
+                        color: 0x00ffff,
+                        position: { x: 0, y: 0, z: 0 },
+                        size: 1.2,
+                        connections: ['ey', 'jpmorgan', 'google', 'apple', 'nvidia', 'openai', 'aws', 'microsoft', 'salesforce', 'mit', 'stanford'],
+                        description: 'Central autonomous intelligence platform orchestrating the entire ecosystem.',
+                        metrics: { projects: 1500, revenue: 300, countries: 65, successRate: 97 }
+                    },
+                    ey: {
+                        name: 'Ernst & Young',
+                        category: 'strategic',
+                        color: 0xffff00,
+                        position: { x: -6, y: 3, z: -2 },
+                        size: 0.9,
+                        connections: ['aia', 'jpmorgan', 'microsoft', 'salesforce'],
+                        description: 'Strategic partnership for enterprise AI implementation, providing advisory services and Fortune 500 client access.',
+                        metrics: { projects: 250, revenue: 180, countries: 45, successRate: 98 },
+                        strength: 95
+                    },
+                    jpmorgan: {
+                        name: 'JPMorgan Chase',
+                        category: 'strategic',
+                        color: 0x00ff00,
+                        position: { x: 6, y: 3, z: -2 },
+                        size: 0.9,
+                        connections: ['aia', 'ey', 'aws', 'google'],
+                        description: 'Financial services integration and enterprise banking solutions for AI-driven financial intelligence.',
+                        metrics: { projects: 180, revenue: 220, countries: 35, successRate: 96 },
+                        strength: 92
+                    },
+                    apple: {
+                        name: 'Apple Vision Pro',
+                        category: 'technology',
+                        color: 0xff8800,
+                        position: { x: -4, y: -3, z: 4 },
+                        size: 0.8,
+                        connections: ['aia', 'nvidia', 'openai'],
+                        description: 'AR/VR integration for immersive business intelligence and spatial computing experiences.',
+                        metrics: { projects: 85, revenue: 95, countries: 25, successRate: 94 },
+                        strength: 88
+                    },
+                    google: {
+                        name: 'Google Cloud',
+                        category: 'technology',
+                        color: 0xff0088,
+                        position: { x: 4, y: -3, z: 4 },
+                        size: 0.85,
+                        connections: ['aia', 'jpmorgan', 'openai', 'mit'],
+                        description: 'Cloud infrastructure, AI/ML services, and enterprise-grade computing resources.',
+                        metrics: { projects: 320, revenue: 280, countries: 55, successRate: 99 },
+                        strength: 94
+                    },
+                    nvidia: {
+                        name: 'NVIDIA',
+                        category: 'technology',
+                        color: 0x8800ff,
+                        position: { x: -6, y: 0, z: 3 },
+                        size: 0.8,
+                        connections: ['aia', 'apple', 'openai', 'aws'],
+                        description: 'GPU computing power and AI acceleration for large-scale machine learning workloads.',
+                        metrics: { projects: 150, revenue: 160, countries: 30, successRate: 97 },
+                        strength: 90
+                    },
+                    openai: {
+                        name: 'OpenAI',
+                        category: 'technology',
+                        color: 0x00ffff,
+                        position: { x: 6, y: 0, z: 3 },
+                        size: 0.75,
+                        connections: ['aia', 'google', 'nvidia', 'apple'],
+                        description: 'Advanced language models and AI capabilities integration for enhanced intelligence.',
+                        metrics: { projects: 95, revenue: 120, countries: 20, successRate: 95 },
+                        strength: 89
+                    },
+                    aws: {
+                        name: 'Amazon AWS',
+                        category: 'industry',
+                        color: 0xff4444,
+                        position: { x: -3, y: 5, z: 0 },
+                        size: 0.8,
+                        connections: ['aia', 'nvidia', 'jpmorgan', 'salesforce'],
+                        description: 'Cloud infrastructure and enterprise services for scalable AI deployment.',
+                        metrics: { projects: 280, revenue: 240, countries: 50, successRate: 98 },
+                        strength: 91
+                    },
+                    microsoft: {
+                        name: 'Microsoft Azure',
+                        category: 'industry',
+                        color: 0x4488ff,
+                        position: { x: 3, y: 5, z: 0 },
+                        size: 0.8,
+                        connections: ['aia', 'ey', 'salesforce', 'openai'],
+                        description: 'Enterprise cloud solutions and productivity tools integration.',
+                        metrics: { projects: 210, revenue: 190, countries: 42, successRate: 96 },
+                        strength: 87
+                    },
+                    salesforce: {
+                        name: 'Salesforce',
+                        category: 'industry',
+                        color: 0x44ff88,
+                        position: { x: 0, y: -5, z: 2 },
+                        size: 0.7,
+                        connections: ['aia', 'ey', 'aws', 'microsoft'],
+                        description: 'CRM integration and customer intelligence analytics platform.',
+                        metrics: { projects: 165, revenue: 140, countries: 38, successRate: 94 },
+                        strength: 84
+                    },
+                    mit: {
+                        name: 'MIT CSAIL',
+                        category: 'research',
+                        color: 0xff88ff,
+                        position: { x: -5, y: -1, z: -4 },
+                        size: 0.6,
+                        connections: ['aia', 'google', 'stanford'],
+                        description: 'Cutting-edge AI research and algorithm development partnership.',
+                        metrics: { projects: 45, revenue: 25, countries: 8, successRate: 100 },
+                        strength: 78
+                    },
+                    stanford: {
+                        name: 'Stanford HAI',
+                        category: 'research',
+                        color: 0x88ffff,
+                        position: { x: 5, y: -1, z: -4 },
+                        size: 0.6,
+                        connections: ['aia', 'mit', 'google'],
+                        description: 'Human-AI interaction research and ethical AI development.',
+                        metrics: { projects: 38, revenue: 20, countries: 6, successRate: 100 },
+                        strength: 75
+                    }
+                };
+
+                this.init();
+                this.setupEventListeners();
+                this.createVisualization();
+                this.startAnimation();
+
+                // Hide loading after initialization
+                setTimeout(() => {
+                    document.getElementById('loadingOverlay').style.opacity = '0';
+                    setTimeout(() => {
+                        document.getElementById('loadingOverlay').style.display = 'none';
+                    }, 500);
+                }, 2000);
+            }
+
+            init() {
+                const canvas = document.getElementById('ecosystemCanvas');
+                const container = canvas.parentElement;
+
+                // Scene setup
+                this.scene = new THREE.Scene();
+                this.camera = new THREE.PerspectiveCamera(75, container.clientWidth / container.clientHeight, 0.1, 1000);
+                this.renderer = new THREE.WebGLRenderer({
+                    canvas: canvas,
+                    antialias: true,
+                    alpha: true,
+                    powerPreference: "high-performance"
+                });
+
+                this.renderer.setSize(container.clientWidth, container.clientHeight);
+                this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+                this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+                this.renderer.toneMappingExposure = 0.8;
+
+                // Post-processing
+                this.composer = new EffectComposer(this.renderer);
+                this.composer.addPass(new RenderPass(this.scene, this.camera));
+                this.composer.addPass(new UnrealBloomPass(
+                    new THREE.Vector2(window.innerWidth, window.innerHeight),
+                    0.4, 0.1, 0.9
+                ));
+
+                // Controls
+                this.controls = new OrbitControls(this.camera, this.renderer.domElement);
+                this.controls.enableDamping = true;
+                this.controls.dampingFactor = 0.05;
+                this.controls.minDistance = 8;
+                this.controls.maxDistance = 30;
+
+                // Lighting
+                this.setupLighting();
+
+                // Camera position
+                this.camera.position.set(0, 8, 20);
+                this.camera.lookAt(0, 0, 0);
+
+                // Storage for scene objects
+                this.partnerObjects = {};
+                this.connectionLines = [];
+                this.animationMixers = [];
+                this.particleSystems = [];
+
+                // Interaction
+                this.raycaster = new THREE.Raycaster();
+                this.mouse = new THREE.Vector2();
+                this.hoveredPartner = null;
+            }
+
+            setupLighting() {
+                // Ambient light
+                const ambientLight = new THREE.AmbientLight(0xffffff, 0.3);
+                this.scene.add(ambientLight);
+
+                // Main directional light
+                const mainLight = new THREE.DirectionalLight(0x00ffff, 1.2);
+                mainLight.position.set(15, 15, 10);
+                mainLight.castShadow = true;
+                this.scene.add(mainLight);
+
+                // Accent lights for depth
+                const accentLight1 = new THREE.PointLight(0xffff00, 0.8, 30);
+                accentLight1.position.set(-10, 8, -8);
+                this.scene.add(accentLight1);
+
+                const accentLight2 = new THREE.PointLight(0xff0088, 0.6, 25);
+                accentLight2.position.set(10, -5, 8);
+                this.scene.add(accentLight2);
+
+                // Dynamic light that follows camera
+                this.dynamicLight = new THREE.PointLight(0x00ffff, 0.5, 20);
+                this.scene.add(this.dynamicLight);
+
+                // Atmospheric lighting
+                const hemiLight = new THREE.HemisphereLight(0x00ffff, 0x1a1a1a, 0.4);
+                this.scene.add(hemiLight);
+            }
+
+            setupEventListeners() {
+                // Partner selection
+                document.querySelectorAll('.partner-item').forEach(item => {
+                    item.addEventListener('click', (e) => {
+                        document.querySelectorAll('.partner-item').forEach(p => p.classList.remove('active'));
+                        e.currentTarget.classList.add('active');
+                        this.selectedPartner = e.currentTarget.dataset.partner;
+                        this.updateInfoDisplay();
+                        this.highlightPartner(this.selectedPartner);
+                    });
+                });
+
+                // Mode controls
+                document.querySelectorAll('[data-mode]').forEach(button => {
+                    button.addEventListener('click', (e) => {
+                        document.querySelectorAll('[data-mode]').forEach(b => b.classList.remove('active'));
+                        e.currentTarget.classList.add('active');
+                        this.currentMode = e.currentTarget.dataset.mode;
+                        this.switchMode(this.currentMode);
+                    });
+                });
+
+                // Filter controls
+                document.querySelectorAll('[data-filter]').forEach(button => {
+                    button.addEventListener('click', (e) => {
+                        document.querySelectorAll('[data-filter]').forEach(b => b.classList.remove('active'));
+                        e.currentTarget.classList.add('active');
+                        this.currentFilter = e.currentTarget.dataset.filter;
+                        this.applyFilter(this.currentFilter);
+                    });
+                });
+
+                // Sliders
+                document.getElementById('strengthSlider').addEventListener('input', (e) => {
+                    this.connectionStrength = e.target.value / 100;
+                    this.updateConnections();
+                });
+
+                document.getElementById('speedSlider').addEventListener('input', (e) => {
+                    this.animationSpeed = e.target.value / 100;
+                });
+
+                // Mouse interaction
+                this.renderer.domElement.addEventListener('mousemove', (e) => this.onMouseMove(e));
+                this.renderer.domElement.addEventListener('click', (e) => this.onClick(e));
+
+                // Window resize
+                window.addEventListener('resize', () => this.handleResize());
+
+                // Keyboard shortcuts
+                document.addEventListener('keydown', (e) => {
+                    switch(e.key.toLowerCase()) {
+                        case '1': this.switchMode('network'); break;
+                        case '2': this.switchMode('hierarchy'); break;
+                        case '3': this.switchMode('force'); break;
+                        case '4': this.switchMode('cluster'); break;
+                        case 'r': this.resetView(); break;
+                        case 'f': this.toggleFullscreen(); break;
+                    }
+                });
+            }
+
+            createVisualization() {
+                this.clearScene();
+
+                // Create partner nodes
+                Object.entries(this.partners).forEach(([key, partner]) => {
+                    this.createPartnerNode(key, partner);
+                });
+
+                // Create connections
+                this.createConnections();
+
+                // Create particle effects
+                this.createParticleEffects();
+
+                // Apply current mode
+                this.switchMode(this.currentMode);
+
+                // Update display
+                this.updateInfoDisplay();
+            }
+
+            createPartnerNode(key, partner) {
+                // Main node geometry
+                let geometry;
+                if (key === 'aia') {
+                    geometry = new THREE.IcosahedronGeometry(partner.size, 2);
+                } else {
+                    geometry = new THREE.SphereGeometry(partner.size, 24, 24);
+                }
+
+                const material = new THREE.MeshStandardMaterial({
+                    color: partner.color,
+                    metalness: 0.7,
+                    roughness: 0.3,
+                    emissive: new THREE.Color(partner.color).multiplyScalar(0.1),
+                    transparent: true,
+                    opacity: 0.9
+                });
+
+                const node = new THREE.Mesh(geometry, material);
+                node.position.set(partner.position.x, partner.position.y, partner.position.z);
+                node.name = key;
+                node.userData = partner;
+
+                this.scene.add(node);
+                this.partnerObjects[key] = node;
+
+                // Add orbital ring for strategic partners
+                if (partner.category === 'strategic' || key === 'aia') {
+                    const ringGeometry = new THREE.RingGeometry(partner.size * 1.2, partner.size * 1.3, 32);
+                    const ringMaterial = new THREE.MeshBasicMaterial({
+                        color: partner.color,
+                        transparent: true,
+                        opacity: 0.3,
+                        side: THREE.DoubleSide
+                    });
+                    const ring = new THREE.Mesh(ringGeometry, ringMaterial);
+                    ring.position.copy(node.position);
+                    ring.lookAt(this.camera.position);
+                    this.scene.add(ring);
+                    node.userData.ring = ring;
+                }
+
+                // Add pulsing effect for high-importance partners
+                if (partner.strength && partner.strength > 90) {
+                    const pulseGeometry = new THREE.SphereGeometry(partner.size * 1.1, 16, 16);
+                    const pulseMaterial = new THREE.MeshBasicMaterial({
+                        color: partner.color,
+                        transparent: true,
+                        opacity: 0.2,
+                        wireframe: true
+                    });
+                    const pulse = new THREE.Mesh(pulseGeometry, pulseMaterial);
+                    pulse.position.copy(node.position);
+                    this.scene.add(pulse);
+                    node.userData.pulse = pulse;
+                }
+
+                return node;
+            }
+
+            createConnections() {
+                this.connectionLines = [];
+
+                Object.entries(this.partners).forEach(([key, partner]) => {
+                    partner.connections.forEach(connectionKey => {
+                        if (connectionKey !== key && this.partners[connectionKey]) {
+                            this.createConnection(key, connectionKey);
+                        }
+                    });
+                });
+            }
+
+            createConnection(fromKey, toKey) {
+                const fromPartner = this.partners[fromKey];
+                const toPartner = this.partners[toKey];
+                const fromNode = this.partnerObjects[fromKey];
+                const toNode = this.partnerObjects[toKey];
+
+                if (!fromNode || !toNode) return;
+
+                // Calculate connection strength
+                const baseStrength = Math.min(fromPartner.strength || 50, toPartner.strength || 50) / 100;
+                const adjustedStrength = baseStrength * this.connectionStrength;
+
+                // Create curved connection
+                const midpoint = new THREE.Vector3()
+                    .addVectors(fromNode.position, toNode.position)
+                    .multiplyScalar(0.5);
+
+                // Add curve based on distance and importance
+                const distance = fromNode.position.distanceTo(toNode.position);
+                const curveHeight = distance * 0.3 * adjustedStrength;
+                midpoint.y += curveHeight;
+
+                const curve = new THREE.QuadraticBezierCurve3(
+                    fromNode.position,
+                    midpoint,
+                    toNode.position
+                );
+
+                const points = curve.getPoints(50);
+                const geometry = new THREE.BufferGeometry().setFromPoints(points);
+
+                // Connection material based on strength
+                const material = new THREE.LineBasicMaterial({
+                    color: new THREE.Color().lerpColors(
+                        new THREE.Color(0x666666),
+                        new THREE.Color(fromPartner.color),
+                        adjustedStrength
+                    ),
+                    transparent: true,
+                    opacity: 0.3 + adjustedStrength * 0.7,
+                    linewidth: 1 + adjustedStrength * 3
+                });
+
+                const line = new THREE.Line(geometry, material);
+                line.userData = {
+                    from: fromKey,
+                    to: toKey,
+                    strength: adjustedStrength,
+                    curve: curve
+                };
+
+                this.scene.add(line);
+                this.connectionLines.push(line);
+
+                // Add flowing particles for strong connections
+                if (adjustedStrength > 0.7) {
+                    this.createFlowingParticles(curve, fromPartner.color);
+                }
+            }
+
+            createFlowingParticles(curve, color) {
+                const particleCount = 8;
+                const particles = [];
+
+                for (let i = 0; i < particleCount; i++) {
+                    const geometry = new THREE.SphereGeometry(0.05, 8, 8);
+                    const material = new THREE.MeshBasicMaterial({
+                        color: color,
+                        transparent: true,
+                        opacity: 0.8
+                    });
+
+                    const particle = new THREE.Mesh(geometry, material);
+                    particle.userData = {
+                        curve: curve,
+                        speed: 0.005 + Math.random() * 0.01,
+                        offset: i / particleCount,
+                        time: 0
+                    };
+
+                    this.scene.add(particle);
+                    particles.push(particle);
+                }
+
+                this.particleSystems.push(...particles);
+            }
+
+            createParticleEffects() {
+                // Ambient particle field
+                const particleCount = 200;
+                const geometry = new THREE.BufferGeometry();
+                const positions = new Float32Array(particleCount * 3);
+                const colors = new Float32Array(particleCount * 3);
+
+                for (let i = 0; i < particleCount; i++) {
+                    const i3 = i * 3;
+
+                    // Random positions in sphere
+                    const radius = 25;
+                    positions[i3] = (Math.random() - 0.5) * radius;
+                    positions[i3 + 1] = (Math.random() - 0.5) * radius;
+                    positions[i3 + 2] = (Math.random() - 0.5) * radius;
+
+                    // Colors based on ecosystem theme
+                    const colorOptions = [
+                        new THREE.Color(0x00ffff),
+                        new THREE.Color(0xffff00),
+                        new THREE.Color(0xff0088),
+                        new THREE.Color(0x8800ff)
+                    ];
+                    const color = colorOptions[Math.floor(Math.random() * colorOptions.length)];
+                    colors[i3] = color.r;
+                    colors[i3 + 1] = color.g;
+                    colors[i3 + 2] = color.b;
+                }
+
+                geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+                geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+                const material = new THREE.PointsMaterial({
+                    size: 0.1,
+                    transparent: true,
+                    opacity: 0.4,
+                    vertexColors: true,
+                    sizeAttenuation: true
+                });
+
+                const particles = new THREE.Points(geometry, material);
+                this.scene.add(particles);
+                this.ambientParticles = particles;
+            }
+
+            switchMode(mode) {
+                this.currentMode = mode;
+
+                // Clear existing positions
+                this.clearAnimations();
+
+                switch(mode) {
+                    case 'network':
+                        this.arrangeNetwork();
+                        break;
+                    case 'hierarchy':
+                        this.arrangeHierarchy();
+                        break;
+                    case 'force':
+                        this.arrangeForceLayout();
+                        break;
+                    case 'cluster':
+                        this.arrangeClusters();
+                        break;
+                }
+
+                // Update connections
+                this.updateConnections();
+            }
+
+            arrangeNetwork() {
+                // Original positions - natural network layout
+                Object.entries(this.partners).forEach(([key, partner]) => {
+                    const node = this.partnerObjects[key];
+                    if (node) {
+                        this.animateToPosition(node, partner.position, 2000);
+                    }
+                });
+            }
+
+            arrangeHierarchy() {
+                // Hierarchical layout by category
+                const categories = {
+                    core: { y: 0, partners: [], radius: 0 },
+                    strategic: { y: 4, partners: [], radius: 6 },
+                    technology: { y: 0, partners: [], radius: 8 },
+                    industry: { y: -4, partners: [], radius: 6 },
+                    research: { y: -8, partners: [], radius: 4 }
+                };
+
+                // Group partners by category
+                Object.entries(this.partners).forEach(([key, partner]) => {
+                    if (categories[partner.category]) {
+                        categories[partner.category].partners.push(key);
+                    }
+                });
+
+                // Position partners within categories
+                Object.entries(categories).forEach(([category, data]) => {
+                    data.partners.forEach((key, index) => {
+                        const angle = (index / data.partners.length) * Math.PI * 2;
+                        const x = Math.cos(angle) * data.radius;
+                        const z = Math.sin(angle) * data.radius;
+
+                        const node = this.partnerObjects[key];
+                        if (node) {
+                            this.animateToPosition(node, { x, y: data.y, z }, 2500);
+                        }
+                    });
+                });
+            }
+
+            arrangeForceLayout() {
+                // Physics-based force simulation
+                const iterations = 100;
+                const positions = {};
+
+                // Initialize positions
+                Object.keys(this.partners).forEach(key => {
+                    positions[key] = {
+                        x: (Math.random() - 0.5) * 20,
+                        y: (Math.random() - 0.5) * 20,
+                        z: (Math.random() - 0.5) * 20,
+                        vx: 0, vy: 0, vz: 0
+                    };
+                });
+
+                // Run force simulation
+                for (let i = 0; i < iterations; i++) {
+                    // Apply forces
+                    Object.entries(this.partners).forEach(([key, partner]) => {
+                        const pos = positions[key];
+
+                        // Attraction to center
+                        pos.vx -= pos.x * 0.001;
+                        pos.vy -= pos.y * 0.001;
+                        pos.vz -= pos.z * 0.001;
+
+                        // Connection attractions
+                        partner.connections.forEach(connKey => {
+                            if (positions[connKey]) {
+                                const connPos = positions[connKey];
+                                const dx = connPos.x - pos.x;
+                                const dy = connPos.y - pos.y;
+                                const dz = connPos.z - pos.z;
+                                const dist = Math.sqrt(dx*dx + dy*dy + dz*dz);
+
+                                const force = 0.01;
+                                pos.vx += (dx / dist) * force;
+                                pos.vy += (dy / dist) * force;
+                                pos.vz += (dz / dist) * force;
+                            }
+                        });
+
+                        // Repulsion from others
+                        Object.entries(positions).forEach(([otherKey, otherPos]) => {
+                            if (otherKey !== key) {
+                                const dx = pos.x - otherPos.x;
+                                const dy = pos.y - otherPos.y;
+                                const dz = pos.z - otherPos.z;
+                                const dist = Math.sqrt(dx*dx + dy*dy + dz*dz) + 0.1;
+
+                                const force = 2 / (dist * dist);
+                                pos.vx += (dx / dist) * force;
+                                pos.vy += (dy / dist) * force;
+                                pos.vz += (dz / dist) * force;
+                            }
+                        });
+
+                        // Apply velocity
+                        pos.x += pos.vx * 0.8;
+                        pos.y += pos.vy * 0.8;
+                        pos.z += pos.vz * 0.8;
+
+                        // Damping
+                        pos.vx *= 0.9;
+                        pos.vy *= 0.9;
+                        pos.vz *= 0.9;
+                    });
+                }
+
+                // Apply final positions
+                Object.entries(positions).forEach(([key, pos]) => {
+                    const node = this.partnerObjects[key];
+                    if (node) {
+                        this.animateToPosition(node, { x: pos.x, y: pos.y, z: pos.z }, 3000);
+                    }
+                });
+            }
+
+            arrangeClusters() {
+                // Cluster by category with clear separation
+                const clusterCenters = {
+                    core: { x: 0, y: 0, z: 0 },
+                    strategic: { x: -8, y: 6, z: 0 },
+                    technology: { x: 8, y: 6, z: 0 },
+                    industry: { x: 8, y: -6, z: 0 },
+                    research: { x: -8, y: -6, z: 0 }
+                };
+
+                Object.entries(this.partners).forEach(([key, partner]) => {
+                    const center = clusterCenters[partner.category];
+                    if (center) {
+                        const offset = {
+                            x: (Math.random() - 0.5) * 4,
+                            y: (Math.random() - 0.5) * 4,
+                            z: (Math.random() - 0.5) * 4
+                        };
+
+                        const node = this.partnerObjects[key];
+                        if (node) {
+                            this.animateToPosition(node, {
+                                x: center.x + offset.x,
+                                y: center.y + offset.y,
+                                z: center.z + offset.z
+                            }, 2000);
+                        }
+                    }
+                });
+            }
+
+            animateToPosition(object, targetPosition, duration) {
+                const startPosition = object.position.clone();
+                const startTime = Date.now();
+
+                const animate = () => {
+                    const elapsed = Date.now() - startTime;
+                    const progress = Math.min(elapsed / duration, 1);
+                    const easeProgress = this.easeInOutCubic(progress);
+
+                    object.position.lerpVectors(
+                        startPosition,
+                        new THREE.Vector3(targetPosition.x, targetPosition.y, targetPosition.z),
+                        easeProgress
+                    );
+
+                    if (progress < 1) {
+                        requestAnimationFrame(animate);
+                    }
+                };
+
+                animate();
+            }
+
+            easeInOutCubic(t) {
+                return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+            }
+
+            updateConnections() {
+                // Remove existing connections
+                this.connectionLines.forEach(line => {
+                    this.scene.remove(line);
+                    line.geometry.dispose();
+                    line.material.dispose();
+                });
+
+                // Remove flowing particles
+                this.particleSystems.forEach(particle => {
+                    this.scene.remove(particle);
+                    particle.geometry.dispose();
+                    particle.material.dispose();
+                });
+
+                this.connectionLines = [];
+                this.particleSystems = [];
+
+                // Recreate connections
+                this.createConnections();
+            }
+
+            applyFilter(filter) {
+                Object.entries(this.partnerObjects).forEach(([key, node]) => {
+                    const partner = this.partners[key];
+                    let visible = true;
+
+                    switch(filter) {
+                        case 'strategic':
+                            visible = partner.category === 'strategic' || key === 'aia';
+                            break;
+                        case 'technology':
+                            visible = partner.category === 'technology' || key === 'aia';
+                            break;
+                        case 'financial':
+                            visible = ['jpmorgan', 'aia'].includes(key);
+                            break;
+                        case 'all':
+                        default:
+                            visible = true;
+                    }
+
+                    node.visible = visible;
+                    if (node.userData.ring) node.userData.ring.visible = visible;
+                    if (node.userData.pulse) node.userData.pulse.visible = visible;
+                });
+
+                // Update connection visibility
+                this.connectionLines.forEach(line => {
+                    const fromVisible = this.partnerObjects[line.userData.from].visible;
+                    const toVisible = this.partnerObjects[line.userData.to].visible;
+                    line.visible = fromVisible && toVisible;
+                });
+
+                // Update particle systems
+                this.particleSystems.forEach(particle => {
+                    // Hide particles if their connection is not visible
+                    particle.visible = true; // Simplified - would need connection tracking
+                });
+            }
+
+            highlightPartner(partnerKey) {
+                // Reset all partners
+                Object.entries(this.partnerObjects).forEach(([key, node]) => {
+                    node.material.emissive.setScalar(0.1);
+                    node.scale.setScalar(1);
+
+                    if (node.userData.ring) {
+                        node.userData.ring.material.opacity = 0.3;
+                    }
+                });
+
+                // Highlight selected partner
+                const selectedNode = this.partnerObjects[partnerKey];
+                if (selectedNode) {
+                    selectedNode.material.emissive.setScalar(0.3);
+                    selectedNode.scale.setScalar(1.2);
+
+                    if (selectedNode.userData.ring) {
+                        selectedNode.userData.ring.material.opacity = 0.6;
+                    }
+
+                    // Highlight connections
+                    this.connectionLines.forEach(line => {
+                        if (line.userData.from === partnerKey || line.userData.to === partnerKey) {
+                            line.material.opacity = Math.min(1, line.material.opacity * 2);
+                            line.material.color.setScalar(1);
+                        } else {
+                            line.material.opacity = Math.max(0.1, line.material.opacity * 0.3);
+                        }
+                    });
+                }
+            }
+
+            updateInfoDisplay() {
+                const partner = this.partners[this.selectedPartner];
+                const infoDisplay = document.getElementById('infoDisplay');
+
+                if (partner) {
+                    infoDisplay.innerHTML = `
+                        <div class="info-header">
+                            <div class="info-title">${partner.name}</div>
+                            <div class="connection-strength">Strength: ${partner.strength || 'N/A'}%</div>
+                        </div>
+                        <div class="info-content">${partner.description}</div>
+                        <div class="metrics-row">
+                            <div class="metric-item">
+                                <div class="metric-value">${partner.metrics.projects}${typeof partner.metrics.projects === 'number' ? '+' : ''}</div>
+                                <div class="metric-label">Joint Projects</div>
+                            </div>
+                            <div class="metric-item">
+                                <div class="metric-value">$${partner.metrics.revenue}M</div>
+                                <div class="metric-label">Combined Revenue</div>
+                            </div>
+                            <div class="metric-item">
+                                <div class="metric-value">${partner.metrics.countries}</div>
+                                <div class="metric-label">Countries</div>
+                            </div>
+                            <div class="metric-item">
+                                <div class="metric-value">${partner.metrics.successRate}%</div>
+                                <div class="metric-label">Success Rate</div>
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+
+            onMouseMove(event) {
+                const rect = this.renderer.domElement.getBoundingClientRect();
+                this.mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+                this.mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+                // Update dynamic light position
+                const vector = new THREE.Vector3(this.mouse.x, this.mouse.y, 0.5);
+                vector.unproject(this.camera);
+                vector.sub(this.camera.position).normalize();
+                vector.multiplyScalar(10);
+                vector.add(this.camera.position);
+                this.dynamicLight.position.copy(vector);
+
+                // Raycasting for hover effects
+                this.raycaster.setFromCamera(this.mouse, this.camera);
+                const intersects = this.raycaster.intersectObjects(Object.values(this.partnerObjects));
+
+                // Reset previous hover
+                if (this.hoveredPartner && this.hoveredPartner !== this.partnerObjects[this.selectedPartner]) {
+                    this.hoveredPartner.scale.setScalar(1);
+                }
+
+                // Apply hover effect
+                if (intersects.length > 0) {
+                    const partner = intersects[0].object;
+                    if (partner !== this.hoveredPartner) {
+                        this.hoveredPartner = partner;
+                        if (partner !== this.partnerObjects[this.selectedPartner]) {
+                            partner.scale.setScalar(1.1);
+                        }
+                        this.showTooltip(event, partner.userData);
+                    }
+                } else {
+                    this.hoveredPartner = null;
+                    this.hideTooltip();
+                }
+            }
+
+            onClick(event) {
+                this.raycaster.setFromCamera(this.mouse, this.camera);
+                const intersects = this.raycaster.intersectObjects(Object.values(this.partnerObjects));
+
+                if (intersects.length > 0) {
+                    const partner = intersects[0].object;
+                    if (partner.name && this.partners[partner.name]) {
+                        // Update UI to reflect selection
+                        document.querySelectorAll('.partner-item').forEach(p => p.classList.remove('active'));
+                        const partnerElement = document.querySelector(`[data-partner="${partner.name}"]`);
+                        if (partnerElement) {
+                            partnerElement.classList.add('active');
+                        }
+
+                        this.selectedPartner = partner.name;
+                        this.updateInfoDisplay();
+                        this.highlightPartner(this.selectedPartner);
+                    }
+                }
+            }
+
+            showTooltip(event, partnerData) {
+                const tooltip = document.getElementById('tooltip');
+                if (partnerData.name) {
+                    tooltip.innerHTML = `
+                        <strong>${partnerData.name}</strong><br>
+                        Category: ${partnerData.category}<br>
+                        Projects: ${partnerData.metrics.projects}+<br>
+                        Revenue: $${partnerData.metrics.revenue}M
+                    `;
+                    tooltip.style.left = event.clientX + 'px';
+                    tooltip.style.top = event.clientY + 'px';
+                    tooltip.classList.add('show');
+                }
+            }
+
+            hideTooltip() {
+                document.getElementById('tooltip').classList.remove('show');
+            }
+
+            clearScene() {
+                // Remove all meshes and lines
+                const objectsToRemove = [];
+                this.scene.traverse((child) => {
+                    if (child.type === 'Mesh' || child.type === 'Line' || child.type === 'Points') {
+                        // Don't remove lights
+                        if (!child.isLight) {
+                            objectsToRemove.push(child);
+                        }
+                    }
+                });
+
+                objectsToRemove.forEach(obj => {
+                    this.scene.remove(obj);
+                    if (obj.geometry) obj.geometry.dispose();
+                    if (obj.material) obj.material.dispose();
+                });
+
+                // Clear references
+                this.partnerObjects = {};
+                this.connectionLines = [];
+                this.particleSystems = [];
+            }
+
+            clearAnimations() {
+                this.animationMixers.forEach(mixer => {
+                    mixer.stopAllAction();
+                });
+                this.animationMixers = [];
+            }
+
+            resetView() {
+                // Reset camera
+                this.camera.position.set(0, 8, 20);
+                this.controls.target.set(0, 0, 0);
+                this.controls.update();
+
+                // Reset mode
+                this.switchMode('network');
+
+                // Reset filters
+                this.applyFilter('all');
+                document.querySelector('[data-filter="all"]').classList.add('active');
+
+                // Reset sliders
+                document.getElementById('strengthSlider').value = 50;
+                document.getElementById('speedSlider').value = 50;
+                this.connectionStrength = 0.5;
+                this.animationSpeed = 0.5;
+
+                this.updateConnections();
+            }
+
+            animate() {
+                requestAnimationFrame(() => this.animate());
+
+                const time = Date.now() * 0.001;
+
+                // Animate ambient particles
+                if (this.ambientParticles) {
+                    this.ambientParticles.rotation.y += 0.0005 * this.animationSpeed;
+                    this.ambientParticles.rotation.x += 0.0003 * this.animationSpeed;
+                }
+
+                // Animate flowing particles
+                this.particleSystems.forEach(particle => {
+                    if (particle.userData.curve) {
+                        const data = particle.userData;
+                        data.time += data.speed * this.animationSpeed;
+                        const t = (data.time + data.offset) % 1;
+                        const position = data.curve.getPoint(t);
+                        particle.position.copy(position);
+                    }
+                });
+
+                // Animate partner nodes
+                Object.entries(this.partnerObjects).forEach(([key, node]) => {
+                    // Gentle floating animation
+                    node.position.y += Math.sin(time * 0.5 + key.length) * 0.002 * this.animationSpeed;
+
+                    // Rotate core AIA node
+                    if (key === 'aia') {
+                        node.rotation.y += 0.01 * this.animationSpeed;
+                        node.rotation.x += 0.005 * this.animationSpeed;
+                    }
+
+                    // Pulse effect for high-strength partners
+                    if (node.userData.pulse) {
+                        const pulse = node.userData.pulse;
+                        const scale = 1 + Math.sin(time * 2 + key.length) * 0.1;
+                        pulse.scale.setScalar(scale);
+                        pulse.material.opacity = 0.1 + Math.sin(time * 2 + key.length) * 0.1;
+                    }
+
+                    // Ring rotation
+                    if (node.userData.ring) {
+                        node.userData.ring.rotation.z += 0.005 * this.animationSpeed;
+                    }
+                });
+
+                // Update controls and render
+                this.controls.update();
+                this.composer.render();
+            }
+
+            handleResize() {
+                const container = this.renderer.domElement.parentElement;
+
+                this.camera.aspect = container.clientWidth / container.clientHeight;
+                this.camera.updateProjectionMatrix();
+
+                this.renderer.setSize(container.clientWidth, container.clientHeight);
+                this.composer.setSize(container.clientWidth, container.clientHeight);
+            }
+
+            startAnimation() {
+                this.animate();
+                this.updateInfoDisplay();
+                this.highlightPartner(this.selectedPartner);
+            }
+        }
+
+        // Global functions for controls
+        window.exportEcosystem = function() {
+            const ecosystemData = {
+                partners: window.ecosystemApp.partners,
+                connections: window.ecosystemApp.connectionLines.length,
+                totalRevenue: Object.values(window.ecosystemApp.partners).reduce((sum, p) => sum + p.metrics.revenue, 0),
+                timestamp: new Date().toISOString()
+            };
+
+            const blob = new Blob([JSON.stringify(ecosystemData, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'aia-ecosystem-map.json';
+            a.click();
+            URL.revokeObjectURL(url);
+        };
+
+        window.resetView = function() {
+            if (window.ecosystemApp) {
+                window.ecosystemApp.resetView();
+            }
+        };
+
+        window.toggleFullscreen = function() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+            } else {
+                document.exitFullscreen();
+            }
+        };
+
+        // Initialize when DOM is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            window.ecosystemApp = new EcosystemMapping();
+        });
+    </script>
+</body>
+</html>

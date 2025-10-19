@@ -1,0 +1,1103 @@
+openapi: 3.0.3
+info:
+  title: DKG v3 Professional API
+  description: |
+    # Professional Knowledge Graph Intelligence API v3.0
+
+    ## Sprint 3-4: Zero-Disruption Enhancement
+
+    The DKG v3 Professional API provides enterprise-grade knowledge graph intelligence
+    with sub-30ms query performance, intelligent caching, and comprehensive analytics.
+
+    ### Key Features
+    - ⚡ **Sub-30ms Performance**: Optimized queries with intelligent caching
+    - 🧠 **Advanced Intelligence**: ML-powered knowledge synthesis and insights
+    - 📊 **3D Visualization**: Interactive knowledge graph visualization
+    - 🏢 **Fortune 500 Integration**: Business opportunity discovery
+    - 🔒 **Enterprise Security**: Authentication, rate limiting, and audit trails
+    - 📈 **Performance Analytics**: Real-time performance monitoring
+    - 🔄 **HATEOAS Navigation**: RESTful resource navigation
+    - 📱 **Multi-Platform**: Web, mobile, and enterprise integration
+
+    ### Backward Compatibility
+    This API maintains full backward compatibility with existing DKG v3 endpoints
+    while adding professional enhancements as additive features.
+
+    ### Performance Guarantee
+    All queries target sub-30ms response times with intelligent caching and
+    performance optimization. Queries exceeding 30ms trigger automatic optimization.
+
+  version: 3.0.0-professional
+  contact:
+    name: AIA DKG v3 Professional API Support
+    url: https://docs.aia.ai/dkg-v3-professional
+    email: support@aia.ai
+  license:
+    name: Enterprise License
+    url: https://aia.ai/license
+  termsOfService: https://aia.ai/terms
+
+servers:
+  - url: http://localhost:8000/api/v3/dkg-professional
+    description: Development Server
+  - url: https://api.aia.ai/v3/dkg-professional
+    description: Production Server
+  - url: https://staging-api.aia.ai/v3/dkg-professional
+    description: Staging Server
+
+security:
+  - BearerAuth: []
+  - ApiKeyAuth: []
+
+paths:
+  /health/detailed:
+    get:
+      summary: Detailed Health Check
+      description: |
+        Comprehensive health check with performance metrics, capabilities,
+        and system status. Provides detailed information about the DKG v3
+        system health including cache status, knowledge atoms, and performance.
+      operationId: getDetailedHealth
+      tags:
+        - Health & Status
+      responses:
+        '200':
+          description: Detailed health information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DetailedHealthResponse'
+              example:
+                status: "healthy"
+                timestamp: "2025-10-10T07:30:00Z"
+                version: "v3.0-professional"
+                performance:
+                  response_time_ms: 12.5
+                  cache_status: "online"
+                  knowledge_atoms: 2472
+                  active_connections: 15
+                capabilities:
+                  intelligent_caching: true
+                  real_time_analytics: true
+                  "3d_visualization": true
+                  fortune500_integration: true
+                  professional_api: true
+                limits:
+                  max_concurrent_queries: 100
+                  rate_limit_per_minute: 1000
+                  max_query_length: 5000
+                  cache_ttl_seconds: 1800
+        '503':
+          description: Service degraded or unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /intelligence/query:
+    post:
+      summary: Professional Intelligence Query
+      description: |
+        Execute high-performance intelligence queries with sub-30ms target performance.
+        Features intelligent caching, pattern recognition, and comprehensive analytics.
+
+        ### Performance Optimization
+        - Intelligent caching with pattern recognition
+        - Sub-30ms query execution target
+        - Automatic query optimization
+        - Performance metrics in response
+
+        ### Analysis Types
+        - **general**: Broad knowledge analysis
+        - **business**: Business intelligence focus
+        - **technical**: Technical implementation focus
+        - **strategic**: Strategic planning insights
+        - **security**: Security and compliance analysis
+      operationId: queryProfessionalIntelligence
+      tags:
+        - Intelligence Queries
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DKGQueryRequest'
+            examples:
+              business_analysis:
+                summary: Business Analysis Query
+                value:
+                  context: "Analyze market opportunities in AI healthcare sector"
+                  analysis_type: "business"
+                  include_3d: true
+                  priority: "high"
+                  max_results: 50
+                  client_id: "frontend-dashboard-001"
+              technical_query:
+                summary: Technical Implementation Query
+                value:
+                  context: "Optimize ML pipeline performance for real-time inference"
+                  analysis_type: "technical"
+                  include_3d: false
+                  priority: "normal"
+                  max_results: 100
+      responses:
+        '200':
+          description: Intelligence query results
+          headers:
+            X-Processing-Time:
+              description: Query processing time in milliseconds
+              schema:
+                type: number
+            X-Cache-Status:
+              description: Cache hit or miss status
+              schema:
+                type: string
+                enum: [hit, miss, partial]
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DKGIntelligenceResponse'
+        '400':
+          description: Invalid query request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
+        '429':
+          description: Rate limit exceeded
+          headers:
+            Retry-After:
+              description: Seconds to wait before retrying
+              schema:
+                type: integer
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /fortune500/opportunities/advanced:
+    get:
+      summary: Advanced Fortune 500 Opportunities
+      description: |
+        Discover AI-powered Fortune 500 business opportunities with advanced filtering
+        and professional analysis. Provides comprehensive market intelligence and
+        strategic recommendations.
+
+        ### Features
+        - Sector-specific opportunity filtering
+        - Market size and ROI analysis
+        - Risk assessment and mitigation
+        - Partnership potential scoring
+        - Competitive landscape analysis
+      operationId: getAdvancedFortune500Opportunities
+      tags:
+        - Fortune 500 Intelligence
+      parameters:
+        - name: sectors
+          in: query
+          description: Industry sectors to focus on
+          schema:
+            type: array
+            items:
+              type: string
+            example: ["healthcare", "fintech", "manufacturing"]
+        - name: min_market_size
+          in: query
+          description: Minimum market size in billions USD
+          schema:
+            type: number
+            minimum: 0
+            example: 1.5
+        - name: risk_tolerance
+          in: query
+          description: Risk tolerance level
+          schema:
+            type: string
+            enum: [low, medium, high]
+            default: medium
+        - name: timeline
+          in: query
+          description: Expected timeline for opportunity realization
+          schema:
+            type: string
+            enum: ["3months", "6months", "1year", "2years", "5years"]
+            default: "1year"
+        - name: include_partnerships
+          in: query
+          description: Include partnership opportunities
+          schema:
+            type: boolean
+            default: true
+        - name: format
+          in: query
+          description: Response format detail level
+          schema:
+            type: string
+            enum: [summary, detailed, executive]
+            default: detailed
+      responses:
+        '200':
+          description: Fortune 500 opportunities analysis
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Fortune500OpportunitiesResponse'
+
+  /visualization/3d/professional:
+    post:
+      summary: Professional 3D Visualization
+      description: |
+        Generate enterprise-grade 3D knowledge graph visualizations with
+        performance optimization and interactive features.
+
+        ### Visualization Types
+        - **network**: Traditional network graph layout
+        - **flow**: Process and data flow visualization
+        - **hierarchy**: Hierarchical tree structures
+        - **spatial**: Geographic or spatial relationships
+        - **temporal**: Time-based relationship evolution
+
+        ### Performance Features
+        - 60 FPS optimization
+        - GPU acceleration support
+        - Level-of-detail rendering
+        - Mobile responsiveness
+        - Memory optimization
+      operationId: getProfessional3DVisualization
+      tags:
+        - 3D Visualization
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DKGVisualizationRequest'
+            examples:
+              network_viz:
+                summary: Network Visualization
+                value:
+                  visualization_type: "network"
+                  resolution: "high"
+                  animation_enabled: true
+                  color_scheme: "professional"
+                  max_nodes: 1000
+              flow_viz:
+                summary: Flow Visualization
+                value:
+                  visualization_type: "flow"
+                  resolution: "medium"
+                  animation_enabled: false
+                  color_scheme: "minimal"
+                  max_nodes: 500
+      responses:
+        '200':
+          description: 3D visualization data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Visualization3DResponse'
+
+  /analytics/performance:
+    get:
+      summary: Performance Analytics
+      description: |
+        Get comprehensive performance analytics and optimization statistics
+        for the DKG v3 system. Includes query patterns, cache metrics,
+        and system performance trends.
+      operationId: getPerformanceAnalytics
+      tags:
+        - Analytics & Monitoring
+      parameters:
+        - name: time_range
+          in: query
+          description: Time range for analytics
+          schema:
+            type: string
+            enum: ["1h", "6h", "24h", "7d", "30d"]
+            default: "24h"
+        - name: include_patterns
+          in: query
+          description: Include query pattern analysis
+          schema:
+            type: boolean
+            default: true
+      responses:
+        '200':
+          description: Performance analytics data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PerformanceAnalyticsResponse'
+
+  /queries/{request_id}:
+    get:
+      summary: Get Query Status
+      description: |
+        Retrieve the status and results of a specific query by request ID.
+        Provides HATEOAS navigation and detailed query information.
+      operationId: getQueryStatus
+      tags:
+        - Query Management
+      parameters:
+        - name: request_id
+          in: path
+          required: true
+          description: Unique query request identifier
+          schema:
+            type: string
+            pattern: '^[a-fA-F0-9]{16}$'
+      responses:
+        '200':
+          description: Query status and results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QueryStatusResponse'
+        '404':
+          description: Query not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /queries/{request_id}/export:
+    get:
+      summary: Export Query Results
+      description: |
+        Export query results in various formats (JSON, CSV, PDF).
+        Supports professional reporting and data integration workflows.
+      operationId: exportQueryResults
+      tags:
+        - Data Export
+      parameters:
+        - name: request_id
+          in: path
+          required: true
+          description: Unique query request identifier
+          schema:
+            type: string
+        - name: format
+          in: query
+          description: Export format
+          schema:
+            type: string
+            enum: [json, csv, pdf, xlsx]
+            default: json
+        - name: include_metadata
+          in: query
+          description: Include query metadata in export
+          schema:
+            type: boolean
+            default: true
+      responses:
+        '200':
+          description: Exported data
+          content:
+            application/json:
+              schema:
+                type: object
+            text/csv:
+              schema:
+                type: string
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token for authentication
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: API key for service authentication
+
+  schemas:
+    DKGQueryRequest:
+      type: object
+      required:
+        - context
+      properties:
+        context:
+          type: string
+          minLength: 1
+          maxLength: 5000
+          description: Query context and content
+          example: "Analyze market opportunities in AI healthcare sector"
+        analysis_type:
+          type: string
+          enum: [general, business, technical, strategic, security]
+          default: general
+          description: Type of analysis to perform
+        include_3d:
+          type: boolean
+          default: false
+          description: Include 3D visualization data in response
+        priority:
+          type: string
+          enum: [low, normal, high, critical]
+          default: normal
+          description: Query processing priority
+        max_results:
+          type: integer
+          minimum: 1
+          maximum: 1000
+          default: 100
+          description: Maximum number of results to return
+        format_version:
+          type: string
+          enum: [v1, v2, v3]
+          default: v1
+          description: Response format version
+        client_id:
+          type: string
+          maxLength: 100
+          description: Client identifier for tracking
+        timeout_ms:
+          type: integer
+          minimum: 1000
+          maximum: 300000
+          default: 30000
+          description: Query timeout in milliseconds
+
+    DKGIntelligenceResponse:
+      type: object
+      required:
+        - status
+        - request_id
+        - timestamp
+        - query_metadata
+        - intelligence_data
+        - performance_metrics
+        - confidence_score
+        - cache_status
+        - links
+      properties:
+        status:
+          type: string
+          enum: [success, error, partial]
+          description: Response status
+        request_id:
+          type: string
+          description: Unique request identifier
+        timestamp:
+          type: string
+          format: date-time
+          description: Response timestamp
+        query_metadata:
+          $ref: '#/components/schemas/DKGQueryRequest'
+        intelligence_data:
+          type: object
+          description: Core intelligence results
+          properties:
+            insights:
+              type: array
+              items:
+                $ref: '#/components/schemas/DKGInsight'
+            total_atoms_analyzed:
+              type: integer
+              description: Number of knowledge atoms analyzed
+            processing_mode:
+              type: string
+              enum: [optimized_fast, comprehensive, deep_analysis]
+            confidence_score:
+              type: number
+              minimum: 0
+              maximum: 1
+        performance_metrics:
+          $ref: '#/components/schemas/PerformanceMetrics'
+        confidence_score:
+          type: number
+          minimum: 0
+          maximum: 1
+          description: Overall result confidence score
+        cache_status:
+          type: string
+          enum: [hit, miss, partial]
+          description: Cache hit status
+        links:
+          $ref: '#/components/schemas/HATEOASLinks'
+
+    DKGInsight:
+      type: object
+      required:
+        - type
+        - confidence
+        - source_atom
+      properties:
+        type:
+          type: string
+          enum:
+            - revenue_opportunity
+            - technical_solution
+            - market_trend
+            - security_concern
+            - efficiency_improvement
+            - collaboration_potential
+            - innovation_opportunity
+            - risk_mitigation
+          description: Type of insight discovered
+        confidence:
+          type: number
+          minimum: 0
+          maximum: 1
+          description: Confidence in the insight
+        source_atom:
+          type: string
+          description: Source knowledge atom file path
+        description:
+          type: string
+          description: Detailed insight description
+        impact_score:
+          type: number
+          minimum: 0
+          maximum: 10
+          description: Potential impact score
+        actionable_steps:
+          type: array
+          items:
+            type: string
+          description: Recommended actions
+        business_value:
+          type: number
+          description: Estimated business value
+        technical_complexity:
+          type: string
+          enum: [low, medium, high, critical]
+          description: Implementation complexity level
+
+    PerformanceMetrics:
+      type: object
+      required:
+        - processing_time_ms
+        - cache_hit
+        - knowledge_atoms_accessed
+        - sub_30ms_achieved
+      properties:
+        processing_time_ms:
+          type: number
+          description: Total processing time in milliseconds
+        cache_hit:
+          type: boolean
+          description: Whether cache was hit for this query
+        knowledge_atoms_accessed:
+          type: integer
+          description: Number of knowledge atoms accessed
+        ml_inference_time_ms:
+          type: number
+          description: ML inference time in milliseconds
+        optimization_applied:
+          type: array
+          items:
+            type: string
+          description: List of optimizations applied
+        memory_usage_kb:
+          type: number
+          description: Memory usage in kilobytes
+        cpu_usage_percent:
+          type: number
+          description: CPU usage percentage
+        sub_30ms_achieved:
+          type: boolean
+          description: Whether sub-30ms target was achieved
+
+    HATEOASLinks:
+      type: object
+      required:
+        - self
+        - status
+        - related
+        - export
+      properties:
+        self:
+          type: string
+          format: uri
+          description: Link to this resource
+        status:
+          type: string
+          format: uri
+          description: Link to query status
+        related:
+          type: string
+          format: uri
+          description: Link to related queries
+        export:
+          type: string
+          format: uri
+          description: Link to export results
+        refresh:
+          type: string
+          format: uri
+          description: Link to refresh query
+        cancel:
+          type: string
+          format: uri
+          description: Link to cancel query
+        history:
+          type: string
+          format: uri
+          description: Link to query history
+
+    DetailedHealthResponse:
+      type: object
+      required:
+        - status
+        - timestamp
+        - version
+        - performance
+        - capabilities
+        - limits
+      properties:
+        status:
+          type: string
+          enum: [healthy, degraded, error, maintenance]
+          description: Overall system status
+        timestamp:
+          type: string
+          format: date-time
+          description: Health check timestamp
+        version:
+          type: string
+          description: API version
+        performance:
+          type: object
+          properties:
+            response_time_ms:
+              type: number
+              description: Average response time
+            cache_status:
+              type: string
+              enum: [online, offline, degraded]
+            knowledge_atoms:
+              type: integer
+              description: Total knowledge atoms available
+            active_connections:
+              type: integer
+              description: Current active connections
+        capabilities:
+          type: object
+          properties:
+            intelligent_caching:
+              type: boolean
+            real_time_analytics:
+              type: boolean
+            "3d_visualization":
+              type: boolean
+            fortune500_integration:
+              type: boolean
+            professional_api:
+              type: boolean
+        limits:
+          type: object
+          properties:
+            max_concurrent_queries:
+              type: integer
+            rate_limit_per_minute:
+              type: integer
+            max_query_length:
+              type: integer
+            cache_ttl_seconds:
+              type: integer
+
+    Fortune500OpportunitiesResponse:
+      type: object
+      required:
+        - status
+        - request_id
+        - timestamp
+        - opportunities
+        - metadata
+      properties:
+        status:
+          type: string
+          enum: [success, error, partial]
+        request_id:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        query_parameters:
+          type: object
+          description: Original query parameters
+        opportunities:
+          type: array
+          items:
+            $ref: '#/components/schemas/Fortune500Opportunity'
+        metadata:
+          type: object
+          properties:
+            total_opportunities:
+              type: integer
+            processing_time_ms:
+              type: number
+            filtering_applied:
+              type: object
+        performance:
+          type: object
+          properties:
+            response_optimized:
+              type: boolean
+            cache_eligible:
+              type: boolean
+            professional_format:
+              type: boolean
+        links:
+          $ref: '#/components/schemas/HATEOASLinks'
+
+    Fortune500Opportunity:
+      type: object
+      required:
+        - opportunity_id
+        - title
+        - market_size
+        - confidence
+      properties:
+        opportunity_id:
+          type: string
+          description: Unique opportunity identifier
+        title:
+          type: string
+          description: Opportunity title
+        description:
+          type: string
+          description: Detailed opportunity description
+        market_size:
+          type: number
+          description: Market size in billions USD
+        confidence:
+          type: number
+          minimum: 0
+          maximum: 1
+          description: Confidence in opportunity assessment
+        timeline:
+          type: string
+          enum: ["3months", "6months", "1year", "2years", "5years"]
+        investment_required:
+          type: number
+          description: Estimated investment required
+        expected_roi:
+          type: number
+          description: Expected return on investment
+        key_technologies:
+          type: array
+          items:
+            type: string
+          description: Key technologies involved
+        risk_factors:
+          type: array
+          items:
+            $ref: '#/components/schemas/RiskFactor'
+
+    RiskFactor:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [market, technical, regulatory, competitive, financial]
+        description:
+          type: string
+        probability:
+          type: number
+          minimum: 0
+          maximum: 1
+        impact:
+          type: number
+          minimum: 0
+          maximum: 10
+        mitigation_strategies:
+          type: array
+          items:
+            type: string
+
+    DKGVisualizationRequest:
+      type: object
+      properties:
+        visualization_type:
+          type: string
+          enum: [network, flow, hierarchy, spatial, temporal]
+          default: network
+        resolution:
+          type: string
+          enum: [low, medium, high, ultra]
+          default: medium
+        animation_enabled:
+          type: boolean
+          default: true
+        color_scheme:
+          type: string
+          enum: [professional, vibrant, minimal, dark]
+          default: professional
+        max_nodes:
+          type: integer
+          minimum: 10
+          maximum: 10000
+          default: 1000
+
+    Visualization3DResponse:
+      type: object
+      required:
+        - status
+        - request_id
+        - timestamp
+        - visualization_data
+        - performance_metrics
+      properties:
+        status:
+          type: string
+          enum: [success, error, partial]
+        request_id:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        visualization_data:
+          type: object
+          properties:
+            nodes:
+              type: array
+              items:
+                $ref: '#/components/schemas/Visualization3DNode'
+            connections:
+              type: array
+              items:
+                $ref: '#/components/schemas/Visualization3DConnection'
+            rendering_config:
+              type: object
+            professional_features:
+              type: object
+        performance_metrics:
+          type: object
+          properties:
+            processing_time_ms:
+              type: number
+            optimized_for_60fps:
+              type: boolean
+            memory_efficient:
+              type: boolean
+            gpu_accelerated:
+              type: boolean
+        metadata:
+          type: object
+          properties:
+            node_count:
+              type: integer
+            rendering_complexity:
+              type: string
+            interactive_elements:
+              type: boolean
+        links:
+          $ref: '#/components/schemas/HATEOASLinks'
+
+    Visualization3DNode:
+      type: object
+      required:
+        - id
+        - position
+        - type
+        - size
+        - label
+      properties:
+        id:
+          type: string
+        position:
+          type: array
+          items:
+            type: number
+          minItems: 3
+          maxItems: 3
+          description: 3D position coordinates [x, y, z]
+        type:
+          type: string
+          enum: [knowledge_atom, concept, relationship, insight, opportunity]
+        size:
+          type: number
+          minimum: 0.1
+          maximum: 10.0
+        color:
+          type: string
+          pattern: '^#[0-9A-Fa-f]{6}$'
+        opacity:
+          type: number
+          minimum: 0.0
+          maximum: 1.0
+        label:
+          type: string
+        metadata:
+          type: object
+        connections:
+          type: array
+          items:
+            type: string
+        importance_score:
+          type: number
+          minimum: 0
+          maximum: 1
+
+    Visualization3DConnection:
+      type: object
+      required:
+        - id
+        - source_id
+        - target_id
+        - strength
+        - type
+      properties:
+        id:
+          type: string
+        source_id:
+          type: string
+        target_id:
+          type: string
+        strength:
+          type: number
+          minimum: 0
+          maximum: 1
+        type:
+          type: string
+          enum: [semantic, causal, temporal, hierarchical, collaborative]
+        color:
+          type: string
+          pattern: '^#[0-9A-Fa-f]{6}$'
+        animated:
+          type: boolean
+        bidirectional:
+          type: boolean
+        metadata:
+          type: object
+
+    PerformanceAnalyticsResponse:
+      type: object
+      properties:
+        optimization_status:
+          type: string
+          enum: [active, disabled, maintenance]
+        total_queries_processed:
+          type: integer
+        average_response_time_ms:
+          type: number
+        sub_30ms_achievement_rate:
+          type: number
+          minimum: 0
+          maximum: 1
+        cache_hit_ratio:
+          type: number
+          minimum: 0
+          maximum: 1
+        memory_usage_mb:
+          type: number
+        query_patterns_learned:
+          type: integer
+        optimization_techniques:
+          type: array
+          items:
+            type: string
+
+    QueryStatusResponse:
+      type: object
+      required:
+        - request_id
+        - status
+        - timestamp
+      properties:
+        request_id:
+          type: string
+        status:
+          type: string
+          enum: [queued, processing, completed, failed, cancelled]
+        timestamp:
+          type: string
+          format: date-time
+        progress:
+          type: object
+          properties:
+            percentage:
+              type: number
+              minimum: 0
+              maximum: 100
+            current_stage:
+              type: string
+            estimated_completion:
+              type: string
+              format: date-time
+        results:
+          $ref: '#/components/schemas/DKGIntelligenceResponse'
+        error:
+          $ref: '#/components/schemas/ErrorResponse'
+        links:
+          $ref: '#/components/schemas/HATEOASLinks'
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+        - message
+        - timestamp
+      properties:
+        error:
+          type: string
+          description: Error code
+        message:
+          type: string
+          description: Human-readable error message
+        details:
+          type: object
+          description: Additional error details
+        request_id:
+          type: string
+          description: Request identifier for debugging
+        timestamp:
+          type: string
+          format: date-time
+        retry_after:
+          type: integer
+          description: Seconds to wait before retrying
+        documentation_url:
+          type: string
+          format: uri
+          description: Link to relevant documentation
+
+    ValidationErrorResponse:
+      allOf:
+        - $ref: '#/components/schemas/ErrorResponse'
+        - type: object
+          properties:
+            field_errors:
+              type: array
+              items:
+                type: object
+                properties:
+                  field:
+                    type: string
+                  message:
+                    type: string
+                  value:
+                    description: Invalid value
+                  constraint:
+                    type: string
+
+tags:
+  - name: Health & Status
+    description: System health monitoring and status endpoints
+  - name: Intelligence Queries
+    description: Core knowledge graph intelligence queries
+  - name: Fortune 500 Intelligence
+    description: Business opportunity discovery and analysis
+  - name: 3D Visualization
+    description: Interactive knowledge graph visualization
+  - name: Analytics & Monitoring
+    description: Performance analytics and system monitoring
+  - name: Query Management
+    description: Query lifecycle and result management
+  - name: Data Export
+    description: Data export and reporting capabilities
+
+externalDocs:
+  description: DKG v3 Professional API Documentation
+  url: https://docs.aia.ai/dkg-v3-professional

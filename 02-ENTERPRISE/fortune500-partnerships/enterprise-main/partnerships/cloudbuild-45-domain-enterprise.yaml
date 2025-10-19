@@ -1,0 +1,206 @@
+steps:
+  # Build AIA Backend Enterprise Image
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'build-backend'
+    args:
+      - 'build'
+      - '-t'
+      - 'gcr.io/${PROJECT_ID}/aia-backend:enterprise-v3.0'
+      - '-f'
+      - 'aia/Dockerfile.enterprise'
+      - '.'
+    env:
+      - 'DOCKER_BUILDKIT=1'
+
+  # Build Frontend Sentient Canvas Image
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'build-frontend'
+    args:
+      - 'build'
+      - '-t'
+      - 'gcr.io/${PROJECT_ID}/aia-frontend:sentient-canvas-v3.0'
+      - '-f'
+      - 'frontend/Dockerfile.sentient-canvas'
+      - 'frontend/'
+    env:
+      - 'DOCKER_BUILDKIT=1'
+
+  # Build Analytics Neural Intelligence Image
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'build-analytics'
+    args:
+      - 'build'
+      - '-t'
+      - 'gcr.io/${PROJECT_ID}/aia-analytics:neural-v3.0'
+      - '-f'
+      - 'aia/analytics/Dockerfile.neural'
+      - 'aia/'
+    env:
+      - 'DOCKER_BUILDKIT=1'
+
+  # Push Backend Image
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'push-backend'
+    args:
+      - 'push'
+      - 'gcr.io/${PROJECT_ID}/aia-backend:enterprise-v3.0'
+    waitFor: ['build-backend']
+
+  # Push Frontend Image
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'push-frontend'
+    args:
+      - 'push'
+      - 'gcr.io/${PROJECT_ID}/aia-frontend:sentient-canvas-v3.0'
+    waitFor: ['build-frontend']
+
+  # Push Analytics Image
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'push-analytics'
+    args:
+      - 'push'
+      - 'gcr.io/${PROJECT_ID}/aia-analytics:neural-v3.0'
+    waitFor: ['build-analytics']
+
+  # Verify Global Static IP exists
+  - name: 'gcr.io/cloud-builders/gcloud'
+    id: 'verify-static-ip'
+    args:
+      - 'compute'
+      - 'addresses'
+      - 'describe'
+      - 'aia-global-ip'
+      - '--global'
+      - '--format=value(address)'
+    waitFor: ['-'] # Run independently
+
+  # Deploy to GKE
+  - name: 'gcr.io/cloud-builders/kubectl'
+    id: 'deploy-to-gke'
+    args:
+      - 'apply'
+      - '-f'
+      - 'k8s-complete-45-domain-deployment.yaml'
+    env:
+      - 'CLOUDSDK_COMPUTE_ZONE=us-central1-a'
+      - 'CLOUDSDK_CONTAINER_CLUSTER=aia-production-us-central1'
+    waitFor: ['push-backend', 'push-frontend', 'push-analytics']
+
+  # Update Deployment Images
+  - name: 'gcr.io/cloud-builders/kubectl'
+    id: 'update-backend-image'
+    args:
+      - 'set'
+      - 'image'
+      - 'deployment/aia-backend-enterprise'
+      - 'aia-backend=gcr.io/${PROJECT_ID}/aia-backend:enterprise-v3.0'
+      - '-n'
+      - 'aia-enterprise-ecosystem'
+    env:
+      - 'CLOUDSDK_COMPUTE_ZONE=us-central1-a'
+      - 'CLOUDSDK_CONTAINER_CLUSTER=aia-production-us-central1'
+    waitFor: ['deploy-to-gke']
+
+  - name: 'gcr.io/cloud-builders/kubectl'
+    id: 'update-frontend-image'
+    args:
+      - 'set'
+      - 'image'
+      - 'deployment/aia-frontend-sentient-canvas'
+      - 'aia-frontend=gcr.io/${PROJECT_ID}/aia-frontend:sentient-canvas-v3.0'
+      - '-n'
+      - 'aia-enterprise-ecosystem'
+    env:
+      - 'CLOUDSDK_COMPUTE_ZONE=us-central1-a'
+      - 'CLOUDSDK_CONTAINER_CLUSTER=aia-production-us-central1'
+    waitFor: ['deploy-to-gke']
+
+  - name: 'gcr.io/cloud-builders/kubectl'
+    id: 'update-analytics-image'
+    args:
+      - 'set'
+      - 'image'
+      - 'deployment/aia-analytics-intelligence'
+      - 'analytics-engine=gcr.io/${PROJECT_ID}/aia-analytics:neural-v3.0'
+      - '-n'
+      - 'aia-enterprise-ecosystem'
+    env:
+      - 'CLOUDSDK_COMPUTE_ZONE=us-central1-a'
+      - 'CLOUDSDK_CONTAINER_CLUSTER=aia-production-us-central1'
+    waitFor: ['deploy-to-gke']
+
+  # Verify Deployment Status
+  - name: 'gcr.io/cloud-builders/kubectl'
+    id: 'verify-deployment'
+    args:
+      - 'get'
+      - 'pods,services,ingress'
+      - '-n'
+      - 'aia-enterprise-ecosystem'
+    env:
+      - 'CLOUDSDK_COMPUTE_ZONE=us-central1-a'
+      - 'CLOUDSDK_CONTAINER_CLUSTER=aia-production-us-central1'
+    waitFor: ['update-backend-image', 'update-frontend-image', 'update-analytics-image']
+
+  # Configure DNS for all domains
+  - name: 'gcr.io/cloud-builders/gcloud'
+    id: 'get-external-ip'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        # Get the external IP
+        EXTERNAL_IP=$$(gcloud compute addresses describe aia-global-ip --global --format="value(address)")
+        echo "External IP: $$EXTERNAL_IP"
+
+        # Create DNS configuration script
+        cat > configure_dns.sh << 'EOF'
+        #!/bin/bash
+        EXTERNAL_IP=$$1
+
+        # List of all domains to configure
+        DOMAINS=(
+          "013a.tech"
+          "enterprise.013a.tech"
+          "get.013a.tech"
+          "demo.013a.tech"
+          "trial.013a.tech"
+          "pricing.013a.tech"
+          "finance.013a.tech"
+          "healthcare.013a.tech"
+          "retail.013a.tech"
+          "manufacturing.013a.tech"
+          "partners.013a.tech"
+          "developers.013a.tech"
+          "resellers.013a.tech"
+          "integrations.013a.tech"
+          "insights.013a.tech"
+          "blog.013a.tech"
+          "resources.013a.tech"
+          "events.013a.tech"
+          "success.013a.tech"
+          "support.013a.tech"
+          "training.013a.tech"
+          "community.013a.tech"
+        )
+
+        echo "Configure these DNS records manually or via Cloudflare API:"
+        for domain in "$${DOMAINS[@]}"; do
+          echo "A record: $$domain -> $$EXTERNAL_IP"
+        done
+        EOF
+
+        chmod +x configure_dns.sh
+        ./configure_dns.sh "$$EXTERNAL_IP"
+    waitFor: ['verify-static-ip']
+
+options:
+  machineType: 'E2_HIGHCPU_8'
+  diskSizeGb: '100'
+
+images:
+  - 'gcr.io/${PROJECT_ID}/aia-backend:enterprise-v3.0'
+  - 'gcr.io/${PROJECT_ID}/aia-frontend:sentient-canvas-v3.0'
+  - 'gcr.io/${PROJECT_ID}/aia-analytics:neural-v3.0'
+
+timeout: '3600s'

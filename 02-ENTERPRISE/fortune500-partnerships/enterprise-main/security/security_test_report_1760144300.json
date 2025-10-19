@@ -1,0 +1,76 @@
+{
+  "test_summary": {
+    "total_tests": 15,
+    "passed_tests": 4,
+    "failed_tests": 11,
+    "success_rate": 0.26666666666666666,
+    "total_execution_time": 0.07328486442565918,
+    "timestamp": "2025-10-11T00:58:20.974659"
+  },
+  "security_posture": {
+    "overall_score": 0,
+    "security_grade": "F",
+    "critical_failures": 5,
+    "high_priority_failures": 5
+  },
+  "category_summaries": {
+    "Infrastructure": {
+      "total": 1,
+      "passed": 0,
+      "failed": 1,
+      "success_rate": 0.0
+    },
+    "Network Security": {
+      "total": 3,
+      "passed": 2,
+      "failed": 1,
+      "success_rate": 0.6666666666666666
+    },
+    "Authentication": {
+      "total": 1,
+      "passed": 0,
+      "failed": 1,
+      "success_rate": 0.0
+    },
+    "WAF Protection": {
+      "total": 1,
+      "passed": 0,
+      "failed": 1,
+      "success_rate": 0.0
+    },
+    "Data Protection": {
+      "total": 1,
+      "passed": 0,
+      "failed": 1,
+      "success_rate": 0.0
+    },
+    "Monitoring": {
+      "total": 1,
+      "passed": 0,
+      "failed": 1,
+      "success_rate": 0.0
+    },
+    "Compliance": {
+      "total": 3,
+      "passed": 0,
+      "failed": 3,
+      "success_rate": 0.0
+    },
+    "External Access": {
+      "total": 3,
+      "passed": 2,
+      "failed": 1,
+      "success_rate": 0.6666666666666666
+    },
+    "Performance": {
+      "total": 1,
+      "passed": 0,
+      "failed": 1,
+      "success_rate": 0.0
+    }
+  },
+  "detailed_results": [
+    {
+      "test_name": "component_initialization",
+      "category": "Infrastructure",
+      "severity": 

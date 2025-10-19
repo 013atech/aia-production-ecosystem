@@ -1,0 +1,382 @@
+# Fortune 500 Enterprise Integrations Deployment
+# Enhanced with Apple Vision, Google Cloud, JPMorgan, and EY Global integrations
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: aia-enterprise
+  labels:
+    app: aia-enterprise
+    environment: production
+
+---
+# Enterprise Configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: enterprise-config
+  namespace: aia-enterprise
+data:
+  APPLE_VISION_API_ENDPOINT: "https://api.apple.com/vision/v1"
+  GOOGLE_CLOUD_PROJECT: "aia-system-prod-1759055445"
+  JPMORGAN_API_ENDPOINT: "https://api.jpmorgan.com/enterprise/v1"
+  EY_GLOBAL_API_ENDPOINT: "https://api.ey.com/analytics/v1"
+  ENTERPRISE_MODE: "production"
+  COMPLIANCE_LEVEL: "SOX_COMPLIANCE"
+
+---
+# Enterprise Secrets
+apiVersion: v1
+kind: Secret
+metadata:
+  name: enterprise-secrets
+  namespace: aia-enterprise
+type: Opaque
+stringData:
+  APPLE_VISION_API_KEY: "your-apple-vision-key"
+  JPMORGAN_API_KEY: "your-jpmorgan-key"
+  EY_GLOBAL_API_KEY: "your-ey-global-key"
+  GOOGLE_CLOUD_SERVICE_ACCOUNT: |
+    {
+      "type": "service_account",
+      "project_id": "aia-system-prod-1759055445"
+    }
+
+---
+# Fortune 500 Analytics Engine
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fortune500-analytics-engine
+  namespace: aia-enterprise
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: fortune500-analytics-engine
+  template:
+    metadata:
+      labels:
+        app: fortune500-analytics-engine
+    spec:
+      containers:
+      - name: analytics-engine
+        image: us-central1-docker.pkg.dev/aia-system-prod-1759055445/aia-repo/aia-backend:latest
+        ports:
+        - containerPort: 8010
+        env:
+        - name: SERVICE_MODE
+          value: "fortune500-analytics"
+        - name: DATABASE_URL
+          value: "postgresql://postgres:$(DATABASE_PASSWORD)@$(DATABASE_HOST):5432/aia_analytics"
+        envFrom:
+        - configMapRef:
+            name: enterprise-config
+        - secretRef:
+            name: enterprise-secrets
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        volumeMounts:
+        - name: analytics-cache
+          mountPath: /tmp/analytics-cache
+      volumes:
+      - name: analytics-cache
+        emptyDir:
+          sizeLimit: "10Gi"
+
+---
+# Enterprise Reporting API
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: enterprise-reporting-api
+  namespace: aia-enterprise
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: enterprise-reporting-api
+  template:
+    metadata:
+      labels:
+        app: enterprise-reporting-api
+    spec:
+      containers:
+      - name: reporting-api
+        image: us-central1-docker.pkg.dev/aia-system-prod-1759055445/aia-repo/aia-backend:latest
+        ports:
+        - containerPort: 8011
+        env:
+        - name: SERVICE_MODE
+          value: "enterprise-reporting"
+        - name: DATABASE_URL
+          value: "postgresql://postgres:$(DATABASE_PASSWORD)@$(DATABASE_HOST):5432/aia_analytics"
+        envFrom:
+        - configMapRef:
+            name: enterprise-config
+        - secretRef:
+            name: enterprise-secrets
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+
+---
+# Fortune 500 Workflow Automation
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fortune500-workflow-automation
+  namespace: aia-enterprise
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: fortune500-workflow-automation
+  template:
+    metadata:
+      labels:
+        app: fortune500-workflow-automation
+    spec:
+      containers:
+      - name: workflow-automation
+        image: us-central1-docker.pkg.dev/aia-system-prod-1759055445/aia-repo/aia-backend:latest
+        ports:
+        - containerPort: 8012
+        env:
+        - name: SERVICE_MODE
+          value: "workflow-automation"
+        - name: DATABASE_URL
+          value: "postgresql://postgres:$(DATABASE_PASSWORD)@$(DATABASE_HOST):5432/aia_main"
+        envFrom:
+        - configMapRef:
+            name: enterprise-config
+        - secretRef:
+            name: enterprise-secrets
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+
+---
+# Apple Vision Integration Service
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: apple-vision-integration
+  namespace: aia-enterprise
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: apple-vision-integration
+  template:
+    metadata:
+      labels:
+        app: apple-vision-integration
+    spec:
+      containers:
+      - name: apple-vision
+        image: us-central1-docker.pkg.dev/aia-system-prod-1759055445/aia-repo/aia-backend:latest
+        ports:
+        - containerPort: 8013
+        env:
+        - name: SERVICE_MODE
+          value: "apple-vision-integration"
+        - name: APPLE_VISION_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: enterprise-secrets
+              key: APPLE_VISION_API_KEY
+        envFrom:
+        - configMapRef:
+            name: enterprise-config
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+
+---
+# Services for Enterprise Components
+apiVersion: v1
+kind: Service
+metadata:
+  name: fortune500-analytics-engine-service
+  namespace: aia-enterprise
+spec:
+  selector:
+    app: fortune500-analytics-engine
+  ports:
+  - port: 8010
+    targetPort: 8010
+  type: ClusterIP
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: enterprise-reporting-api-service
+  namespace: aia-enterprise
+spec:
+  selector:
+    app: enterprise-reporting-api
+  ports:
+  - port: 8011
+    targetPort: 8011
+  type: ClusterIP
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: fortune500-workflow-automation-service
+  namespace: aia-enterprise
+spec:
+  selector:
+    app: fortune500-workflow-automation
+  ports:
+  - port: 8012
+    targetPort: 8012
+  type: ClusterIP
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: apple-vision-integration-service
+  namespace: aia-enterprise
+spec:
+  selector:
+    app: apple-vision-integration
+  ports:
+  - port: 8013
+    targetPort: 8013
+  type: ClusterIP
+
+---
+# Enterprise Ingress with Advanced Routing
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: enterprise-ingress
+  namespace: aia-enterprise
+  annotations:
+    kubernetes.io/ingress.class: "gce"
+    kubernetes.io/ingress.global-static-ip-name: "aia-enterprise-ip"
+    ingress.gcp.kubernetes.io/managed-certificates: "aia-enterprise-ssl-cert"
+spec:
+  rules:
+  - host: enterprise.013a.tech
+    http:
+      paths:
+      - path: /analytics/*
+        pathType: Prefix
+        backend:
+          service:
+            name: fortune500-analytics-engine-service
+            port:
+              number: 8010
+      - path: /reporting/*
+        pathType: Prefix
+        backend:
+          service:
+            name: enterprise-reporting-api-service
+            port:
+              number: 8011
+      - path: /workflow/*
+        pathType: Prefix
+        backend:
+          service:
+            name: fortune500-workflow-automation-service
+            port:
+              number: 8012
+      - path: /apple-vision/*
+        pathType: Prefix
+        backend:
+          service:
+            name: apple-vision-integration-service
+            port:
+              number: 8013
+
+---
+# Managed Certificate for Enterprise SSL
+apiVersion: networking.gcp.cloud.google.com/v1
+kind: ManagedCertificate
+metadata:
+  name: aia-enterprise-ssl-cert
+  namespace: aia-enterprise
+spec:
+  domains:
+  - enterprise.013a.tech
+
+---
+# HorizontalPodAutoscaler for Analytics Engine
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: fortune500-analytics-hpa
+  namespace: aia-enterprise
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: fortune500-analytics-engine
+  minReplicas: 3
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+
+---
+# NetworkPolicy for Enterprise Security
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: enterprise-network-policy
+  namespace: aia-enterprise
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: aia-production
+    - namespaceSelector:
+        matchLabels:
+          name: monitoring
+  egress:
+  - to: []
+    ports:
+    - protocol: TCP
+      port: 443
+    - protocol: TCP
+      port: 5432
+    - protocol: TCP
+      port: 6379

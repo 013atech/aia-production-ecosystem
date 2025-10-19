@@ -1,0 +1,633 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: enterprise-partner-config
+  namespace: default
+data:
+  nginx.conf: |
+    events {
+        worker_connections 1024;
+    }
+
+    http {
+        upstream aia_backend {
+            server aia-backend-service:8000;
+        }
+
+        upstream aia_frontend {
+            server aia-frontend-service:80;
+        }
+
+        # Rate limiting for enterprise partners
+        limit_req_zone $binary_remote_addr zone=partner_limit:10m rate=100r/s;
+
+        # EY Global Subdomain
+        server {
+            listen 80;
+            server_name ey.013a.tech;
+
+            limit_req zone=partner_limit burst=200 nodelay;
+
+            # Custom EY headers
+            add_header X-Partner "EY-Global" always;
+            add_header X-Security-Level "Enterprise" always;
+            add_header X-Quantum-Secured "true" always;
+
+            # EY-specific analytics
+            access_log /var/log/nginx/ey-access.log;
+            error_log /var/log/nginx/ey-error.log;
+
+            location / {
+                proxy_pass http://aia_frontend;
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Proto $scheme;
+                proxy_set_header X-Partner-Context "EY";
+
+                # Redirect to EY partner dashboard
+                if ($request_uri = "/") {
+                    return 302 /partners/ey;
+                }
+            }
+
+            location /api/ {
+                proxy_pass http://aia_backend/;
+                proxy_set_header X-Partner-ID "ey-global";
+                proxy_set_header X-Security-Context "enterprise";
+            }
+        }
+
+        # JPMorgan Chase Subdomain
+        server {
+            listen 80;
+            server_name jpmorgan.013a.tech;
+
+            limit_req zone=partner_limit burst=500 nodelay;
+
+            # JPM-specific headers
+            add_header X-Partner "JPMorgan-Chase" always;
+            add_header X-Financial-AI "enabled" always;
+            add_header X-Quantum-Security "max" always;
+
+            access_log /var/log/nginx/jpmorgan-access.log;
+            error_log /var/log/nginx/jpmorgan-error.log;
+
+            location / {
+                proxy_pass http://aia_frontend;
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Proto $scheme;
+                proxy_set_header X-Partner-Context "JPMORGAN";
+
+                if ($request_uri = "/") {
+                    return 302 /partners/jpmorgan;
+                }
+            }
+
+            location /api/ {
+                proxy_pass http://aia_backend/;
+                proxy_set_header X-Partner-ID "jpmorgan-chase";
+                proxy_set_header X-Financial-Context "trading";
+                proxy_set_header X-Crypto-Enabled "true";
+            }
+        }
+
+        # Google Cloud Subdomain
+        server {
+            listen 80;
+            server_name gcp.013a.tech;
+
+            limit_req zone=partner_limit burst=300 nodelay;
+
+            # GCP-specific headers
+            add_header X-Partner "Google-Cloud" always;
+            add_header X-Marketplace "enabled" always;
+            add_header X-Workspace-Integration "active" always;
+
+            access_log /var/log/nginx/gcp-access.log;
+            error_log /var/log/nginx/gcp-error.log;
+
+            location / {
+                proxy_pass http://aia_frontend;
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Proto $scheme;
+                proxy_set_header X-Partner-Context "GCP";
+
+                if ($request_uri = "/") {
+                    return 302 /partners/google-cloud;
+                }
+            }
+
+            location /api/ {
+                proxy_pass http://aia_backend/;
+                proxy_set_header X-Partner-ID "google-cloud";
+                proxy_set_header X-Cloud-Context "gcp";
+                proxy_set_header X-PyPAIA-Enabled "true";
+            }
+        }
+
+        # Apple Subdomain
+        server {
+            listen 80;
+            server_name apple.013a.tech;
+
+            limit_req zone=partner_limit burst=400 nodelay;
+
+            # Apple-specific headers
+            add_header X-Partner "Apple-Inc" always;
+            add_header X-Spatial-Computing "visionpro" always;
+            add_header X-Device-Ecosystem "enabled" always;
+
+            access_log /var/log/nginx/apple-access.log;
+            error_log /var/log/nginx/apple-error.log;
+
+            location / {
+                proxy_pass http://aia_frontend;
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Proto $scheme;
+                proxy_set_header X-Partner-Context "APPLE";
+
+                if ($request_uri = "/") {
+                    return 302 /partners/apple;
+                }
+            }
+
+            location /api/ {
+                proxy_pass http://aia_backend/;
+                proxy_Set_header X-Partner-ID "apple-inc";
+                proxy_set_header X-Device-Context "ecosystem";
+                proxy_set_header X-VisionPro-Enabled "true";
+            }
+        }
+
+        # Main domain with partner discovery
+        server {
+            listen 80 default_server;
+            server_name 013a.tech www.013a.tech;
+
+            location / {
+                proxy_pass http://aia_frontend;
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Proto $scheme;
+            }
+
+            location /api/ {
+                proxy_pass http://aia_backend/;
+            }
+        }
+    }
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: enterprise-partner-proxy
+  namespace: default
+  labels:
+    app: enterprise-partner-proxy
+    tier: networking
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: enterprise-partner-proxy
+  template:
+    metadata:
+      labels:
+        app: enterprise-partner-proxy
+    spec:
+      containers:
+      - name: nginx-proxy
+        image: nginx:1.24-alpine
+        ports:
+        - containerPort: 80
+        volumeMounts:
+        - name: nginx-config
+          mountPath: /etc/nginx/nginx.conf
+          subPath: nginx.conf
+        - name: nginx-logs
+          mountPath: /var/log/nginx
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 80
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 80
+          initialDelaySeconds: 5
+          periodSeconds: 5
+      volumes:
+      - name: nginx-config
+        configMap:
+          name: enterprise-partner-config
+      - name: nginx-logs
+        emptyDir: {}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: enterprise-partner-proxy-service
+  namespace: default
+  labels:
+    app: enterprise-partner-proxy
+spec:
+  type: NodePort
+  ports:
+  - port: 80
+    targetPort: 80
+    protocol: TCP
+    name: http
+  selector:
+    app: enterprise-partner-proxy
+
+---
+apiVersion: networking.gke.io/v1
+kind: ManagedCertificate
+metadata:
+  name: enterprise-partner-ssl-cert
+  namespace: default
+spec:
+  domains:
+    - "013a.tech"
+    - "www.013a.tech"
+    - "ey.013a.tech"
+    - "jpmorgan.013a.tech"
+    - "gcp.013a.tech"
+    - "apple.013a.tech"
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: enterprise-partner-ingress
+  namespace: default
+  annotations:
+    kubernetes.io/ingress.global-static-ip-name: "aia-production-ip"
+    networking.gke.io/managed-certificates: "enterprise-partner-ssl-cert"
+    kubernetes.io/ingress.class: "gce"
+    kubernetes.io/ingress.allow-http: "false"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+spec:
+  rules:
+  - host: "013a.tech"
+    http:
+      paths:
+      - path: "/"
+        pathType: Prefix
+        backend:
+          service:
+            name: enterprise-partner-proxy-service
+            port:
+              number: 80
+  - host: "www.013a.tech"
+    http:
+      paths:
+      - path: "/"
+        pathType: Prefix
+        backend:
+          service:
+            name: enterprise-partner-proxy-service
+            port:
+              number: 80
+  - host: "ey.013a.tech"
+    http:
+      paths:
+      - path: "/"
+        pathType: Prefix
+        backend:
+          service:
+            name: enterprise-partner-proxy-service
+            port:
+              number: 80
+  - host: "jpmorgan.013a.tech"
+    http:
+      paths:
+      - path: "/"
+        pathType: Prefix
+        backend:
+          service:
+            name: enterprise-partner-proxy-service
+            port:
+              number: 80
+  - host: "gcp.013a.tech"
+    http:
+      paths:
+      - path: "/"
+        pathType: Prefix
+        backend:
+          service:
+            name: enterprise-partner-proxy-service
+            port:
+              number: 80
+  - host: "apple.013a.tech"
+    http:
+      paths:
+      - path: "/"
+        pathType: Prefix
+        backend:
+          service:
+            name: enterprise-partner-proxy-service
+            port:
+              number: 80
+
+---
+# Quantum Security Layer for Enterprise Partners
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: quantum-security-config
+  namespace: default
+data:
+  security.yaml: |
+    quantum_encryption:
+      enabled: true
+      algorithm: "ML-DSA-65"
+      key_rotation_hours: 24
+
+    partner_security_levels:
+      ey-global:
+        level: "enterprise"
+        encryption: "AES-256-GCM"
+        authentication: "mutual_tls"
+        audit_logging: true
+
+      jpmorgan-chase:
+        level: "financial_max"
+        encryption: "Quantum-AES-512"
+        authentication: "multi_factor"
+        audit_logging: true
+        compliance: ["SOX", "FINRA", "Basel_III"]
+
+      google-cloud:
+        level: "cloud_native"
+        encryption: "AES-256-GCM"
+        authentication: "oauth2_gcp"
+        audit_logging: true
+        integration: "gcp_security_center"
+
+      apple-inc:
+        level: "ecosystem_secured"
+        encryption: "AES-256-GCM"
+        authentication: "apple_id_federation"
+        audit_logging: true
+        device_binding: true
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: quantum-security-service
+  namespace: default
+  labels:
+    app: quantum-security-service
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: quantum-security-service
+  template:
+    metadata:
+      labels:
+        app: quantum-security-service
+    spec:
+      containers:
+      - name: quantum-security
+        image: gcr.io/aia-system-prod-1759055445/quantum-security:latest
+        ports:
+        - containerPort: 8080
+        env:
+        - name: QUANTUM_KEY_STORE
+          valueFrom:
+            secretKeyRef:
+              name: quantum-keys
+              key: master-key
+        - name: SECURITY_LEVEL
+          value: "enterprise"
+        volumeMounts:
+        - name: security-config
+          mountPath: /etc/security/config.yaml
+          subPath: security.yaml
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+      volumes:
+      - name: security-config
+        configMap:
+          name: quantum-security-config
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: quantum-security-service
+  namespace: default
+spec:
+  selector:
+    app: quantum-security-service
+  ports:
+  - port: 8080
+    targetPort: 8080
+    protocol: TCP
+  type: ClusterIP
+
+---
+# Revenue Tracking Service for Enterprise Partners
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: revenue-tracking-service
+  namespace: default
+  labels:
+    app: revenue-tracking-service
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: revenue-tracking-service
+  template:
+    metadata:
+      labels:
+        app: revenue-tracking-service
+    spec:
+      containers:
+      - name: revenue-tracker
+        image: gcr.io/aia-system-prod-1759055445/revenue-tracker:latest
+        ports:
+        - containerPort: 8090
+        env:
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: database-credentials
+              key: url
+        - name: REVENUE_REPORTING_ENABLED
+          value: "true"
+        - name: PARTNER_ANALYTICS_LEVEL
+          value: "detailed"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8090
+          initialDelaySeconds: 30
+          periodSeconds: 10
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: revenue-tracking-service
+  namespace: default
+spec:
+  selector:
+    app: revenue-tracking-service
+  ports:
+  - port: 8090
+    targetPort: 8090
+    protocol: TCP
+  type: ClusterIP
+
+---
+# Enterprise Partner Analytics Dashboard
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: partner-analytics-dashboard
+  namespace: default
+  labels:
+    app: partner-analytics-dashboard
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: partner-analytics-dashboard
+  template:
+    metadata:
+      labels:
+        app: partner-analytics-dashboard
+    spec:
+      containers:
+      - name: analytics-dashboard
+        image: gcr.io/aia-system-prod-1759055445/partner-analytics:latest
+        ports:
+        - containerPort: 3000
+        env:
+        - name: NODE_ENV
+          value: "production"
+        - name: ANALYTICS_DB_URL
+          valueFrom:
+            secretKeyRef:
+              name: analytics-db
+              key: connection-string
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: partner-analytics-service
+  namespace: default
+spec:
+  selector:
+    app: partner-analytics-dashboard
+  ports:
+  - port: 3000
+    targetPort: 3000
+    protocol: TCP
+  type: ClusterIP
+
+---
+# Monitoring and Alerting for Enterprise Partners
+apiVersion: v1
+kind: ServiceMonitor
+metadata:
+  name: enterprise-partner-monitoring
+  namespace: default
+  labels:
+    app: enterprise-partners
+spec:
+  selector:
+    matchLabels:
+      monitoring: enterprise-partners
+  endpoints:
+  - port: metrics
+    interval: 30s
+    path: /metrics
+
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: enterprise-partner-alerts
+  namespace: default
+  labels:
+    app: enterprise-partners
+spec:
+  groups:
+  - name: enterprise_partners
+    rules:
+    - alert: PartnerDashboardDown
+      expr: up{job="enterprise-partner-proxy"} == 0
+      for: 2m
+      labels:
+        severity: critical
+        partner: all
+      annotations:
+        summary: "Enterprise partner dashboard is down"
+        description: "Partner dashboard has been down for more than 2 minutes"
+
+    - alert: QuantumSecurityServiceDown
+      expr: up{job="quantum-security-service"} == 0
+      for: 1m
+      labels:
+        severity: critical
+        security: quantum
+      annotations:
+        summary: "Quantum security service is down"
+        description: "Critical security service outage affecting all partners"
+
+    - alert: HighPartnerLatency
+      expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job="enterprise-partner-proxy"}[5m])) > 2
+      for: 5m
+      labels:
+        severity: warning
+        performance: latency
+      annotations:
+        summary: "High latency on partner dashboard"
+        description: "95th percentile latency is above 2s for {{ $labels.partner }}"

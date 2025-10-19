@@ -1,0 +1,30 @@
+# AIA System - Minimal Core Dependencies
+# Only essential packages for basic API functionality
+
+# Core Web Framework
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+pydantic==2.5.2
+
+# Database
+sqlalchemy[asyncio]==2.0.23
+asyncpg==0.29.0
+
+# Redis
+redis==5.0.1
+
+# Security
+cryptography>=46.0.0
+python-jose[cryptography]==3.3.0
+
+# Google Cloud
+google-cloud-storage==2.13.0
+google-cloud-secretmanager==2.18.1
+
+# Basic utilities
+requests==2.31.0
+python-dotenv==1.0.0
+structlog==23.2.0
+
+# Async support
+aiofiles==23.2.1

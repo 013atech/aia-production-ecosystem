@@ -1,0 +1,25 @@
+{
+  "timestamp": "2025-09-18T18:30:25.529Z",
+  "url": "https://013a.tech",
+  "testResults": {
+    "landing-page-load": {
+      "status": "completed",
+      "details": [
+        {
+          "check": "HTTP Status",
+          "result": "PASS",
+          "value": 200
+        },
+        {
+          "check": "Page Title",
+          "result": "PASS",
+          "value": "013a - Advanced Intelligence Architecture"
+        }
+      ],
+      "score": 80
+    }
+  },
+  "overallScore": 0,
+  "criticalIssues": [],
+  "recommendations": []
+}

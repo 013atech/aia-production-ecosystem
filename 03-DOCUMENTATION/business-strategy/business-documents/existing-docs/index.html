@@ -1,0 +1,133 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AIA Platform API Documentation</title>
+    <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@4.15.5/swagger-ui.css">
+    <style>
+        body { margin: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem;
+            text-align: center;
+        }
+        .header h1 { margin: 0; font-size: 2.5rem; font-weight: 300; }
+        .header p { margin: 0.5rem 0 0 0; opacity: 0.9; }
+        .enterprise-badge {
+            display: inline-block;
+            background: #ffd700;
+            color: #333;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            margin-left: 1rem;
+        }
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            padding: 2rem;
+            background: #f8f9fa;
+        }
+        .feature-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border-left: 4px solid #667eea;
+        }
+        .feature-card h3 { margin: 0 0 1rem 0; color: #333; }
+        .feature-list { list-style: none; padding: 0; }
+        .feature-list li { padding: 0.25rem 0; color: #666; }
+        .feature-list li:before { content: "✓ "; color: #28a745; font-weight: bold; }
+        .swagger-ui { max-width: none; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>AIA Platform API<span class="enterprise-badge">v2.0 Enterprise</span></h1>
+        <p>Enterprise-Grade Neural Intelligence Platform with Fortune 500 Integrations</p>
+        <p>🚀 Quantum-Enhanced AI • 🏢 Fortune 500 Ready • 🧠 Neural Intelligence • 🥽 3D Analytics</p>
+    </div>
+
+    <div class="features-grid">
+        <div class="feature-card">
+            <h3>🧠 Neural Intelligence</h3>
+            <ul class="feature-list">
+                <li>Quantum-enhanced AI agents</li>
+                <li>Cognitive behavioral profiles</li>
+                <li>Advanced pattern recognition</li>
+                <li>Self-learning capabilities</li>
+            </ul>
+        </div>
+
+        <div class="feature-card">
+            <h3>🏢 Fortune 500 Connectors</h3>
+            <ul class="feature-list">
+                <li>Pre-built enterprise integrations</li>
+                <li>SSO authentication support</li>
+                <li>Real-time data synchronization</li>
+                <li>Compliance-ready security</li>
+            </ul>
+        </div>
+
+        <div class="feature-card">
+            <h3>🥽 3D Analytics & WebXR</h3>
+            <ul class="feature-list">
+                <li>Immersive data visualizations</li>
+                <li>VR/AR analytics experiences</li>
+                <li>Interactive 3D dashboards</li>
+                <li>Multi-device compatibility</li>
+            </ul>
+        </div>
+
+        <div class="feature-card">
+            <h3>🤝 A2A Marketplace</h3>
+            <ul class="feature-list">
+                <li>Agent knowledge trading</li>
+                <li>Monetize AI capabilities</li>
+                <li>Enterprise knowledge sharing</li>
+                <li>Quality-assured algorithms</li>
+            </ul>
+        </div>
+    </div>
+
+    <div id="swagger-ui"></div>
+
+    <script src="https://unpkg.com/swagger-ui-dist@4.15.5/swagger-ui-bundle.js"></script>
+    <script src="https://unpkg.com/swagger-ui-dist@4.15.5/swagger-ui-standalone-preset.js"></script>
+    <script>
+        const spec = {"components": {"schemas": {"EnterpriseUser": {"properties": {"created_at": {"format": "date-time", "type": "string"}, "department": {"type": "string"}, "email": {"format": "email", "type": "string"}, "enterprise_features": {"items": {"type": "string"}, "type": "array"}, "id": {"type": "string"}, "name": {"type": "string"}, "role": {"type": "string"}}, "type": "object"}, "Error": {"properties": {"code": {"type": "string"}, "error": {"type": "string"}, "message": {"type": "string"}, "timestamp": {"format": "date-time", "type": "string"}}, "type": "object"}}, "securitySchemes": {"ApiKeyAuth": {"description": "API key for enterprise customers", "in": "header", "name": "X-API-Key", "type": "apiKey"}, "BearerAuth": {"bearerFormat": "JWT", "description": "Enterprise JWT token authentication", "scheme": "bearer", "type": "http"}}}, "info": {"contact": {"email": "enterprise@013a.tech", "name": "Enterprise Support", "url": "https://013a.tech/support"}, "description": "Enterprise-grade AI platform API with neural intelligence, Fortune 500 integrations, and 3D analytics capabilities.", "license": {"name": "Enterprise License", "url": "https://013a.tech/license/enterprise"}, "title": "AIA Platform API", "version": "v2.0 Enterprise"}, "openapi": "3.0.3", "paths": {"/api/v2/analytics/3d/visualizations": {"post": {"description": "Generate immersive 3D data visualizations with WebXR support", "operationId": "post__api_v2_analytics_3d_visualizations", "requestBody": {"content": {"application/json": {"schema": {"properties": {"dataset": {"description": "Data to visualize", "type": "object"}, "enterprise_branding": {"description": "Custom branding configuration", "type": "object"}, "visualization_type": {"enum": ["scatter3d", "heatmap3d", "network3d", "timeseries3d"], "type": "string"}, "webxr_enabled": {"default": false, "type": "boolean"}}, "required": ["dataset", "visualization_type"], "type": "object"}}}, "required": true}, "responses": {"200": {"description": "Success"}}, "security": [{"BearerAuth": []}], "summary": "Create 3D Data Visualization", "tags": ["3D Analytics \u0026 WebXR"], "x-enterprise-features": {"features": ["WebXR Support", "Custom Branding", "Advanced Visualizations"], "integrations": ["VR Headsets", "Enterprise Displays"]}}}, "/api/v2/auth/enterprise/login": {"post": {"description": "Authenticate enterprise users with SSO integration (Okta, Azure AD, Google Workspace)", "operationId": "post__api_v2_auth_enterprise_login", "requestBody": {"content": {"application/json": {"schema": {"properties": {"domain": {"example": "company.okta.com", "type": "string"}, "sso_provider": {"enum": ["okta", "azure_ad", "google"], "type": "string"}, "token": {"description": "SSO authentication token", "type": "string"}}, "required": ["sso_provider", "domain", "token"], "type": "object"}}}, "required": true}, "responses": {"200": {"content": {"access_token": "string", "enterprise_features": ["list"]}, "description": "Authentication successful"}, "401": {"description": "Authentication failed"}, "403": {"description": "Enterprise license required"}}, "security": [{"BearerAuth": []}], "summary": "Enterprise SSO Authentication", "tags": ["Authentication \u0026 Users"], "x-enterprise-features": {"features": ["SSO Integration", "Multi-tenant Security"], "integrations": ["Okta", "Azure AD", "Google Workspace"]}}}, "/api/v2/connectors/fortune500": {"get": {"description": "Get list of pre-built enterprise system connectors", "operationId": "get__api_v2_connectors_fortune500", "responses": {"200": {"description": "Connectors retrieved successfully"}}, "security": [{"BearerAuth": []}], "summary": "List Available Fortune 500 Connectors", "tags": ["Enterprise Connectors"], "x-enterprise-features": {"features": [], "integrations": ["Salesforce", "SAP", "Oracle", "Microsoft", "ServiceNow"]}}}, "/api/v2/marketplace/knowledge": {"get": {"description": "Discover and purchase agent knowledge from A2A marketplace", "operationId": "get__api_v2_marketplace_knowledge", "parameters": [{"in": "query", "name": "category", "type": "string"}, {"in": "query", "name": "price_min", "type": "number"}, {"in": "query", "name": "price_max", "type": "number"}, {"default": false, "in": "query", "name": "enterprise_only", "type": "boolean"}], "responses": {"200": {"description": "Knowledge listings retrieved"}, "402": {"description": "Insufficient AIA tokens"}}, "security": [{"BearerAuth": []}], "summary": "Browse Agent Knowledge Marketplace", "tags": ["A2A Marketplace"], "x-enterprise-features": {"features": ["Premium Knowledge Access", "Bulk Purchase Options"], "integrations": ["Enterprise Payment Systems"]}}}, "/api/v2/neural/agents": {"post": {"description": "Deploy AI agent with quantum-enhanced neural intelligence capabilities", "operationId": "post__api_v2_neural_agents", "requestBody": {"content": {"application/json": {"schema": {"properties": {"capabilities": {"description": "Agent capabilities", "items": {"type": "string"}, "type": "array"}, "enterprise_integrations": {"items": {"type": "string"}, "type": "array"}, "name": {"description": "Agent name", "type": "string"}, "neural_config": {"properties": {"cognitive_profile": {"enum": ["analytical", "creative", "hybrid"], "type": "string"}, "learning_rate": {"maximum": 0.1, "minimum": 0.001, "type": "number"}, "quantum_enhanced": {"default": true, "type": "boolean"}}, "type": "object"}}, "required": ["name", "capabilities"], "type": "object"}}}, "required": true}, "responses": {"200": {"description": "Success"}}, "security": [{"BearerAuth": []}], "summary": "Create Neural-Enhanced Agent", "tags": ["Neural Intelligence"], "x-enterprise-features": {"features": ["Quantum Enhancement", "Cognitive Profiles", "Enterprise Connectors"], "integrations": ["Salesforce", "Tableau", "Power BI", "SAP"]}}}, "/api/v2/users/enterprise": {"get": {"description": "Retrieve paginated list of enterprise users with advanced filtering", "operationId": "get__api_v2_users_enterprise", "parameters": [{"default": 1, "in": "query", "name": "page", "type": "integer"}, {"default": 50, "in": "query", "maximum": 1000, "name": "limit", "type": "integer"}, {"description": "Filter by department", "in": "query", "name": "department", "type": "string"}, {"description": "Filter by user role", "in": "query", "name": "role", "type": "string"}, {"enum": ["active", "inactive", "pending"], "in": "query", "name": "status", "type": "string"}], "responses": {"200": {"description": "Users retrieved successfully"}, "403": {"description": "Insufficient permissions"}}, "security": [{"BearerAuth": []}], "summary": "List Enterprise Users", "tags": ["Authentication \u0026 Users"], "x-enterprise-features": {"features": ["Advanced User Management", "Department Filtering", "Role-based Access"], "integrations": ["Active Directory", "LDAP", "SCIM"]}}}}, "security": [{"BearerAuth": []}, {"ApiKeyAuth": []}], "servers": [{"description": "Production API Server", "url": "https://api.013a.tech/v2"}, {"description": "Staging Environment", "url": "https://staging-api.013a.tech/v2"}], "tags": [{"description": "Enterprise authentication and user management", "externalDocs": {"description": "Authentication \u0026 Users Documentation", "url": "https://docs.013a.tech/authentication-\u0026-users"}, "name": "Authentication \u0026 Users"}, {"description": "AI agents with quantum-enhanced capabilities", "externalDocs": {"description": "Neural Intelligence Documentation", "url": "https://docs.013a.tech/neural-intelligence"}, "name": "Neural Intelligence"}, {"description": "Agent-to-agent knowledge trading platform", "externalDocs": {"description": "A2A Marketplace Documentation", "url": "https://docs.013a.tech/a2a-marketplace"}, "name": "A2A Marketplace"}, {"description": "Immersive data visualization and VR/AR experiences", "externalDocs": {"description": "3D Analytics \u0026 WebXR Documentation", "url": "https://docs.013a.tech/3d-analytics-\u0026-webxr"}, "name": "3D Analytics \u0026 WebXR"}, {"description": "Pre-built Fortune 500 system integrations", "externalDocs": {"description": "Enterprise Connectors Documentation", "url": "https://docs.013a.tech/enterprise-connectors"}, "name": "Enterprise Connectors"}]};
+
+        SwaggerUIBundle({
+            spec: spec,
+            dom_id: '#swagger-ui',
+            deepLinking: true,
+            presets: [
+                SwaggerUIBundle.presets.apis,
+                SwaggerUIStandalonePreset
+            ],
+            plugins: [
+                SwaggerUIBundle.plugins.DownloadUrl
+            ],
+            layout: "StandaloneLayout",
+            tryItOutEnabled: true,
+            requestInterceptor: function(req) {
+                // Add enterprise headers
+                req.headers['X-Enterprise-Client'] = 'AIA-SDK';
+                return req;
+            },
+            responseInterceptor: function(res) {
+                // Log enterprise API usage
+                console.log('Enterprise API Response:', res.status);
+                return res;
+            }
+        });
+    </script>
+</body>
+</html>
+        

@@ -1,0 +1,658 @@
+---
+# ENTERPRISE ALERTING WITH SLO-BASED POLICIES
+# Intelligent Alert Management for Multi-Agent System
+# Predictive Alerting with Machine Learning Integration
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: alertmanager-enterprise
+  namespace: aia-observability
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: alertmanager-enterprise
+  template:
+    metadata:
+      labels:
+        app: alertmanager-enterprise
+    spec:
+      containers:
+      - name: alertmanager
+        image: prom/alertmanager:v0.26.0
+        ports:
+        - containerPort: 9093
+        args:
+        - --config.file=/etc/alertmanager/config.yml
+        - --storage.path=/alertmanager
+        - --web.listen-address=:9093
+        - --web.external-url=http://alertmanager.aia-observability.svc.cluster.local:9093
+        - --cluster.listen-address=0.0.0.0:9094
+        - --cluster.peer=alertmanager-enterprise-0.alertmanager-enterprise.aia-observability.svc.cluster.local:9094
+        - --cluster.peer=alertmanager-enterprise-1.alertmanager-enterprise.aia-observability.svc.cluster.local:9094
+        - --cluster.peer=alertmanager-enterprise-2.alertmanager-enterprise.aia-observability.svc.cluster.local:9094
+        resources:
+          requests:
+            memory: 256Mi
+            cpu: 100m
+          limits:
+            memory: 512Mi
+            cpu: 200m
+        volumeMounts:
+        - name: alertmanager-config
+          mountPath: /etc/alertmanager
+        - name: alertmanager-storage
+          mountPath: /alertmanager
+        readinessProbe:
+          httpGet:
+            path: /-/ready
+            port: 9093
+          initialDelaySeconds: 30
+        livenessProbe:
+          httpGet:
+            path: /-/healthy
+            port: 9093
+          initialDelaySeconds: 30
+      volumes:
+      - name: alertmanager-config
+        configMap:
+          name: alertmanager-config
+      - name: alertmanager-storage
+        emptyDir: {}
+---
+# AlertManager Configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: alertmanager-config
+  namespace: aia-observability
+data:
+  config.yml: |
+    global:
+      smtp_smarthost: 'localhost:587'
+      smtp_from: 'aia-alerts@013a.tech'
+      resolve_timeout: 5m
+
+    # Alert routing tree
+    route:
+      group_by: ['alertname', 'cluster', 'service']
+      group_wait: 30s
+      group_interval: 5m
+      repeat_interval: 12h
+      receiver: 'enterprise-team'
+      routes:
+
+      # Critical SLO Breaches - Immediate escalation
+      - match:
+          severity: critical
+          slo_breach: "true"
+        receiver: 'slo-critical-escalation'
+        group_wait: 0s
+        repeat_interval: 5m
+
+      # Multi-Agent System specific alerts
+      - match_re:
+          service: '^aia-(agent|orchestration|coordination).*'
+        receiver: 'multi-agent-team'
+        routes:
+        - match:
+            alertname: 'AgentCoordinationFailure'
+          receiver: 'agent-coordination-escalation'
+        - match:
+            alertname: 'KnowledgeGraphCorruption'
+          receiver: 'data-integrity-team'
+
+      # Database alerts
+      - match_re:
+          service: '^(timescaledb|redis|neo4j).*'
+        receiver: 'database-team'
+        routes:
+        - match:
+            severity: critical
+          receiver: 'database-critical-escalation'
+
+      # Security alerts
+      - match_re:
+          alertname: '^Security.*'
+        receiver: 'security-team'
+        group_wait: 0s
+        repeat_interval: 1m
+
+      # Payment system alerts
+      - match_re:
+          service: '^aia-payment.*'
+        receiver: 'fintech-team'
+        routes:
+        - match:
+            alertname: 'PaymentProcessingFailure'
+          receiver: 'payment-critical-escalation'
+
+      # Enterprise integration alerts
+      - match_re:
+          service: '^aia-(ey|jpmorgan|google|apple).*'
+        receiver: 'enterprise-integration-team'
+
+    # Alert receivers and notification methods
+    receivers:
+    - name: 'enterprise-team'
+      slack_configs:
+      - api_url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
+        channel: '#aia-alerts'
+        title: 'AIA Enterprise Alert'
+        text: |
+          {{ range .Alerts }}
+          *Alert:* {{ .Annotations.summary }}
+          *Description:* {{ .Annotations.description }}
+          *Severity:* {{ .Labels.severity }}
+          *Service:* {{ .Labels.service }}
+          {{ end }}
+      email_configs:
+      - to: 'aia-team@013a.tech'
+        subject: 'AIA Alert: {{ .GroupLabels.alertname }}'
+        body: |
+          {{ range .Alerts }}
+          Alert: {{ .Annotations.summary }}
+          Description: {{ .Annotations.description }}
+          Labels: {{ range .Labels.SortedPairs }}{{ .Name }}={{ .Value }} {{ end }}
+          {{ end }}
+
+    - name: 'slo-critical-escalation'
+      pagerduty_configs:
+      - routing_key: 'YOUR_PAGERDUTY_KEY'
+        description: 'Critical SLO breach in AIA system'
+        severity: 'critical'
+      slack_configs:
+      - api_url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
+        channel: '#aia-slo-critical'
+        title: '🚨 CRITICAL SLO BREACH'
+        text: |
+          {{ range .Alerts }}
+          *SLO Breach:* {{ .Labels.slo_name }}
+          *Current Value:* {{ .Labels.current_value }}
+          *Target:* {{ .Labels.target_value }}
+          *Service:* {{ .Labels.service }}
+          {{ end }}
+
+    - name: 'multi-agent-team'
+      slack_configs:
+      - api_url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
+        channel: '#aia-multi-agent'
+        title: 'Multi-Agent System Alert'
+
+    - name: 'agent-coordination-escalation'
+      pagerduty_configs:
+      - routing_key: 'YOUR_PAGERDUTY_KEY'
+        description: 'Agent coordination system failure'
+        severity: 'critical'
+
+    - name: 'data-integrity-team'
+      email_configs:
+      - to: 'data-team@013a.tech'
+        subject: 'Data Integrity Issue in AIA System'
+
+    - name: 'database-team'
+      slack_configs:
+      - api_url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
+        channel: '#aia-database'
+        title: 'Database Alert'
+
+    - name: 'database-critical-escalation'
+      pagerduty_configs:
+      - routing_key: 'YOUR_PAGERDUTY_KEY'
+        description: 'Critical database issue'
+        severity: 'critical'
+
+    - name: 'security-team'
+      pagerduty_configs:
+      - routing_key: 'YOUR_SECURITY_PAGERDUTY_KEY'
+        description: 'Security incident in AIA system'
+        severity: 'critical'
+      slack_configs:
+      - api_url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
+        channel: '#aia-security-alerts'
+        title: '🔒 Security Alert'
+
+    - name: 'fintech-team'
+      slack_configs:
+      - api_url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
+        channel: '#aia-payments'
+        title: 'Payment System Alert'
+
+    - name: 'payment-critical-escalation'
+      pagerduty_configs:
+      - routing_key: 'YOUR_PAYMENT_PAGERDUTY_KEY'
+        description: 'Critical payment processing failure'
+        severity: 'critical'
+
+    - name: 'enterprise-integration-team'
+      email_configs:
+      - to: 'enterprise-integrations@013a.tech'
+        subject: 'Enterprise Integration Alert'
+
+    # Inhibition rules to reduce alert noise
+    inhibit_rules:
+    - source_match:
+        severity: 'critical'
+      target_match:
+        severity: 'warning'
+      equal: ['alertname', 'service']
+    - source_match:
+        alertname: 'ServiceDown'
+      target_match_re:
+        alertname: '.*'
+      equal: ['service']
+
+---
+# AlertManager Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: alertmanager-enterprise
+  namespace: aia-observability
+spec:
+  selector:
+    app: alertmanager-enterprise
+  ports:
+  - port: 9093
+    targetPort: 9093
+    name: web
+  - port: 9094
+    targetPort: 9094
+    name: cluster
+  type: ClusterIP
+---
+# Intelligent Alert Processor
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: intelligent-alert-processor
+  namespace: aia-observability
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: intelligent-alert-processor
+  template:
+    metadata:
+      labels:
+        app: intelligent-alert-processor
+    spec:
+      containers:
+      - name: processor
+        image: python:3.11-slim
+        ports:
+        - containerPort: 8200
+        command:
+        - python
+        - -c
+        - |
+          import asyncio
+          import json
+          import time
+          import aiohttp
+          import numpy as np
+          from datetime import datetime, timedelta
+          import logging
+
+          logging.basicConfig(level=logging.INFO)
+          logger = logging.getLogger(__name__)
+
+          class IntelligentAlertProcessor:
+              def __init__(self):
+                  self.alert_history = []
+                  self.false_positive_patterns = []
+                  self.alert_correlation_rules = {}
+                  self.ml_model_cache = {}
+
+              async def process_alerts(self):
+                  """Main alert processing loop with ML enhancement"""
+                  logger.info("🧠 Intelligent Alert Processor Starting...")
+
+                  while True:
+                      try:
+                          # Fetch pending alerts
+                          alerts = await self.fetch_alerts()
+
+                          # Apply intelligent filtering
+                          filtered_alerts = await self.apply_intelligent_filtering(alerts)
+
+                          # Correlate related alerts
+                          correlated_groups = await self.correlate_alerts(filtered_alerts)
+
+                          # Predict alert severity using ML
+                          enhanced_alerts = await self.enhance_with_ml_predictions(correlated_groups)
+
+                          # Generate alert insights
+                          insights = await self.generate_alert_insights(enhanced_alerts)
+
+                          processing_summary = {
+                              'timestamp': datetime.now().isoformat(),
+                              'raw_alerts': len(alerts),
+                              'filtered_alerts': len(filtered_alerts),
+                              'alert_groups': len(correlated_groups),
+                              'insights_generated': len(insights)
+                          }
+
+                          logger.info(f"🎯 Alert Processing: {json.dumps(processing_summary, indent=2)}")
+
+                      except Exception as e:
+                          logger.error(f"❌ Alert processing error: {e}")
+
+                      await asyncio.sleep(30)  # Process every 30 seconds
+
+              async def fetch_alerts(self):
+                  """Fetch alerts from AlertManager"""
+                  # Simulated alert data
+                  sample_alerts = [
+                      {
+                          'id': 'alert_001',
+                          'name': 'HighCPUUsage',
+                          'severity': 'warning',
+                          'service': 'aia-agent-coordination',
+                          'value': 85.5,
+                          'threshold': 80.0,
+                          'timestamp': datetime.now().isoformat(),
+                          'labels': {'cluster': 'production', 'namespace': 'aia-system'}
+                      },
+                      {
+                          'id': 'alert_002',
+                          'name': 'DatabaseConnectionPoolExhausted',
+                          'severity': 'critical',
+                          'service': 'timescaledb',
+                          'value': 95,
+                          'threshold': 90,
+                          'timestamp': datetime.now().isoformat(),
+                          'labels': {'cluster': 'production', 'namespace': 'aia-database-optimization'}
+                      }
+                  ]
+
+                  return sample_alerts
+
+              async def apply_intelligent_filtering(self, alerts):
+                  """Filter out false positives using ML patterns"""
+                  filtered_alerts = []
+
+                  for alert in alerts:
+                      # Check against known false positive patterns
+                      is_false_positive = await self.check_false_positive_patterns(alert)
+
+                      # Apply noise reduction algorithms
+                      noise_score = await self.calculate_noise_score(alert)
+
+                      # Apply time-based filtering
+                      is_recurring = await self.check_recurring_pattern(alert)
+
+                      if not is_false_positive and noise_score < 0.7 and not is_recurring:
+                          filtered_alerts.append({
+                              **alert,
+                              'noise_score': noise_score,
+                              'confidence': 1.0 - noise_score
+                          })
+                      else:
+                          logger.info(f"🔇 Filtered out alert: {alert['name']} (noise_score: {noise_score})")
+
+                  return filtered_alerts
+
+              async def check_false_positive_patterns(self, alert):
+                  """Check if alert matches known false positive patterns"""
+                  # Simple pattern matching - in production, use ML models
+                  false_positive_indicators = [
+                      # High CPU during known batch processing
+                      lambda a: a['name'] == 'HighCPUUsage' and 2 <= datetime.now().hour <= 4,
+                      # Memory spikes during garbage collection
+                      lambda a: a['name'] == 'HighMemoryUsage' and a['value'] < a['threshold'] * 1.1
+                  ]
+
+                  for pattern in false_positive_indicators:
+                      if pattern(alert):
+                          return True
+
+                  return False
+
+              async def calculate_noise_score(self, alert):
+                  """Calculate noise score using statistical analysis"""
+                  # Analyze alert frequency and context
+                  recent_similar = [
+                      h for h in self.alert_history[-100:]  # Last 100 alerts
+                      if h['name'] == alert['name'] and h['service'] == alert['service']
+                  ]
+
+                  if len(recent_similar) > 10:  # Frequent similar alerts
+                      return 0.8
+                  elif len(recent_similar) > 5:
+                      return 0.5
+                  else:
+                      return 0.2
+
+              async def check_recurring_pattern(self, alert):
+                  """Check for recurring alert patterns"""
+                  # Look for alerts that fire every X minutes predictably
+                  similar_alerts = [
+                      h for h in self.alert_history[-50:]
+                      if h['name'] == alert['name'] and h['service'] == alert['service']
+                  ]
+
+                  if len(similar_alerts) >= 3:
+                      time_diffs = []
+                      for i in range(1, len(similar_alerts)):
+                          prev_time = datetime.fromisoformat(similar_alerts[i-1]['timestamp'])
+                          curr_time = datetime.fromisoformat(similar_alerts[i]['timestamp'])
+                          time_diffs.append((curr_time - prev_time).total_seconds())
+
+                      if time_diffs and np.std(time_diffs) < 300:  # Consistent timing (< 5 min std dev)
+                          return True
+
+                  return False
+
+              async def correlate_alerts(self, alerts):
+                  """Group related alerts together"""
+                  alert_groups = []
+                  processed_alerts = set()
+
+                  for alert in alerts:
+                      if alert['id'] in processed_alerts:
+                          continue
+
+                      # Find related alerts
+                      related_alerts = [alert]
+
+                      for other_alert in alerts:
+                          if other_alert['id'] != alert['id'] and other_alert['id'] not in processed_alerts:
+                              # Check correlation criteria
+                              if await self.are_alerts_related(alert, other_alert):
+                                  related_alerts.append(other_alert)
+                                  processed_alerts.add(other_alert['id'])
+
+                      alert_groups.append({
+                          'group_id': f"group_{len(alert_groups)}",
+                          'primary_alert': alert,
+                          'related_alerts': related_alerts[1:],
+                          'correlation_strength': len(related_alerts) / len(alerts),
+                          'group_severity': self.calculate_group_severity(related_alerts)
+                      })
+
+                      processed_alerts.add(alert['id'])
+
+                  return alert_groups
+
+              async def are_alerts_related(self, alert1, alert2):
+                  """Determine if two alerts are related"""
+                  # Service-based correlation
+                  if alert1['service'] == alert2['service']:
+                      return True
+
+                  # Time-based correlation (within 5 minutes)
+                  time1 = datetime.fromisoformat(alert1['timestamp'])
+                  time2 = datetime.fromisoformat(alert2['timestamp'])
+                  if abs((time1 - time2).total_seconds()) < 300:
+                      return True
+
+                  # Namespace-based correlation
+                  if (alert1['labels'].get('namespace') == alert2['labels'].get('namespace') and
+                      alert1['labels'].get('namespace') is not None):
+                      return True
+
+                  return False
+
+              def calculate_group_severity(self, alerts):
+                  """Calculate severity for a group of alerts"""
+                  severity_weights = {'critical': 3, 'warning': 2, 'info': 1}
+                  total_weight = sum(severity_weights.get(alert['severity'], 0) for alert in alerts)
+
+                  if total_weight >= 6:
+                      return 'critical'
+                  elif total_weight >= 3:
+                      return 'warning'
+                  else:
+                      return 'info'
+
+              async def enhance_with_ml_predictions(self, alert_groups):
+                  """Enhance alerts with ML-based predictions"""
+                  enhanced_groups = []
+
+                  for group in alert_groups:
+                      # Predict escalation probability
+                      escalation_prob = await self.predict_escalation_probability(group)
+
+                      # Predict resolution time
+                      estimated_resolution_time = await self.predict_resolution_time(group)
+
+                      # Generate impact assessment
+                      impact_assessment = await self.assess_business_impact(group)
+
+                      enhanced_group = {
+                          **group,
+                          'ml_predictions': {
+                              'escalation_probability': escalation_prob,
+                              'estimated_resolution_minutes': estimated_resolution_time,
+                              'business_impact_score': impact_assessment['score'],
+                              'affected_systems': impact_assessment['systems']
+                          }
+                      }
+
+                      enhanced_groups.append(enhanced_group)
+
+                  return enhanced_groups
+
+              async def predict_escalation_probability(self, group):
+                  """Predict probability of alert escalation using ML"""
+                  # Simplified ML prediction - in production, use trained models
+                  severity = group['group_severity']
+                  alert_count = len(group['related_alerts']) + 1
+
+                  base_prob = {'critical': 0.8, 'warning': 0.3, 'info': 0.1}[severity]
+                  count_factor = min(alert_count * 0.1, 0.3)
+
+                  return min(base_prob + count_factor, 0.95)
+
+              async def predict_resolution_time(self, group):
+                  """Predict resolution time based on historical data"""
+                  # Historical analysis - in production, use ML models
+                  severity_times = {'critical': 60, 'warning': 180, 'info': 360}
+                  base_time = severity_times[group['group_severity']]
+
+                  # Adjust based on service type
+                  service_factors = {
+                      'database': 1.5,
+                      'agent': 1.2,
+                      'payment': 2.0,
+                      'security': 0.8
+                  }
+
+                  service_type = 'default'
+                  primary_service = group['primary_alert']['service']
+
+                  for stype in service_factors:
+                      if stype in primary_service:
+                          service_type = stype
+                          break
+
+                  factor = service_factors.get(service_type, 1.0)
+
+                  return int(base_time * factor)
+
+              async def assess_business_impact(self, group):
+                  """Assess business impact of alert group"""
+                  impact_score = 0
+                  affected_systems = []
+
+                  # Critical services impact
+                  critical_services = ['payment', 'security', 'database', 'coordination']
+
+                  for alert in [group['primary_alert']] + group['related_alerts']:
+                      service = alert['service']
+
+                      for critical_service in critical_services:
+                          if critical_service in service:
+                              impact_score += {'critical': 3, 'warning': 2, 'info': 1}[alert['severity']]
+                              affected_systems.append(service)
+
+                  return {
+                      'score': min(impact_score, 10),  # Max score of 10
+                      'systems': list(set(affected_systems))
+                  }
+
+              async def generate_alert_insights(self, enhanced_groups):
+                  """Generate actionable insights from alerts"""
+                  insights = []
+
+                  for group in enhanced_groups:
+                      ml_predictions = group['ml_predictions']
+
+                      # High escalation probability insight
+                      if ml_predictions['escalation_probability'] > 0.7:
+                          insights.append({
+                              'type': 'escalation_risk',
+                              'message': f"Alert group {group['group_id']} has high escalation risk ({ml_predictions['escalation_probability']:.1%})",
+                              'recommended_action': 'Assign senior engineer immediately',
+                              'priority': 'high'
+                          })
+
+                      # Long resolution time insight
+                      if ml_predictions['estimated_resolution_minutes'] > 240:
+                          insights.append({
+                              'type': 'long_resolution',
+                              'message': f"Alert group {group['group_id']} estimated to take {ml_predictions['estimated_resolution_minutes']} minutes to resolve",
+                              'recommended_action': 'Consider engaging multiple team members',
+                              'priority': 'medium'
+                          })
+
+                      # High business impact insight
+                      if ml_predictions['business_impact_score'] > 7:
+                          insights.append({
+                              'type': 'business_impact',
+                              'message': f"Alert group {group['group_id']} has high business impact (score: {ml_predictions['business_impact_score']})",
+                              'recommended_action': 'Notify stakeholders and prepare status update',
+                              'priority': 'high'
+                          })
+
+                  return insights
+
+          async def main():
+              processor = IntelligentAlertProcessor()
+              await processor.process_alerts()
+
+          if __name__ == "__main__":
+              asyncio.run(main())
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "0.5"
+          limits:
+            memory: "2Gi"
+            cpu: "1"
+---
+# Alert Processor Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: intelligent-alert-processor
+  namespace: aia-observability
+spec:
+  selector:
+    app: intelligent-alert-processor
+  ports:
+  - port: 8200
+    targetPort: 8200
+  type: ClusterIP

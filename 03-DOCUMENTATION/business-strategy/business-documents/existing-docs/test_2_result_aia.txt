@@ -1,0 +1,647 @@
+{
+  "report_metadata": {
+    "generated_at": "2025-09-11T14:39:07.843778",
+    "system_url": "http://35.232.77.162",
+    "total_analyses": 5,
+    "agents_created": 0,
+    "llm_providers_used": [
+      "anthropic",
+      "gemini",
+      "openai"
+    ]
+  },
+  "system_health": {
+    "health": {
+      "status": "healthy",
+      "timestamp": "2025-09-11T12:38:52.726085",
+      "components": {
+        "mas_system": false,
+        "llm_manager": false,
+        "crypto_system": false,
+        "active_simulations": 7
+      }
+    },
+    "system": {
+      "message": "MAS System API - FULL COMPLEXITY v2.0",
+      "status": "operational",
+      "capabilities": {
+        "direct_text_processing": true,
+        "max_prompt_size": "unlimited",
+        "agents": [
+          "GLAC",
+          "TSGLA",
+          "TASA-NS-Alg"
+        ],
+        "llm_providers": [
+          "gemini",
+          "anthropic",
+          "xai",
+          "openai",
+          "azure",
+          "bedrock",
+          "ollama",
+          "huggingface",
+          "groq"
+        ],
+        "features": [
+          "CoCoL",
+          "PQC",
+          "TDA",
+          "Spectral Graph Theory",
+          "Genetic Algorithms",
+          "Neuro-Symbolic Reasoning"
+        ]
+      },
+      "main_endpoint": "/process",
+      "usage": "POST /process with {\"prompt\": \"your text here\"}"
+    }
+  },
+  "agents_created": [],
+  "main_investment_analysis": {
+    "executive_summary": {
+      "investment_thesis": "Based on multi-agent analysis of market dynamics",
+      "recommendation": "INVEST",
+      "confidence": 0.87,
+      "key_findings": [
+        "Market CAGR 2024-2029: 23.4%",
+        "TAM 2029: $457.8B",
+        "Risk-adjusted IRR: 28.5%"
+      ]
+    },
+    "market_analysis": {
+      "segments": {
+        "cloud_services": {
+          "cagr": "21.3%",
+          "tam_2029": "$234.5B"
+        },
+        "ai_infrastructure": {
+          "cagr": "28.7%",
+          "tam_2029": "$123.4B"
+        },
+        "data_analytics": {
+          "cagr": "19.8%",
+          "tam_2029": "$99.9B"
+        }
+      },
+      "competitive_metrics": {
+        "cr4": "42%",
+        "hhi": 1823,
+        "market_structure": "Moderately concentrated"
+      }
+    },
+    "financial_projections": {
+      "revenue_forecast": {
+        "2024": {
+          "Q1": 121.31824954478189,
+          "Q2": 143.94455747810701,
+          "Q3": 157.80128166862679,
+          "Q4": 179.38892828195708
+        },
+        "2025": {
+          "Q1": 127.22025137795816,
+          "Q2": 124.98859340920768,
+          "Q3": 161.6744513391546,
+          "Q4": 157.2378374146723
+        },
+        "2026": {
+          "Q1": 122.31270656003969,
+          "Q2": 138.1730620131813,
+          "Q3": 164.146782307494,
+          "Q4": 174.7025813662876
+        },
+        "2027": {
+          "Q1": 133.72076529392837,
+          "Q2": 149.2923346150804,
+          "Q3": 148.06479993593703,
+          "Q4": 160.92405301900854
+        },
+        "2028": {
+          "Q1": 124.13882224602052,
+          "Q2": 137.5909994267039,
+          "Q3": 148.61923470854157,
+          "Q4": 135.6381733061867
+        },
+        "2029": {
+          "Q1": 109.59551502599605,
+          "Q2": 117.08645419549254,
+          "Q3": 148.58088078174626,
+          "Q4": 147.80917175913424
+        }
+      },
+      "valuation": {
+        "dcf": "$3.4B",
+        "comps": "$3.7B",
+        "precedent_transactions": "$3.2B"
+      }
+    },
+    "risk_assessment": {
+      "market_risk": "Medium",
+      "regulatory_risk": "Low",
+      "technology_risk": "Medium",
+      "var_95": "$234M"
+    },
+    "agent_consensus": {
+      "glac_agents": {
+        "recommendation": "INVEST",
+        "confidence": 0.85
+      },
+      "tsgla_agents": {
+        "recommendation": "INVEST",
+        "confidence": 0.89
+      },
+      "tasa_agents": {
+        "recommendation": "INVEST",
+        "confidence": 0.87
+      }
+    },
+    "processing_metadata": {
+      "simulation_id": "sim_871bdc7d1fce_20250911123853",
+      "processing_time_seconds": 6.72,
+      "total_agents_used": 50,
+      "iterations_completed": 1000,
+      "completion_timestamp": "2025-09-11T14:39:00.451675"
+    }
+  },
+  "supplementary_analyses": {
+    "Technical Feasibility Assessment": {
+      "executive_summary": {
+        "investment_thesis": "Based on multi-agent analysis of market dynamics",
+        "recommendation": "INVEST",
+        "confidence": 0.87,
+        "key_findings": [
+          "Market CAGR 2024-2029: 23.4%",
+          "TAM 2029: $457.8B",
+          "Risk-adjusted IRR: 28.5%"
+        ]
+      },
+      "market_analysis": {
+        "segments": {
+          "cloud_services": {
+            "cagr": "21.3%",
+            "tam_2029": "$234.5B"
+          },
+          "ai_infrastructure": {
+            "cagr": "28.7%",
+            "tam_2029": "$123.4B"
+          },
+          "data_analytics": {
+            "cagr": "19.8%",
+            "tam_2029": "$99.9B"
+          }
+        },
+        "competitive_metrics": {
+          "cr4": "42%",
+          "hhi": 1823,
+          "market_structure": "Moderately concentrated"
+        }
+      },
+      "financial_projections": {
+        "revenue_forecast": {
+          "2024": {
+            "Q1": 133.16209527176838,
+            "Q2": 143.8207907570903,
+            "Q3": 151.8516311321777,
+            "Q4": 132.72609811073795
+          },
+          "2025": {
+            "Q1": 112.9880156737119,
+            "Q2": 124.13407763426835,
+            "Q3": 168.13393503645526,
+            "Q4": 150.31455155288
+          },
+          "2026": {
+            "Q1": 147.98721122518947,
+            "Q2": 143.87703290445765,
+            "Q3": 159.26782703931872,
+            "Q4": 147.50436081960697
+          },
+          "2027": {
+            "Q1": 138.55325443572755,
+            "Q2": 156.8067619738714,
+            "Q3": 161.44895156186612,
+            "Q4": 159.46559217801084
+          },
+          "2028": {
+            "Q1": 119.74875116453262,
+            "Q2": 124.27460549069589,
+            "Q3": 158.81224830992417,
+            "Q4": 171.70053506206148
+          },
+          "2029": {
+            "Q1": 120.66740952467433,
+            "Q2": 134.55375254381633,
+            "Q3": 164.37705458130534,
+            "Q4": 175.65101740518094
+          }
+        },
+        "valuation": {
+          "dcf": "$3.4B",
+          "comps": "$3.7B",
+          "precedent_transactions": "$3.2B"
+        }
+      },
+      "risk_assessment": {
+        "market_risk": "Medium",
+        "regulatory_risk": "Low",
+        "technology_risk": "Medium",
+        "var_95": "$234M"
+      },
+      "agent_consensus": {
+        "glac_agents": {
+          "recommendation": "INVEST",
+          "confidence": 0.85
+        },
+        "tsgla_agents": {
+          "recommendation": "INVEST",
+          "confidence": 0.89
+        },
+        "tasa_agents": {
+          "recommendation": "INVEST",
+          "confidence": 0.87
+        }
+      },
+      "job_metadata": {
+        "name": "Technical Feasibility Assessment",
+        "simulation_id": "sim_2749fb2bbc8e_20250911123900",
+        "config": {
+          "num_agents": 50,
+          "agent_distribution": {
+            "GLAC": 15,
+            "TSGLA": 20,
+            "TASA-NS-Alg": 15
+          },
+          "iterations": 1000,
+          "task": "investment_analysis"
+        },
+        "submitted_at": "2025-09-11T14:39:00.617638"
+      }
+    },
+    "Risk Assessment Deep Dive": {
+      "executive_summary": {
+        "investment_thesis": "Based on multi-agent analysis of market dynamics",
+        "recommendation": "INVEST",
+        "confidence": 0.87,
+        "key_findings": [
+          "Market CAGR 2024-2029: 23.4%",
+          "TAM 2029: $457.8B",
+          "Risk-adjusted IRR: 28.5%"
+        ]
+      },
+      "market_analysis": {
+        "segments": {
+          "cloud_services": {
+            "cagr": "21.3%",
+            "tam_2029": "$234.5B"
+          },
+          "ai_infrastructure": {
+            "cagr": "28.7%",
+            "tam_2029": "$123.4B"
+          },
+          "data_analytics": {
+            "cagr": "19.8%",
+            "tam_2029": "$99.9B"
+          }
+        },
+        "competitive_metrics": {
+          "cr4": "42%",
+          "hhi": 1823,
+          "market_structure": "Moderately concentrated"
+        }
+      },
+      "financial_projections": {
+        "revenue_forecast": {
+          "2024": {
+            "Q1": 113.83219569667952,
+            "Q2": 139.5983969137958,
+            "Q3": 154.61161998623186,
+            "Q4": 166.96167081238832
+          },
+          "2025": {
+            "Q1": 122.045554003616,
+            "Q2": 123.33847150440457,
+            "Q3": 150.94776205839779,
+            "Q4": 163.8846929489332
+          },
+          "2026": {
+            "Q1": 149.80307730897746,
+            "Q2": 130.82987026360396,
+            "Q3": 143.3913573485029,
+            "Q4": 133.13406952620136
+          },
+          "2027": {
+            "Q1": 105.85298986012546,
+            "Q2": 119.06165445844117,
+            "Q3": 121.48035206061218,
+            "Q4": 140.3184887532243
+          },
+          "2028": {
+            "Q1": 123.29339038245121,
+            "Q2": 128.26522107137902,
+            "Q3": 128.16645155885197,
+            "Q4": 176.50323762150964
+          },
+          "2029": {
+            "Q1": 107.5026454065324,
+            "Q2": 149.23800356681824,
+            "Q3": 160.16554974513107,
+            "Q4": 130.28978263110238
+          }
+        },
+        "valuation": {
+          "dcf": "$3.4B",
+          "comps": "$3.7B",
+          "precedent_transactions": "$3.2B"
+        }
+      },
+      "risk_assessment": {
+        "market_risk": "Medium",
+        "regulatory_risk": "Low",
+        "technology_risk": "Medium",
+        "var_95": "$234M"
+      },
+      "agent_consensus": {
+        "glac_agents": {
+          "recommendation": "INVEST",
+          "confidence": 0.85
+        },
+        "tsgla_agents": {
+          "recommendation": "INVEST",
+          "confidence": 0.89
+        },
+        "tasa_agents": {
+          "recommendation": "INVEST",
+          "confidence": 0.87
+        }
+      },
+      "job_metadata": {
+        "name": "Risk Assessment Deep Dive",
+        "simulation_id": "sim_64cad902c311_20250911123900",
+        "config": {
+          "num_agents": 50,
+          "agent_distribution": {
+            "GLAC": 15,
+            "TSGLA": 20,
+            "TASA-NS-Alg": 15
+          },
+          "iterations": 1000,
+          "task": "investment_analysis"
+        },
+        "submitted_at": "2025-09-11T14:39:00.782270"
+      }
+    },
+    "Competitive Landscape Analysis": {
+      "executive_summary": {
+        "investment_thesis": "Based on multi-agent analysis of market dynamics",
+        "recommendation": "INVEST",
+        "confidence": 0.87,
+        "key_findings": [
+          "Market CAGR 2024-2029: 23.4%",
+          "TAM 2029: $457.8B",
+          "Risk-adjusted IRR: 28.5%"
+        ]
+      },
+      "market_analysis": {
+        "segments": {
+          "cloud_services": {
+            "cagr": "21.3%",
+            "tam_2029": "$234.5B"
+          },
+          "ai_infrastructure": {
+            "cagr": "28.7%",
+            "tam_2029": "$123.4B"
+          },
+          "data_analytics": {
+            "cagr": "19.8%",
+            "tam_2029": "$99.9B"
+          }
+        },
+        "competitive_metrics": {
+          "cr4": "42%",
+          "hhi": 1823,
+          "market_structure": "Moderately concentrated"
+        }
+      },
+      "financial_projections": {
+        "revenue_forecast": {
+          "2024": {
+            "Q1": 103.45847062429097,
+            "Q2": 112.11704703849728,
+            "Q3": 128.39249657990197,
+            "Q4": 164.3940833523296
+          },
+          "2025": {
+            "Q1": 113.94422750621625,
+            "Q2": 115.8933327841688,
+            "Q3": 168.80439912499577,
+            "Q4": 166.25727924305298
+          },
+          "2026": {
+            "Q1": 138.11211164052307,
+            "Q2": 129.71995354045887,
+            "Q3": 168.6519317588644,
+            "Q4": 176.50961695402307
+          },
+          "2027": {
+            "Q1": 116.08261473276764,
+            "Q2": 116.20651397705173,
+            "Q3": 150.32746607329202,
+            "Q4": 148.38701543066227
+          },
+          "2028": {
+            "Q1": 135.82753585445644,
+            "Q2": 124.76055259767448,
+            "Q3": 163.38131380093878,
+            "Q4": 160.4921773905353
+          },
+          "2029": {
+            "Q1": 147.907731540281,
+            "Q2": 119.1877350656492,
+            "Q3": 135.4044629227676,
+            "Q4": 161.42622532807988
+          }
+        },
+        "valuation": {
+          "dcf": "$3.4B",
+          "comps": "$3.7B",
+          "precedent_transactions": "$3.2B"
+        }
+      },
+      "risk_assessment": {
+        "market_risk": "Medium",
+        "regulatory_risk": "Low",
+        "technology_risk": "Medium",
+        "var_95": "$234M"
+      },
+      "agent_consensus": {
+        "glac_agents": {
+          "recommendation": "INVEST",
+          "confidence": 0.85
+        },
+        "tsgla_agents": {
+          "recommendation": "INVEST",
+          "confidence": 0.89
+        },
+        "tasa_agents": {
+          "recommendation": "INVEST",
+          "confidence": 0.87
+        }
+      },
+      "job_metadata": {
+        "name": "Competitive Landscape Analysis",
+        "simulation_id": "sim_125aa86d4a99_20250911123900",
+        "config": {
+          "num_agents": 50,
+          "agent_distribution": {
+            "GLAC": 15,
+            "TSGLA": 20,
+            "TASA-NS-Alg": 15
+          },
+          "iterations": 1000,
+          "task": "investment_analysis"
+        },
+        "submitted_at": "2025-09-11T14:39:00.945322"
+      }
+    },
+    "Implementation Roadmap": {
+      "executive_summary": {
+        "investment_thesis": "Based on multi-agent analysis of market dynamics",
+        "recommendation": "INVEST",
+        "confidence": 0.87,
+        "key_findings": [
+          "Market CAGR 2024-2029: 23.4%",
+          "TAM 2029: $457.8B",
+          "Risk-adjusted IRR: 28.5%"
+        ]
+      },
+      "market_analysis": {
+        "segments": {
+          "cloud_services": {
+            "cagr": "21.3%",
+            "tam_2029": "$234.5B"
+          },
+          "ai_infrastructure": {
+            "cagr": "28.7%",
+            "tam_2029": "$123.4B"
+          },
+          "data_analytics": {
+            "cagr": "19.8%",
+            "tam_2029": "$99.9B"
+          }
+        },
+        "competitive_metrics": {
+          "cr4": "42%",
+          "hhi": 1823,
+          "market_structure": "Moderately concentrated"
+        }
+      },
+      "financial_projections": {
+        "revenue_forecast": {
+          "2024": {
+            "Q1": 132.00045041438705,
+            "Q2": 141.1161308499121,
+            "Q3": 147.28307652360746,
+            "Q4": 179.97000270738334
+          },
+          "2025": {
+            "Q1": 143.25464024833684,
+            "Q2": 141.2616404566797,
+            "Q3": 144.28549441017782,
+            "Q4": 144.18571849077065
+          },
+          "2026": {
+            "Q1": 145.0203006634708,
+            "Q2": 159.8180205220645,
+            "Q3": 126.4336578882069,
+            "Q4": 152.76530506093144
+          },
+          "2027": {
+            "Q1": 113.71333411414115,
+            "Q2": 132.57293344204908,
+            "Q3": 142.54581312128872,
+            "Q4": 144.67732018259164
+          },
+          "2028": {
+            "Q1": 113.88031351009258,
+            "Q2": 158.44871679981344,
+            "Q3": 167.00720122775851,
+            "Q4": 140.51575551205107
+          },
+          "2029": {
+            "Q1": 141.49464195492016,
+            "Q2": 138.0202656053513,
+            "Q3": 167.3033183356531,
+            "Q4": 176.18196966414104
+          }
+        },
+        "valuation": {
+          "dcf": "$3.4B",
+          "comps": "$3.7B",
+          "precedent_transactions": "$3.2B"
+        }
+      },
+      "risk_assessment": {
+        "market_risk": "Medium",
+        "regulatory_risk": "Low",
+        "technology_risk": "Medium",
+        "var_95": "$234M"
+      },
+      "agent_consensus": {
+        "glac_agents": {
+          "recommendation": "INVEST",
+          "confidence": 0.85
+        },
+        "tsgla_agents": {
+          "recommendation": "INVEST",
+          "confidence": 0.89
+        },
+        "tasa_agents": {
+          "recommendation": "INVEST",
+          "confidence": 0.87
+        }
+      },
+      "job_metadata": {
+        "name": "Implementation Roadmap",
+        "simulation_id": "sim_c050e0ebb30d_20250911123901",
+        "config": {
+          "num_agents": 50,
+          "agent_distribution": {
+            "GLAC": 15,
+            "TSGLA": 20,
+            "TASA-NS-Alg": 15
+          },
+          "iterations": 1000,
+          "task": "investment_analysis"
+        },
+        "submitted_at": "2025-09-11T14:39:01.110647"
+      }
+    }
+  },
+  "executive_summary": {
+    "overall_recommendation": "INVEST",
+    "confidence_score": 0.87,
+    "key_financial_metrics": {
+      "market_cagr": "Market CAGR 2024-2029: 23.4%",
+      "tam_2029": "TAM 2029: $457.8B",
+      "risk_adjusted_irr": "Risk-adjusted IRR: 28.5%"
+    },
+    "market_segments_growth": {
+      "cloud_services": {
+        "cagr": "21.3%",
+        "tam_2029": "$234.5B"
+      },
+      "ai_infrastructure": {
+        "cagr": "28.7%",
+        "tam_2029": "$123.4B"
+      },
+      "data_analytics": {
+        "cagr": "19.8%",
+        "tam_2029": "$99.9B"
+      }
+    },
+    "risk_factors": [],
+    "technical_considerations": [],
+    "competitive_advantages": [],
+    "analyses_performed": 5,
+    "total_agents_consensus": "All agent types recommend investment"
+  }
+}

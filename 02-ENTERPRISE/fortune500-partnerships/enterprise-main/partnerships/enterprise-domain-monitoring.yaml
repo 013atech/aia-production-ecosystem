@@ -1,0 +1,568 @@
+# =====================================================
+# AIA ENTERPRISE DOMAIN MONITORING SYSTEM
+# Comprehensive Health Validation & Alerting
+# =====================================================
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: domain-monitoring-config
+  namespace: aia-production
+data:
+  monitoring_config.yaml: |
+    # Enterprise Domain Monitoring Configuration
+    domains:
+      core:
+        - 013a.tech
+        - www.013a.tech
+        - app.013a.tech
+        - api.013a.tech
+      services:
+        - analytics.013a.tech
+        - enterprise.013a.tech
+        - ml.013a.tech
+        - marketplace.013a.tech
+        - docs.013a.tech
+      immersive:
+        - immersive.013a.tech
+        - 3d.013a.tech
+        - webxr.013a.tech
+        - spatial.013a.tech
+      partners:
+        - ey.013a.tech
+        - jpmorgan.013a.tech
+        - google.013a.tech
+        - apple.013a.tech
+      infrastructure:
+        - monitoring.013a.tech
+        - admin.013a.tech
+        - status.013a.tech
+        - cdn.013a.tech
+      regional:
+        - us.013a.tech
+        - eu.013a.tech
+        - asia.013a.tech
+
+    monitoring:
+      interval: 30s
+      timeout: 10s
+      expected_status_codes:
+        - 200
+        - 201
+        - 405  # Method not allowed is acceptable for some endpoints
+      ssl_check: true
+      dns_check: true
+      performance_threshold: 2000ms
+
+    alerts:
+      slack_webhook: ""
+      email: "admin@013a.tech"
+      pagerduty_key: ""
+
+  prometheus_rules.yaml: |
+    groups:
+    - name: domain-health
+      rules:
+      - alert: DomainDown
+        expr: probe_success{job="domain-monitor"} == 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Domain {{ $labels.instance }} is down"
+          description: "Domain {{ $labels.instance }} has been unreachable for more than 5 minutes"
+
+      - alert: DomainSlowResponse
+        expr: probe_duration_seconds{job="domain-monitor"} > 2
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Domain {{ $labels.instance }} slow response"
+          description: "Domain {{ $labels.instance }} response time is {{ $value }}s"
+
+      - alert: SSLCertificateExpiry
+        expr: probe_ssl_earliest_cert_expiry{job="domain-monitor"} - time() < 604800
+        for: 1h
+        labels:
+          severity: warning
+        annotations:
+          summary: "SSL certificate expiring soon"
+          description: "SSL certificate for {{ $labels.instance }} expires in {{ $value | humanizeDuration }}"
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: domain-monitor
+  namespace: aia-production
+  labels:
+    app: domain-monitor
+    component: monitoring
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: domain-monitor
+  template:
+    metadata:
+      labels:
+        app: domain-monitor
+        component: monitoring
+    spec:
+      containers:
+      - name: blackbox-exporter
+        image: prom/blackbox-exporter:latest
+        ports:
+        - containerPort: 9115
+          name: metrics
+        volumeMounts:
+        - name: config
+          mountPath: /etc/blackbox_exporter
+          readOnly: true
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 9115
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 9115
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "50m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+      - name: domain-checker
+        image: alpine/curl:latest
+        command:
+        - /bin/sh
+        - -c
+        - |
+          while true; do
+            echo "$(date): Starting domain health checks..."
+
+            # Core domains
+            for domain in 013a.tech www.013a.tech app.013a.tech api.013a.tech; do
+              echo "Checking $domain..."
+              curl -I -s --max-time 10 "https://$domain" | head -1 || echo "$domain: FAILED"
+            done
+
+            # Service domains
+            for domain in analytics.013a.tech enterprise.013a.tech ml.013a.tech marketplace.013a.tech; do
+              echo "Checking $domain..."
+              curl -I -s --max-time 10 "https://$domain" | head -1 || echo "$domain: FAILED"
+            done
+
+            # Partner domains
+            for domain in ey.013a.tech jpmorgan.013a.tech google.013a.tech apple.013a.tech; do
+              echo "Checking $domain..."
+              curl -I -s --max-time 10 "https://$domain" | head -1 || echo "$domain: FAILED"
+            done
+
+            echo "$(date): Domain health check completed"
+            sleep 300  # Check every 5 minutes
+          done
+        resources:
+          requests:
+            memory: "32Mi"
+            cpu: "25m"
+          limits:
+            memory: "64Mi"
+            cpu: "50m"
+      volumes:
+      - name: config
+        configMap:
+          name: blackbox-config
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: domain-monitor-service
+  namespace: aia-production
+  labels:
+    app: domain-monitor
+spec:
+  type: ClusterIP
+  ports:
+  - name: metrics
+    port: 9115
+    targetPort: 9115
+    protocol: TCP
+  selector:
+    app: domain-monitor
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: blackbox-config
+  namespace: aia-production
+data:
+  blackbox.yml: |
+    modules:
+      http_2xx:
+        prober: http
+        timeout: 10s
+        http:
+          valid_status_codes: [200, 201, 405]
+          method: GET
+          fail_if_ssl: false
+          fail_if_not_ssl: false
+          tls_config:
+            insecure_skip_verify: false
+          preferred_ip_protocol: "ip4"
+
+      http_post_2xx:
+        prober: http
+        timeout: 10s
+        http:
+          method: POST
+          valid_status_codes: [200, 201, 405]
+
+      tcp_connect:
+        prober: tcp
+        timeout: 10s
+
+      dns:
+        prober: dns
+        timeout: 10s
+        dns:
+          query_name: "013a.tech"
+          query_type: "A"
+
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: domain-health-monitor
+  namespace: aia-production
+  labels:
+    app: domain-monitor
+spec:
+  selector:
+    matchLabels:
+      app: domain-monitor
+  endpoints:
+  - port: metrics
+    interval: 30s
+    path: /metrics
+
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: domain-monitoring-rules
+  namespace: aia-production
+spec:
+  groups:
+  - name: domain-health-rules
+    rules:
+    - alert: AIA_DomainDown
+      expr: probe_success{job="domain-monitor"} == 0
+      for: 5m
+      labels:
+        severity: critical
+        service: domain-monitoring
+      annotations:
+        summary: "AIA Domain {{ $labels.instance }} is down"
+        description: "Domain {{ $labels.instance }} has been unreachable for more than 5 minutes. This affects enterprise operations."
+        runbook_url: "https://docs.013a.tech/runbooks/domain-down"
+
+    - alert: AIA_DomainSlowResponse
+      expr: probe_duration_seconds{job="domain-monitor"} > 2
+      for: 2m
+      labels:
+        severity: warning
+        service: domain-monitoring
+      annotations:
+        summary: "AIA Domain {{ $labels.instance }} slow response"
+        description: "Domain {{ $labels.instance }} response time is {{ $value }}s, exceeding 2s threshold"
+
+    - alert: AIA_SSLCertificateExpiry
+      expr: probe_ssl_earliest_cert_expiry{job="domain-monitor"} - time() < 604800
+      for: 1h
+      labels:
+        severity: warning
+        service: ssl-certificates
+      annotations:
+        summary: "SSL certificate expiring soon for {{ $labels.instance }}"
+        description: "SSL certificate for {{ $labels.instance }} expires in less than 7 days"
+
+    - alert: AIA_EnterprisePartnerDown
+      expr: probe_success{job="domain-monitor",instance=~"ey.013a.tech|jpmorgan.013a.tech|google.013a.tech|apple.013a.tech"} == 0
+      for: 2m
+      labels:
+        severity: critical
+        service: enterprise-partners
+      annotations:
+        summary: "Enterprise partner domain {{ $labels.instance }} is down"
+        description: "Critical: Fortune 500 partner domain {{ $labels.instance }} is unreachable"
+
+---
+# =====================================================
+# GRAFANA DASHBOARD CONFIGURATION
+# =====================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: domain-dashboard-config
+  namespace: aia-production
+data:
+  domain-dashboard.json: |
+    {
+      "dashboard": {
+        "id": null,
+        "title": "AIA Enterprise Domain Health",
+        "tags": ["aia", "domains", "enterprise", "fortune500"],
+        "timezone": "UTC",
+        "panels": [
+          {
+            "id": 1,
+            "title": "Domain Health Overview",
+            "type": "stat",
+            "targets": [
+              {
+                "expr": "count(probe_success{job=\"domain-monitor\"} == 1) / count(probe_success{job=\"domain-monitor\"}) * 100",
+                "legendFormat": "Overall Health %"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "color": {
+                  "mode": "thresholds"
+                },
+                "thresholds": {
+                  "steps": [
+                    {"color": "red", "value": 0},
+                    {"color": "yellow", "value": 90},
+                    {"color": "green", "value": 95}
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "id": 2,
+            "title": "Domain Response Times",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "probe_duration_seconds{job=\"domain-monitor\"}",
+                "legendFormat": "{{ instance }}"
+              }
+            ]
+          },
+          {
+            "id": 3,
+            "title": "Fortune 500 Partner Status",
+            "type": "table",
+            "targets": [
+              {
+                "expr": "probe_success{job=\"domain-monitor\",instance=~\"ey.013a.tech|jpmorgan.013a.tech|google.013a.tech|apple.013a.tech\"}",
+                "format": "table"
+              }
+            ]
+          },
+          {
+            "id": 4,
+            "title": "SSL Certificate Status",
+            "type": "table",
+            "targets": [
+              {
+                "expr": "(probe_ssl_earliest_cert_expiry{job=\"domain-monitor\"} - time()) / 86400",
+                "legendFormat": "Days until expiry",
+                "format": "table"
+              }
+            ]
+          }
+        ],
+        "time": {
+          "from": "now-1h",
+          "to": "now"
+        },
+        "refresh": "30s"
+      }
+    }
+
+---
+# =====================================================
+# DOMAIN HEALTH CHECK CRONJOB
+# =====================================================
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: domain-health-check
+  namespace: aia-production
+spec:
+  schedule: "*/5 * * * *"  # Every 5 minutes
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: health-checker
+            image: alpine/curl:latest
+            command:
+            - /bin/sh
+            - -c
+            - |
+              echo "Starting comprehensive domain health check at $(date)"
+
+              # Create results file
+              results_file="/tmp/health_results_$(date +%s).json"
+              echo '{"timestamp": "'$(date -Iseconds)'", "results": [' > $results_file
+
+              domains=(
+                "013a.tech"
+                "api.013a.tech"
+                "app.013a.tech"
+                "analytics.013a.tech"
+                "enterprise.013a.tech"
+                "ml.013a.tech"
+                "marketplace.013a.tech"
+                "immersive.013a.tech"
+                "3d.013a.tech"
+                "ey.013a.tech"
+                "jpmorgan.013a.tech"
+                "google.013a.tech"
+                "apple.013a.tech"
+                "monitoring.013a.tech"
+                "status.013a.tech"
+              )
+
+              first=true
+              for domain in "${domains[@]}"; do
+                if [ "$first" = true ]; then
+                  first=false
+                else
+                  echo ',' >> $results_file
+                fi
+
+                echo "Checking https://$domain..."
+                start_time=$(date +%s.%N)
+
+                response=$(curl -I -s --max-time 10 "https://$domain" 2>/dev/null | head -1 || echo "FAILED")
+                status_code=$(echo "$response" | grep -o '[0-9]\{3\}' | head -1 || echo "0")
+
+                end_time=$(date +%s.%N)
+                response_time=$(echo "$end_time - $start_time" | bc -l 2>/dev/null || echo "0")
+
+                ssl_check=$(echo | openssl s_client -servername "$domain" -connect "$domain:443" 2>/dev/null | openssl x509 -noout -dates 2>/dev/null | grep "notAfter" || echo "SSL_CHECK_FAILED")
+
+                cat << EOF >> $results_file
+              {
+                "domain": "$domain",
+                "status_code": "$status_code",
+                "response_time": "$response_time",
+                "ssl_status": "$ssl_check",
+                "healthy": $(if [ "$status_code" = "200" ] || [ "$status_code" = "405" ]; then echo "true"; else echo "false"; fi),
+                "check_time": "$(date -Iseconds)"
+              }
+              EOF
+              done
+
+              echo ']}' >> $results_file
+
+              echo "Health check completed. Results:"
+              cat $results_file
+
+              # Post results to monitoring endpoint
+              curl -X POST "http://aia-backend-service:8000/api/monitoring/domain-health" \
+                   -H "Content-Type: application/json" \
+                   -d @$results_file || echo "Failed to post results to monitoring service"
+
+              echo "Domain health check completed at $(date)"
+            resources:
+              requests:
+                memory: "32Mi"
+                cpu: "25m"
+              limits:
+                memory: "64Mi"
+                cpu: "50m"
+          restartPolicy: OnFailure
+
+---
+# =====================================================
+# ALERTMANAGER CONFIGURATION FOR DOMAIN MONITORING
+# =====================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: alertmanager-domain-config
+  namespace: aia-production
+data:
+  alertmanager.yml: |
+    global:
+      smtp_smarthost: 'smtp.gmail.com:587'
+      smtp_from: 'noreply@013a.tech'
+
+    route:
+      group_by: ['alertname', 'service']
+      group_wait: 10s
+      group_interval: 10s
+      repeat_interval: 1h
+      receiver: 'enterprise-alerts'
+      routes:
+      - match:
+          severity: critical
+          service: domain-monitoring
+        receiver: 'critical-domain-alerts'
+      - match:
+          severity: critical
+          service: enterprise-partners
+        receiver: 'partner-critical-alerts'
+
+    receivers:
+    - name: 'enterprise-alerts'
+      email_configs:
+      - to: 'admin@013a.tech'
+        subject: 'AIA Alert: {{ .GroupLabels.alertname }}'
+        body: |
+          {{ range .Alerts }}
+          Alert: {{ .Annotations.summary }}
+          Description: {{ .Annotations.description }}
+          {{ end }}
+
+    - name: 'critical-domain-alerts'
+      email_configs:
+      - to: 'admin@013a.tech'
+        subject: 'CRITICAL: AIA Domain Alert - {{ .GroupLabels.alertname }}'
+        body: |
+          CRITICAL ALERT - IMMEDIATE ACTION REQUIRED
+
+          {{ range .Alerts }}
+          Domain: {{ .Labels.instance }}
+          Issue: {{ .Annotations.summary }}
+          Details: {{ .Annotations.description }}
+          Time: {{ .StartsAt }}
+          {{ end }}
+
+    - name: 'partner-critical-alerts'
+      email_configs:
+      - to: 'admin@013a.tech'
+        subject: 'CRITICAL: Fortune 500 Partner Domain Down - {{ .GroupLabels.alertname }}'
+        body: |
+          CRITICAL FORTUNE 500 PARTNER ALERT
+
+          {{ range .Alerts }}
+          Partner: {{ .Labels.instance }}
+          Status: DOWN
+          Impact: Enterprise operations affected
+          Action: Immediate investigation required
+          Time: {{ .StartsAt }}
+          {{ end }}
+
+    inhibit_rules:
+    - source_match:
+        severity: 'critical'
+      target_match:
+        severity: 'warning'
+      equal: ['alertname', 'instance']

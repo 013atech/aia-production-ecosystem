@@ -1,0 +1,154 @@
+apiVersion: networking.gke.io/v1beta1
+kind: BackendConfig
+metadata:
+  name: founder-dashboard-backend-config
+  namespace: founder-dashboard
+spec:
+  securityPolicy:
+    name: "founder-dashboard-waf"
+  iap:
+    enabled: true
+    oauthclientCredentials:
+      secretName: founder-dashboard-oauth-secret
+  timeoutSec: 30
+  connectionDraining:
+    drainingTimeoutSec: 60
+  logging:
+    enable: true
+    sampleRate: 1.0
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: founder-dashboard-oauth-secret
+  namespace: founder-dashboard
+type: Opaque
+stringData:
+  client_id: "placeholder-from-gcp-console"
+  client_secret: "placeholder-from-gcp-console"
+
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: founder-dashboard-network-policy
+  namespace: founder-dashboard
+spec:
+  podSelector:
+    matchLabels:
+      app: founder-dashboard
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: founder-dashboard
+    - podSelector:
+        matchLabels:
+          app: founder-dashboard
+  - from: []
+    ports:
+    - protocol: TCP
+      port: 8000
+    - protocol: TCP
+      port: 3000
+  egress:
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: aia-production-secure
+    ports:
+    - protocol: TCP
+      port: 5432  # PostgreSQL
+    - protocol: TCP
+      port: 6379  # Redis
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: aia-monitoring
+    ports:
+    - protocol: TCP
+      port: 9090  # Prometheus
+  - to: []  # Allow external HTTPS for Google APIs
+    ports:
+    - protocol: TCP
+      port: 443
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: founder-dashboard-sa
+  namespace: founder-dashboard
+  annotations:
+    iam.gke.io/gcp-service-account: founder-dashboard@aia-system-prod-1759055445.iam.gserviceaccount.com
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  namespace: founder-dashboard
+  name: founder-dashboard-role
+rules:
+- apiGroups: [""]
+  resources: ["pods", "services", "configmaps", "secrets"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["apps"]
+  resources: ["deployments"]
+  verbs: ["get", "list", "watch"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: founder-dashboard-rolebinding
+  namespace: founder-dashboard
+subjects:
+- kind: ServiceAccount
+  name: founder-dashboard-sa
+  namespace: founder-dashboard
+roleRef:
+  kind: Role
+  name: founder-dashboard-role
+  apiGroup: rbac.authorization.k8s.io
+
+---
+apiVersion: v1
+kind: PodSecurityPolicy
+metadata:
+  name: founder-dashboard-psp
+  namespace: founder-dashboard
+spec:
+  privileged: false
+  allowPrivilegeEscalation: false
+  requiredDropCapabilities:
+    - ALL
+  volumes:
+    - 'configMap'
+    - 'emptyDir'
+    - 'projected'
+    - 'secret'
+    - 'downwardAPI'
+    - 'persistentVolumeClaim'
+  runAsUser:
+    rule: 'MustRunAsNonRoot'
+  seLinux:
+    rule: 'RunAsAny'
+  fsGroup:
+    rule: 'RunAsAny'
+  readOnlyRootFilesystem: true
+
+---
+apiVersion: policy/v1beta1
+kind: PodDisruptionBudget
+metadata:
+  name: founder-dashboard-pdb
+  namespace: founder-dashboard
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: founder-dashboard

@@ -1,0 +1,1115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AIA - Immersive Institutional Investor Presentation</title>
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://unpkg.com/three@0.162.0/build/three.module.js",
+            "three/addons/": "https://unpkg.com/three@0.162.0/examples/jsm/"
+        }
+    }
+    </script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            color: #f5f5dc;
+            overflow: hidden;
+        }
+
+        .presentation-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .slide {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            transform: translateX(100%);
+            transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 50%, #1a1a1a 100%);
+        }
+
+        .slide.active {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .slide-header {
+            position: absolute;
+            top: 40px;
+            left: 60px;
+            z-index: 100;
+        }
+
+        .slide-title {
+            font-size: 3.5rem;
+            font-weight: 300;
+            background: linear-gradient(45deg, #00ffff, #ffff00);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 1rem;
+            text-shadow: 0 0 30px rgba(0, 255, 255, 0.3);
+        }
+
+        .slide-subtitle {
+            font-size: 1.4rem;
+            color: #f5f5dc;
+            font-weight: 200;
+            opacity: 0.9;
+        }
+
+        .three-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        .content-overlay {
+            position: absolute;
+            bottom: 80px;
+            left: 60px;
+            right: 60px;
+            z-index: 10;
+            background: rgba(26, 26, 26, 0.8);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 40px;
+            border: 1px solid rgba(0, 255, 255, 0.2);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 30px;
+            margin-top: 30px;
+        }
+
+        .metric-card {
+            background: linear-gradient(135deg, rgba(0, 255, 255, 0.1), rgba(255, 255, 0, 0.05));
+            border-radius: 15px;
+            padding: 25px;
+            text-align: center;
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            transition: transform 0.3s ease;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 255, 255, 0.2);
+        }
+
+        .metric-value {
+            font-size: 2.5rem;
+            font-weight: 600;
+            background: linear-gradient(45deg, #00ffff, #ffff00);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .metric-label {
+            font-size: 0.9rem;
+            color: #f5f5dc;
+            opacity: 0.8;
+            margin-top: 8px;
+        }
+
+        .navigation {
+            position: fixed;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+            display: flex;
+            gap: 15px;
+        }
+
+        .nav-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: rgba(245, 245, 220, 0.3);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+
+        .nav-dot.active {
+            background: linear-gradient(45deg, #00ffff, #ffff00);
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.5);
+            transform: scale(1.2);
+        }
+
+        .nav-controls {
+            position: fixed;
+            bottom: 40px;
+            right: 40px;
+            z-index: 1000;
+            display: flex;
+            gap: 15px;
+        }
+
+        .nav-button {
+            background: rgba(0, 255, 255, 0.1);
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            color: #f5f5dc;
+            padding: 12px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        .nav-button:hover {
+            background: rgba(0, 255, 255, 0.2);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 255, 255, 0.2);
+        }
+
+        .data-visualization {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80%;
+            height: 60%;
+            background: rgba(26, 26, 26, 0.6);
+            border-radius: 20px;
+            border: 1px solid rgba(0, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+        }
+
+        .chart-container {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            overflow: hidden;
+            border-radius: 20px;
+        }
+
+        .floating-elements {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        .floating-icon {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(45deg, rgba(0, 255, 255, 0.2), rgba(255, 255, 0, 0.1));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            animation: float 6s ease-in-out infinite;
+            border: 1px solid rgba(0, 255, 255, 0.3);
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(180deg); }
+        }
+
+        .progress-indicator {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: rgba(26, 26, 26, 0.8);
+            z-index: 2000;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #00ffff, #ffff00);
+            width: 0%;
+            transition: width 0.8s ease;
+        }
+
+        .slide-counter {
+            position: fixed;
+            top: 40px;
+            right: 60px;
+            z-index: 1000;
+            font-size: 1rem;
+            color: #f5f5dc;
+            opacity: 0.7;
+        }
+
+        @media (max-width: 768px) {
+            .slide-title { font-size: 2.5rem; }
+            .slide-subtitle { font-size: 1.2rem; }
+            .content-overlay {
+                left: 20px;
+                right: 20px;
+                bottom: 20px;
+                padding: 20px;
+            }
+            .metrics-grid { grid-template-columns: 1fr 1fr; gap: 15px; }
+            .slide-header { left: 20px; top: 20px; }
+            .slide-counter { right: 20px; top: 20px; }
+        }
+
+        .webxr-button {
+            position: fixed;
+            top: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+            background: linear-gradient(45deg, rgba(0, 255, 255, 0.2), rgba(255, 255, 0, 0.1));
+            border: 1px solid rgba(0, 255, 255, 0.5);
+            color: #f5f5dc;
+            padding: 15px 30px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            display: none;
+        }
+
+        .webxr-button:hover {
+            background: linear-gradient(45deg, rgba(0, 255, 255, 0.3), rgba(255, 255, 0, 0.2));
+            transform: translateX(-50%) translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0, 255, 255, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="progress-indicator">
+        <div class="progress-bar" id="progressBar"></div>
+    </div>
+
+    <div class="slide-counter" id="slideCounter">1 / 8</div>
+
+    <button class="webxr-button" id="webxrButton">Enter VR Presentation</button>
+
+    <div class="presentation-container">
+        <!-- Slide 1: Welcome -->
+        <div class="slide active" id="slide1">
+            <div class="slide-header">
+                <h1 class="slide-title">AIA Platform</h1>
+                <p class="slide-subtitle">Autonomous Intelligence Architecture</p>
+            </div>
+            <div class="three-container" id="scene1"></div>
+            <div class="content-overlay">
+                <h2 style="color: #00ffff; margin-bottom: 20px;">Transforming Enterprise Intelligence</h2>
+                <p style="font-size: 1.2rem; line-height: 1.6; opacity: 0.9;">
+                    Welcome to the future of autonomous enterprise intelligence. AIA represents a paradigm shift in how Fortune 500 companies approach AI-driven decision making, operational optimization, and strategic planning.
+                </p>
+            </div>
+            <div class="floating-elements">
+                <div class="floating-icon" style="top: 20%; left: 15%; animation-delay: 0s;">🚀</div>
+                <div class="floating-icon" style="top: 60%; right: 20%; animation-delay: 2s;">🧠</div>
+                <div class="floating-icon" style="top: 30%; right: 40%; animation-delay: 4s;">⚡</div>
+            </div>
+        </div>
+
+        <!-- Slide 2: Market Opportunity -->
+        <div class="slide" id="slide2">
+            <div class="slide-header">
+                <h1 class="slide-title">Market Opportunity</h1>
+                <p class="slide-subtitle">$2.3T AI Enterprise Market by 2030</p>
+            </div>
+            <div class="three-container" id="scene2"></div>
+            <div class="content-overlay">
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <div class="metric-value">$2.3T</div>
+                        <div class="metric-label">Total Addressable Market</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value">47%</div>
+                        <div class="metric-label">Annual Growth Rate</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value">500+</div>
+                        <div class="metric-label">Fortune 500 Targets</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value">15M</div>
+                        <div class="metric-label">Enterprise Users</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 3: Business Model -->
+        <div class="slide" id="slide3">
+            <div class="slide-header">
+                <h1 class="slide-title">Business Model</h1>
+                <p class="slide-subtitle">Multi-Stream Revenue Architecture</p>
+            </div>
+            <div class="three-container" id="scene3"></div>
+            <div class="data-visualization">
+                <div class="chart-container" id="businessModelChart"></div>
+            </div>
+        </div>
+
+        <!-- Slide 4: Technology Architecture -->
+        <div class="slide" id="slide4">
+            <div class="slide-header">
+                <h1 class="slide-title">Technology Stack</h1>
+                <p class="slide-subtitle">Quantum-Ready AI Infrastructure</p>
+            </div>
+            <div class="three-container" id="scene4"></div>
+            <div class="content-overlay">
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <div class="metric-value">99.9%</div>
+                        <div class="metric-label">Uptime SLA</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value">&lt;20ms</div>
+                        <div class="metric-label">Response Time</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value">2,472</div>
+                        <div class="metric-label">Knowledge Atoms</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value">∞</div>
+                        <div class="metric-label">Scalability</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 5: Financial Projections -->
+        <div class="slide" id="slide5">
+            <div class="slide-header">
+                <h1 class="slide-title">Financial Projections</h1>
+                <p class="slide-subtitle">5-Year Revenue Trajectory</p>
+            </div>
+            <div class="three-container" id="scene5"></div>
+            <div class="data-visualization">
+                <div class="chart-container" id="financialChart"></div>
+            </div>
+        </div>
+
+        <!-- Slide 6: Ecosystem & Partnerships -->
+        <div class="slide" id="slide6">
+            <div class="slide-header">
+                <h1 class="slide-title">Strategic Ecosystem</h1>
+                <p class="slide-subtitle">Fortune 500 Partnership Network</p>
+            </div>
+            <div class="three-container" id="scene6"></div>
+            <div class="content-overlay">
+                <p style="font-size: 1.2rem; line-height: 1.6; opacity: 0.9;">
+                    Strategic partnerships with EY, JPMorgan Chase, Google Cloud, and Apple Vision Pro create a comprehensive enterprise ecosystem delivering unparalleled value across industries.
+                </p>
+            </div>
+        </div>
+
+        <!-- Slide 7: Competitive Advantage -->
+        <div class="slide" id="slide7">
+            <div class="slide-header">
+                <h1 class="slide-title">Competitive Advantage</h1>
+                <p class="slide-subtitle">Autonomous Multi-Agent Intelligence</p>
+            </div>
+            <div class="three-container" id="scene7"></div>
+            <div class="content-overlay">
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <div class="metric-value">10x</div>
+                        <div class="metric-label">Processing Speed</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value">85%</div>
+                        <div class="metric-label">Cost Reduction</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value">24/7</div>
+                        <div class="metric-label">Autonomous Operation</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value">0</div>
+                        <div class="metric-label">Human Dependency</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 8: Investment Opportunity -->
+        <div class="slide" id="slide8">
+            <div class="slide-header">
+                <h1 class="slide-title">Investment Opportunity</h1>
+                <p class="slide-subtitle">Join the AI Revolution</p>
+            </div>
+            <div class="three-container" id="scene8"></div>
+            <div class="content-overlay">
+                <h2 style="color: #00ffff; margin-bottom: 20px; text-align: center;">Ready to Transform Enterprise Intelligence?</h2>
+                <p style="font-size: 1.3rem; line-height: 1.6; opacity: 0.9; text-align: center;">
+                    Partner with AIA to lead the autonomous intelligence revolution. Together, we'll redefine what's possible in enterprise AI.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="navigation" id="navigation">
+        <div class="nav-dot active" data-slide="1"></div>
+        <div class="nav-dot" data-slide="2"></div>
+        <div class="nav-dot" data-slide="3"></div>
+        <div class="nav-dot" data-slide="4"></div>
+        <div class="nav-dot" data-slide="5"></div>
+        <div class="nav-dot" data-slide="6"></div>
+        <div class="nav-dot" data-slide="7"></div>
+        <div class="nav-dot" data-slide="8"></div>
+    </div>
+
+    <div class="nav-controls">
+        <button class="nav-button" id="prevBtn">Previous</button>
+        <button class="nav-button" id="nextBtn">Next</button>
+        <button class="nav-button" id="fullscreenBtn">Fullscreen</button>
+    </div>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+        import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+
+        class ImmersivePresentation {
+            constructor() {
+                this.currentSlide = 1;
+                this.totalSlides = 8;
+                this.scenes = {};
+                this.isVRMode = false;
+
+                this.init();
+                this.setupNavigation();
+                this.createAllScenes();
+                this.checkWebXRSupport();
+
+                // Auto-advance slides every 30 seconds in demo mode
+                this.autoAdvance = setInterval(() => {
+                    if (!this.isVRMode) {
+                        this.nextSlide();
+                    }
+                }, 30000);
+            }
+
+            init() {
+                this.updateProgress();
+                this.updateSlideCounter();
+            }
+
+            setupNavigation() {
+                // Navigation dots
+                document.querySelectorAll('.nav-dot').forEach(dot => {
+                    dot.addEventListener('click', (e) => {
+                        const slideNum = parseInt(e.target.dataset.slide);
+                        this.goToSlide(slideNum);
+                    });
+                });
+
+                // Control buttons
+                document.getElementById('prevBtn').addEventListener('click', () => this.prevSlide());
+                document.getElementById('nextBtn').addEventListener('click', () => this.nextSlide());
+                document.getElementById('fullscreenBtn').addEventListener('click', () => this.toggleFullscreen());
+
+                // Keyboard navigation
+                document.addEventListener('keydown', (e) => {
+                    switch(e.key) {
+                        case 'ArrowLeft':
+                            this.prevSlide();
+                            break;
+                        case 'ArrowRight':
+                        case ' ':
+                            this.nextSlide();
+                            break;
+                        case 'f':
+                        case 'F':
+                            this.toggleFullscreen();
+                            break;
+                    }
+                });
+
+                // Mouse wheel navigation
+                let wheelTimeout;
+                document.addEventListener('wheel', (e) => {
+                    clearTimeout(wheelTimeout);
+                    wheelTimeout = setTimeout(() => {
+                        if (e.deltaY > 0) {
+                            this.nextSlide();
+                        } else {
+                            this.prevSlide();
+                        }
+                    }, 150);
+                });
+            }
+
+            async checkWebXRSupport() {
+                if ('xr' in navigator) {
+                    const supported = await navigator.xr.isSessionSupported('immersive-vr');
+                    if (supported) {
+                        document.getElementById('webxrButton').style.display = 'block';
+                        document.getElementById('webxrButton').addEventListener('click', () => this.enterVR());
+                    }
+                }
+            }
+
+            async enterVR() {
+                // WebXR implementation would go here
+                console.log('Entering VR mode...');
+                this.isVRMode = true;
+                clearInterval(this.autoAdvance);
+            }
+
+            createAllScenes() {
+                for (let i = 1; i <= this.totalSlides; i++) {
+                    this.createScene(i);
+                }
+            }
+
+            createScene(slideNumber) {
+                const container = document.getElementById(`scene${slideNumber}`);
+                if (!container) return;
+
+                // Scene setup
+                const scene = new THREE.Scene();
+                const camera = new THREE.PerspectiveCamera(75, container.clientWidth / container.clientHeight, 0.1, 1000);
+                const renderer = new THREE.WebGLRenderer({
+                    antialias: true,
+                    alpha: true,
+                    powerPreference: "high-performance"
+                });
+
+                renderer.setSize(container.clientWidth, container.clientHeight);
+                renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+                renderer.toneMapping = THREE.ACESFilmicToneMapping;
+                renderer.toneMappingExposure = 0.8;
+                container.appendChild(renderer.domElement);
+
+                // Post-processing
+                const composer = new EffectComposer(renderer);
+                composer.addPass(new RenderPass(scene, camera));
+                composer.addPass(new UnrealBloomPass(
+                    new THREE.Vector2(window.innerWidth, window.innerHeight),
+                    0.3, 0.1, 0.9
+                ));
+
+                // Controls
+                const controls = new OrbitControls(camera, renderer.domElement);
+                controls.enableDamping = true;
+                controls.dampingFactor = 0.05;
+                controls.enableZoom = false;
+                controls.enablePan = false;
+                controls.maxPolarAngle = Math.PI / 2;
+
+                // Scene-specific content
+                this.createSceneContent(scene, slideNumber);
+
+                // Store scene data
+                this.scenes[slideNumber] = {
+                    scene,
+                    camera,
+                    renderer,
+                    composer,
+                    controls,
+                    container
+                };
+
+                // Start animation loop
+                this.animate(slideNumber);
+            }
+
+            createSceneContent(scene, slideNumber) {
+                // Common lighting
+                const ambientLight = new THREE.AmbientLight(0xffffff, 0.2);
+                scene.add(ambientLight);
+
+                const mainLight = new THREE.DirectionalLight(0x00ffff, 1);
+                mainLight.position.set(10, 10, 5);
+                scene.add(mainLight);
+
+                const accentLight = new THREE.PointLight(0xffff00, 0.5, 100);
+                accentLight.position.set(-10, 5, -5);
+                scene.add(accentLight);
+
+                switch(slideNumber) {
+                    case 1:
+                        this.createWelcomeScene(scene);
+                        break;
+                    case 2:
+                        this.createMarketScene(scene);
+                        break;
+                    case 3:
+                        this.createBusinessModelScene(scene);
+                        break;
+                    case 4:
+                        this.createTechScene(scene);
+                        break;
+                    case 5:
+                        this.createFinancialScene(scene);
+                        break;
+                    case 6:
+                        this.createEcosystemScene(scene);
+                        break;
+                    case 7:
+                        this.createCompetitiveScene(scene);
+                        break;
+                    case 8:
+                        this.createInvestmentScene(scene);
+                        break;
+                }
+            }
+
+            createWelcomeScene(scene) {
+                // Central AIA logo with particle system
+                const geometry = new THREE.SphereGeometry(2, 32, 32);
+                const material = new THREE.MeshStandardMaterial({
+                    color: 0x00ffff,
+                    metalness: 0.8,
+                    roughness: 0.2,
+                    emissive: 0x004455
+                });
+                const sphere = new THREE.Mesh(geometry, material);
+                scene.add(sphere);
+
+                // Particle system
+                const particles = new THREE.BufferGeometry();
+                const particleCount = 1000;
+                const positions = new Float32Array(particleCount * 3);
+
+                for (let i = 0; i < particleCount * 3; i += 3) {
+                    positions[i] = (Math.random() - 0.5) * 50;
+                    positions[i + 1] = (Math.random() - 0.5) * 50;
+                    positions[i + 2] = (Math.random() - 0.5) * 50;
+                }
+
+                particles.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+
+                const particleMaterial = new THREE.PointsMaterial({
+                    color: 0xffff00,
+                    size: 0.1,
+                    transparent: true,
+                    opacity: 0.6
+                });
+
+                const particleSystem = new THREE.Points(particles, particleMaterial);
+                scene.add(particleSystem);
+
+                // Set camera position
+                if (this.scenes[1]) {
+                    this.scenes[1].camera.position.set(0, 0, 10);
+                }
+            }
+
+            createMarketScene(scene) {
+                // 3D bar chart for market data
+                const barData = [2.3, 1.8, 1.2, 0.8, 0.4];
+                const barColors = [0x00ffff, 0xffff00, 0x00ff00, 0xff8800, 0xff0088];
+
+                barData.forEach((value, index) => {
+                    const geometry = new THREE.BoxGeometry(0.8, value * 2, 0.8);
+                    const material = new THREE.MeshStandardMaterial({
+                        color: barColors[index],
+                        metalness: 0.5,
+                        roughness: 0.3,
+                        emissive: new THREE.Color(barColors[index]).multiplyScalar(0.1)
+                    });
+                    const bar = new THREE.Mesh(geometry, material);
+                    bar.position.set((index - 2) * 2, value, 0);
+                    scene.add(bar);
+                });
+
+                if (this.scenes[2]) {
+                    this.scenes[2].camera.position.set(0, 3, 8);
+                }
+            }
+
+            createBusinessModelScene(scene) {
+                // Interconnected nodes representing revenue streams
+                const nodePositions = [
+                    [0, 0, 0], [-3, 2, 0], [3, 2, 0], [-3, -2, 0], [3, -2, 0]
+                ];
+                const nodes = [];
+
+                nodePositions.forEach((pos, index) => {
+                    const geometry = new THREE.SphereGeometry(0.5, 16, 16);
+                    const material = new THREE.MeshStandardMaterial({
+                        color: index === 0 ? 0x00ffff : 0xffff00,
+                        metalness: 0.7,
+                        roughness: 0.2
+                    });
+                    const node = new THREE.Mesh(geometry, material);
+                    node.position.set(...pos);
+                    scene.add(node);
+                    nodes.push(node);
+                });
+
+                // Connect nodes with lines
+                const lineMaterial = new THREE.LineBasicMaterial({ color: 0x00ffff, transparent: true, opacity: 0.6 });
+                for (let i = 1; i < nodes.length; i++) {
+                    const points = [nodes[0].position, nodes[i].position];
+                    const geometry = new THREE.BufferGeometry().setFromPoints(points);
+                    const line = new THREE.Line(geometry, lineMaterial);
+                    scene.add(line);
+                }
+
+                if (this.scenes[3]) {
+                    this.scenes[3].camera.position.set(0, 0, 8);
+                }
+            }
+
+            createTechScene(scene) {
+                // Tech stack visualization as interconnected cubes
+                const stackLevels = [
+                    { name: 'Frontend', color: 0x00ffff, y: 3 },
+                    { name: 'API Layer', color: 0xffff00, y: 1 },
+                    { name: 'AI Engine', color: 0x00ff00, y: -1 },
+                    { name: 'Database', color: 0xff8800, y: -3 }
+                ];
+
+                stackLevels.forEach(level => {
+                    const geometry = new THREE.BoxGeometry(4, 0.5, 2);
+                    const material = new THREE.MeshStandardMaterial({
+                        color: level.color,
+                        metalness: 0.6,
+                        roughness: 0.3,
+                        transparent: true,
+                        opacity: 0.8
+                    });
+                    const cube = new THREE.Mesh(geometry, material);
+                    cube.position.set(0, level.y, 0);
+                    scene.add(cube);
+                });
+
+                if (this.scenes[4]) {
+                    this.scenes[4].camera.position.set(5, 2, 8);
+                }
+            }
+
+            createFinancialScene(scene) {
+                // 3D growth curve
+                const curve = new THREE.QuadraticBezierCurve3(
+                    new THREE.Vector3(-4, -2, 0),
+                    new THREE.Vector3(0, 2, 0),
+                    new THREE.Vector3(4, 4, 0)
+                );
+
+                const points = curve.getPoints(50);
+                const geometry = new THREE.BufferGeometry().setFromPoints(points);
+                const material = new THREE.LineBasicMaterial({ color: 0x00ffff, linewidth: 3 });
+                const line = new THREE.Line(geometry, material);
+                scene.add(line);
+
+                // Add data points
+                [0, 0.2, 0.4, 0.6, 0.8, 1].forEach(t => {
+                    const point = curve.getPoint(t);
+                    const geometry = new THREE.SphereGeometry(0.2, 8, 8);
+                    const material = new THREE.MeshStandardMaterial({
+                        color: 0xffff00,
+                        emissive: 0x444400
+                    });
+                    const sphere = new THREE.Mesh(geometry, material);
+                    sphere.position.copy(point);
+                    scene.add(sphere);
+                });
+
+                if (this.scenes[5]) {
+                    this.scenes[5].camera.position.set(0, 2, 8);
+                }
+            }
+
+            createEcosystemScene(scene) {
+                // Partner ecosystem as orbital system
+                const centerGeometry = new THREE.SphereGeometry(1, 16, 16);
+                const centerMaterial = new THREE.MeshStandardMaterial({
+                    color: 0x00ffff,
+                    metalness: 0.8,
+                    roughness: 0.2
+                });
+                const center = new THREE.Mesh(centerGeometry, centerMaterial);
+                scene.add(center);
+
+                // Orbiting partners
+                const partners = [
+                    { name: 'EY', distance: 3, speed: 0.01, color: 0xffff00 },
+                    { name: 'JPMorgan', distance: 4, speed: 0.008, color: 0x00ff00 },
+                    { name: 'Google', distance: 5, speed: 0.006, color: 0xff8800 },
+                    { name: 'Apple', distance: 6, speed: 0.004, color: 0xff0088 }
+                ];
+
+                partners.forEach(partner => {
+                    const geometry = new THREE.SphereGeometry(0.3, 12, 12);
+                    const material = new THREE.MeshStandardMaterial({
+                        color: partner.color,
+                        metalness: 0.6,
+                        roughness: 0.3
+                    });
+                    const sphere = new THREE.Mesh(geometry, material);
+                    sphere.userData = partner;
+                    scene.add(sphere);
+                });
+
+                if (this.scenes[6]) {
+                    this.scenes[6].camera.position.set(0, 3, 10);
+                }
+            }
+
+            createCompetitiveScene(scene) {
+                // Comparison bars
+                const categories = ['Speed', 'Cost', 'Autonomy', 'Scale'];
+                const aiaValues = [10, 8.5, 9.5, 10];
+                const competitorValues = [6, 5, 4, 6];
+
+                categories.forEach((category, index) => {
+                    // AIA bars
+                    const aiaGeometry = new THREE.BoxGeometry(0.6, aiaValues[index] * 0.5, 0.6);
+                    const aiaMaterial = new THREE.MeshStandardMaterial({
+                        color: 0x00ffff,
+                        metalness: 0.7,
+                        roughness: 0.2
+                    });
+                    const aiaBar = new THREE.Mesh(aiaGeometry, aiaMaterial);
+                    aiaBar.position.set((index - 1.5) * 2 - 0.5, aiaValues[index] * 0.25, 0);
+                    scene.add(aiaBar);
+
+                    // Competitor bars
+                    const compGeometry = new THREE.BoxGeometry(0.6, competitorValues[index] * 0.5, 0.6);
+                    const compMaterial = new THREE.MeshStandardMaterial({
+                        color: 0x666666,
+                        metalness: 0.5,
+                        roughness: 0.5
+                    });
+                    const compBar = new THREE.Mesh(compGeometry, compMaterial);
+                    compBar.position.set((index - 1.5) * 2 + 0.5, competitorValues[index] * 0.25, 0);
+                    scene.add(compBar);
+                });
+
+                if (this.scenes[7]) {
+                    this.scenes[7].camera.position.set(0, 3, 8);
+                }
+            }
+
+            createInvestmentScene(scene) {
+                // Inspiring final scene with growing network
+                const nodes = [];
+                const connections = [];
+
+                // Create network nodes
+                for (let i = 0; i < 20; i++) {
+                    const geometry = new THREE.SphereGeometry(0.2, 8, 8);
+                    const material = new THREE.MeshStandardMaterial({
+                        color: Math.random() > 0.5 ? 0x00ffff : 0xffff00,
+                        metalness: 0.8,
+                        roughness: 0.2,
+                        emissive: 0x001122
+                    });
+                    const node = new THREE.Mesh(geometry, material);
+                    node.position.set(
+                        (Math.random() - 0.5) * 10,
+                        (Math.random() - 0.5) * 10,
+                        (Math.random() - 0.5) * 10
+                    );
+                    scene.add(node);
+                    nodes.push(node);
+                }
+
+                // Create connections
+                for (let i = 0; i < nodes.length; i++) {
+                    for (let j = i + 1; j < nodes.length; j++) {
+                        if (Math.random() > 0.7) {
+                            const points = [nodes[i].position, nodes[j].position];
+                            const geometry = new THREE.BufferGeometry().setFromPoints(points);
+                            const material = new THREE.LineBasicMaterial({
+                                color: 0x00ffff,
+                                transparent: true,
+                                opacity: 0.3
+                            });
+                            const line = new THREE.Line(geometry, material);
+                            scene.add(line);
+                            connections.push(line);
+                        }
+                    }
+                }
+
+                if (this.scenes[8]) {
+                    this.scenes[8].camera.position.set(0, 0, 15);
+                }
+            }
+
+            animate(slideNumber) {
+                const sceneData = this.scenes[slideNumber];
+                if (!sceneData) return;
+
+                const animate = () => {
+                    requestAnimationFrame(animate);
+
+                    // Scene-specific animations
+                    this.updateSceneAnimation(slideNumber);
+
+                    sceneData.controls.update();
+                    sceneData.composer.render();
+                };
+
+                animate();
+            }
+
+            updateSceneAnimation(slideNumber) {
+                const scene = this.scenes[slideNumber].scene;
+                const time = Date.now() * 0.001;
+
+                switch(slideNumber) {
+                    case 1:
+                        // Rotate main sphere and animate particles
+                        scene.children.forEach(child => {
+                            if (child.geometry && child.geometry.type === 'SphereGeometry') {
+                                child.rotation.y += 0.01;
+                            }
+                            if (child.type === 'Points') {
+                                child.rotation.y += 0.002;
+                                child.rotation.x += 0.001;
+                            }
+                        });
+                        break;
+
+                    case 2:
+                        // Animate bars
+                        scene.children.forEach((child, index) => {
+                            if (child.geometry && child.geometry.type === 'BoxGeometry') {
+                                child.rotation.y = Math.sin(time + index) * 0.1;
+                            }
+                        });
+                        break;
+
+                    case 6:
+                        // Animate orbiting partners
+                        scene.children.forEach(child => {
+                            if (child.userData && child.userData.distance) {
+                                const partner = child.userData;
+                                const angle = time * partner.speed;
+                                child.position.x = Math.cos(angle) * partner.distance;
+                                child.position.z = Math.sin(angle) * partner.distance;
+                            }
+                        });
+                        break;
+
+                    default:
+                        // Default rotation animation
+                        scene.children.forEach(child => {
+                            if (child.geometry) {
+                                child.rotation.y += 0.005;
+                            }
+                        });
+                }
+            }
+
+            goToSlide(slideNumber) {
+                if (slideNumber < 1 || slideNumber > this.totalSlides || slideNumber === this.currentSlide) return;
+
+                // Hide current slide
+                document.querySelector(`#slide${this.currentSlide}`).classList.remove('active');
+                document.querySelector(`[data-slide="${this.currentSlide}"]`).classList.remove('active');
+
+                // Show new slide
+                this.currentSlide = slideNumber;
+                document.querySelector(`#slide${this.currentSlide}`).classList.add('active');
+                document.querySelector(`[data-slide="${this.currentSlide}"]`).classList.add('active');
+
+                this.updateProgress();
+                this.updateSlideCounter();
+            }
+
+            nextSlide() {
+                const nextSlide = this.currentSlide >= this.totalSlides ? 1 : this.currentSlide + 1;
+                this.goToSlide(nextSlide);
+            }
+
+            prevSlide() {
+                const prevSlide = this.currentSlide <= 1 ? this.totalSlides : this.currentSlide - 1;
+                this.goToSlide(prevSlide);
+            }
+
+            updateProgress() {
+                const progress = (this.currentSlide / this.totalSlides) * 100;
+                document.getElementById('progressBar').style.width = `${progress}%`;
+            }
+
+            updateSlideCounter() {
+                document.getElementById('slideCounter').textContent = `${this.currentSlide} / ${this.totalSlides}`;
+            }
+
+            toggleFullscreen() {
+                if (!document.fullscreenElement) {
+                    document.documentElement.requestFullscreen();
+                } else {
+                    document.exitFullscreen();
+                }
+            }
+
+            // Handle window resize
+            handleResize() {
+                Object.values(this.scenes).forEach(sceneData => {
+                    const { camera, renderer, composer, container } = sceneData;
+
+                    camera.aspect = container.clientWidth / container.clientHeight;
+                    camera.updateProjectionMatrix();
+
+                    renderer.setSize(container.clientWidth, container.clientHeight);
+                    composer.setSize(container.clientWidth, container.clientHeight);
+                });
+            }
+        }
+
+        // Initialize presentation when DOM is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            const presentation = new ImmersivePresentation();
+
+            // Handle window resize
+            window.addEventListener('resize', () => presentation.handleResize());
+
+            // Performance monitoring
+            let fps = 0;
+            let lastTime = performance.now();
+
+            function updateFPS() {
+                const now = performance.now();
+                fps = 1000 / (now - lastTime);
+                lastTime = now;
+
+                // Log performance every 5 seconds
+                if (Math.floor(now / 5000) !== Math.floor((now - 16) / 5000)) {
+                    console.log(`Performance: ${fps.toFixed(1)} FPS`);
+                }
+
+                requestAnimationFrame(updateFPS);
+            }
+
+            updateFPS();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,774 @@
+# TEMPORARILY DISABLED FOR QUOTA COMPLIANCE
+# This deployment has been temporarily disabled to meet GCP quota requirements
+# Original content below (commented out):
+#
+# # 🔐 AIA Multi-Agent Production Security & Monitoring Framework
+# # Enterprise-grade security and observability for 013a.tech
+# # Team: Cryptography Agent + MLOps Specialist + Production Readiness Assessor
+# 
+# apiVersion: v1
+# kind: Namespace
+# metadata:
+#   name: aia-security-monitoring
+#   labels:
+#     purpose: security-monitoring
+#     team: aia-multi-agent-system
+# ---
+# # 🛡️ Security Framework ConfigMap
+# apiVersion: v1
+# kind: ConfigMap
+# metadata:
+#   name: aia-security-config
+#   namespace: aia-security-monitoring
+# data:
+#   # Post-Quantum Cryptography Configuration
+#   pqc_config.yaml: |
+#     post_quantum_crypto:
+#       enabled: true
+#       algorithms:
+#         key_exchange: "Kyber-768"
+#         digital_signatures: "Dilithium3"
+#         hash_functions: "SPHINCS+-SHA256"
+# 
+#       enterprise_compliance:
+#         gdpr: true
+#         sox: true
+#         pci_dss: true
+#         hipaa: true
+# 
+#       encryption_standards:
+#         data_at_rest: "AES-256-GCM"
+#         data_in_transit: "TLS-1.3-PQC"
+#         key_management: "Google-Cloud-KMS"
+# 
+#   # Security Headers Configuration
+#   security_headers.yaml: |
+#     security_headers:
+#       strict_transport_security:
+#         max_age: 31536000
+#         include_subdomains: true
+#         preload: true
+# 
+#       content_security_policy: >
+#         default-src 'self';
+#         script-src 'self' 'unsafe-eval' https://cdn.jsdelivr.net;
+#         style-src 'self' 'unsafe-inline';
+#         img-src 'self' data: https:;
+#         connect-src 'self' wss: https:;
+#         worker-src 'self' blob:;
+#         frame-src 'self' https://js.stripe.com;
+# 
+#       permissions_policy: >
+#         accelerometer=(),
+#         camera=(),
+#         geolocation=(),
+#         microphone=(),
+#         payment=(self "https://013a.tech")
+# 
+#   # Rate Limiting Configuration
+#   rate_limiting.yaml: |
+#     rate_limits:
+#       api_general:
+#         requests_per_minute: 1000
+#         burst_capacity: 200
+#         action: "challenge"
+# 
+#       ml_endpoints:
+#         requests_per_minute: 100
+#         burst_capacity: 20
+#         action: "block"
+# 
+#       enterprise_partners:
+#         requests_per_minute: 5000
+#         burst_capacity: 1000
+#         action: "log_only"
+# 
+#       webxr_sessions:
+#         concurrent_sessions: 500
+#         max_duration_minutes: 120
+#         action: "queue"
+# 
+# ---
+# # 📊 Monitoring Stack - Prometheus
+# apiVersion: apps/v1
+# kind: Deployment
+# metadata:
+#   name: aia-prometheus-monitoring
+#   namespace: aia-security-monitoring
+# spec:
+#   replicas: 2
+#   selector:
+#     matchLabels:
+#       app: aia-prometheus
+#   template:
+#     metadata:
+#       labels:
+#         app: aia-prometheus
+#     spec:
+#       containers:
+#       - name: prometheus
+#         image: prom/prometheus:v2.45.0
+#         ports:
+#         - containerPort: 9090
+#         args:
+#         - '--config.file=/etc/prometheus/prometheus.yml'
+#         - '--storage.tsdb.path=/prometheus'
+#         - '--web.console.libraries=/etc/prometheus/console_libraries'
+#         - '--web.console.templates=/etc/prometheus/consoles'
+#         - '--storage.tsdb.retention.time=30d'
+#         - '--web.enable-lifecycle'
+#         - '--web.enable-admin-api'
+#         resources:
+#           requests:
+#             memory: "128Mi"
+#             cpu: "100m"
+#           limits:
+#             memory: "128Mi"
+#             cpu: "100m"
+#         volumeMounts:
+#         - name: config-volume
+#           mountPath: /etc/prometheus
+#         - name: storage-volume
+#           mountPath: /prometheus
+#       volumes:
+#       - name: config-volume
+#         configMap:
+#           name: aia-prometheus-config
+#       - name: storage-volume
+#         emptyDir: {}
+# 
+# ---
+# # 📊 Monitoring Stack - Grafana
+# apiVersion: apps/v1
+# kind: Deployment
+# metadata:
+#   name: aia-grafana-monitoring
+#   namespace: aia-security-monitoring
+# spec:
+#   replicas: 1
+#   selector:
+#     matchLabels:
+#       app: aia-grafana
+#   template:
+#     metadata:
+#       labels:
+#         app: aia-grafana
+#     spec:
+#       containers:
+#       - name: grafana
+#         image: grafana/grafana:10.1.0
+#         ports:
+#         - containerPort: 3000
+#         env:
+#         - name: GF_SECURITY_ADMIN_PASSWORD
+#           value: "aia-secure-2025!"
+#         - name: GF_INSTALL_PLUGINS
+#           value: "grafana-kubernetes-app,grafana-piechart-panel,grafana-worldmap-panel"
+#         resources:
+#           requests:
+#             memory: "128Mi"
+#             cpu: "100m"
+#           limits:
+#             memory: "128Mi"
+#             cpu: "100m"
+#         volumeMounts:
+#         - name: grafana-storage
+#           mountPath: /var/lib/grafana
+#         - name: grafana-config
+#           mountPath: /etc/grafana
+#       volumes:
+#       - name: grafana-storage
+#         emptyDir: {}
+#       - name: grafana-config
+#         configMap:
+#           name: aia-grafana-config
+# 
+# ---
+# # 🔒 Security Monitoring - Falco
+# apiVersion: apps/v1
+# kind: DaemonSet
+# metadata:
+#   name: aia-falco-security
+#   namespace: aia-security-monitoring
+# spec:
+#   selector:
+#     matchLabels:
+#       app: aia-falco
+#   template:
+#     metadata:
+#       labels:
+#         app: aia-falco
+#     spec:
+#       serviceAccount: falco
+#       hostNetwork: true
+#       hostPID: true
+#       containers:
+#       - name: falco
+#         image: falcosecurity/falco:0.36.0
+#         args:
+#         - /usr/bin/falco
+#         - --cri=/run/containerd/containerd.sock
+#         - --k8s-api=https://kubernetes.default:443
+#         - --k8s-api-cert=/var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+#         - --k8s-api-token=/var/run/secrets/kubernetes.io/serviceaccount/token
+#         securityContext:
+#           privileged: true
+#         resources:
+#           requests:
+#             memory: "128Mi"
+#             cpu: "100m"
+#           limits:
+#             memory: "128Mi"
+#             cpu: "100m"
+#         volumeMounts:
+#         - mountPath: /host/var/run/docker.sock
+#           name: docker-socket
+#         - mountPath: /host/run/containerd/containerd.sock
+#           name: containerd-socket
+#         - mountPath: /host/dev
+#           name: dev-fs
+#         - mountPath: /host/proc
+#           name: proc-fs
+#         - mountPath: /host/boot
+#           name: boot-fs
+#         - mountPath: /host/lib/modules
+#           name: lib-modules
+#         - mountPath: /host/usr
+#           name: usr-fs
+#         - mountPath: /etc/falco
+#           name: falco-config
+#       volumes:
+#       - name: docker-socket
+#         hostPath:
+#           path: /var/run/docker.sock
+#       - name: containerd-socket
+#         hostPath:
+#           path: /run/containerd/containerd.sock
+#       - name: dev-fs
+#         hostPath:
+#           path: /dev
+#       - name: proc-fs
+#         hostPath:
+#           path: /proc
+#       - name: boot-fs
+#         hostPath:
+#           path: /boot
+#       - name: lib-modules
+#         hostPath:
+#           path: /lib/modules
+#       - name: usr-fs
+#         hostPath:
+#           path: /usr
+#       - name: falco-config
+#         configMap:
+#           name: aia-falco-config
+# 
+# ---
+# # 🌐 Load Balancer Services
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   name: aia-prometheus-service
+#   namespace: aia-security-monitoring
+# spec:
+#   type: NodePort
+#   ports:
+#   - port: 9090
+#     targetPort: 9090
+#     name: prometheus
+#   selector:
+#     app: aia-prometheus
+# 
+# ---
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   name: aia-grafana-service
+#   namespace: aia-security-monitoring
+# spec:
+#   type: NodePort
+#   ports:
+#   - port: 3000
+#     targetPort: 3000
+#     name: grafana
+#   selector:
+#     app: aia-grafana
+# 
+# ---
+# # 📈 Enterprise Monitoring Configuration
+# apiVersion: v1
+# kind: ConfigMap
+# metadata:
+#   name: aia-prometheus-config
+#   namespace: aia-security-monitoring
+# data:
+#   prometheus.yml: |
+#     global:
+#       scrape_interval: 15s
+#       evaluation_interval: 15s
+# 
+#     rule_files:
+#       - "aia_alerting_rules.yml"
+# 
+#     scrape_configs:
+#       # AIA Blue Production Environment
+#       - job_name: 'aia-blue-production'
+#         kubernetes_sd_configs:
+#         - role: pod
+#           namespaces:
+#             names:
+#             - aia-blue-production
+#         relabel_configs:
+#         - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+#           action: keep
+#           regex: true
+# 
+#       # AIA Ultimate Production (Enterprise)
+#       - job_name: 'aia-ultimate-production'
+#         kubernetes_sd_configs:
+#         - role: pod
+#           namespaces:
+#             names:
+#             - aia-ultimate-production
+#         relabel_configs:
+#         - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+#           action: keep
+#           regex: true
+# 
+#       # Global Analytics Environment
+#       - job_name: 'aia-global-analytics'
+#         kubernetes_sd_configs:
+#         - role: pod
+#           namespaces:
+#             names:
+#             - global-013a-analytics
+#         relabel_configs:
+#         - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+#           action: keep
+#           regex: true
+# 
+#       # Cloudflare Analytics Integration
+#       - job_name: 'cloudflare-analytics'
+#         static_configs:
+#         - targets: ['cloudflare-exporter:8080']
+# 
+#       # Node Exporter for infrastructure metrics
+#       - job_name: 'node-exporter'
+#         kubernetes_sd_configs:
+#         - role: node
+#         relabel_configs:
+#         - source_labels: [__address__]
+#           regex: '(.*):10250'
+#           target_label: __address__
+#           replacement: '${1}:9100'
+# 
+#   aia_alerting_rules.yml: |
+#     groups:
+#     - name: aia_production_alerts
+#       rules:
+#       - alert: AIAHighErrorRate
+#         expr: rate(http_requests_total{status=~"5.."}[5m]) > 0.1
+#         for: 5m
+#         labels:
+#           severity: critical
+#           team: aia-multi-agent-system
+#         annotations:
+#           summary: "High error rate detected in AIA system"
+#           description: "Error rate is {{ $value }} errors per second"
+# 
+#       - alert: AIAHighLatency
+#         expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 1
+#         for: 10m
+#         labels:
+#           severity: warning
+#           team: aia-multi-agent-system
+#         annotations:
+#           summary: "High latency detected in AIA system"
+#           description: "95th percentile latency is {{ $value }} seconds"
+# 
+#       - alert: AIAMemoryUsageHigh
+#         expr: container_memory_usage_bytes / container_spec_memory_limit_bytes > 0.8
+#         for: 5m
+#         labels:
+#           severity: warning
+#           team: aia-multi-agent-system
+#         annotations:
+#           summary: "High memory usage in AIA containers"
+#           description: "Memory usage is {{ $value | humanizePercentage }}"
+# 
+#       - alert: AIA3DPerformanceIssue
+#         expr: webxr_fps < 60
+#         for: 2m
+#         labels:
+#           severity: warning
+#           team: three-js-ui-optimizer
+#         annotations:
+#           summary: "3D performance degradation detected"
+#           description: "WebXR FPS dropped to {{ $value }} fps"
+# 
+#       - alert: AIAMLDriftDetected
+#         expr: increase(ml_drift_detection_alerts[1h]) > 0
+#         for: 0m
+#         labels:
+#           severity: critical
+#           team: ml-ops-specialist
+#         annotations:
+#           summary: "ML model drift detected"
+#           description: "Model drift alert triggered in MLOps pipeline"
+# 
+# ---
+# # 📊 Grafana Dashboard Configuration
+# apiVersion: v1
+# kind: ConfigMap
+# metadata:
+#   name: aia-grafana-config
+#   namespace: aia-security-monitoring
+# data:
+#   grafana.ini: |
+#     [server]
+#     protocol = http
+#     http_port = 3000
+#     domain = monitor.013a.tech
+# 
+#     [security]
+#     admin_user = aia-admin
+#     admin_password = aia-secure-2025!
+#     allow_embedding = false
+#     cookie_secure = true
+# 
+#     [auth]
+#     disable_login_form = false
+#     disable_signout_menu = false
+# 
+#     [auth.google]
+#     enabled = true
+#     allow_sign_up = true
+#     client_id = YOUR_GOOGLE_CLIENT_ID
+#     client_secret = YOUR_GOOGLE_CLIENT_SECRET
+#     scopes = https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email
+#     auth_url = https://accounts.google.com/o/oauth2/auth
+#     token_url = https://accounts.google.com/o/oauth2/token
+#     allowed_domains = 013a.tech
+# 
+#     [dashboards]
+#     default_home_dashboard_path = /var/lib/grafana/dashboards/aia-overview.json
+# 
+#   dashboards.yaml: |
+#     apiVersion: 1
+#     providers:
+#     - name: 'default'
+#       orgId: 1
+#       folder: ''
+#       type: file
+#       disableDeletion: false
+#       updateIntervalSeconds: 10
+#       allowUiUpdates: true
+#       options:
+#         path: /var/lib/grafana/dashboards
+# 
+#   # AIA System Overview Dashboard
+#   aia-overview.json: |
+#     {
+#       "dashboard": {
+#         "id": null,
+#         "title": "AIA Multi-Agent System - Production Overview",
+#         "tags": ["aia", "production", "multi-agent"],
+#         "timezone": "browser",
+#         "refresh": "30s",
+#         "panels": [
+#           {
+#             "id": 1,
+#             "title": "AIA System Health",
+#             "type": "stat",
+#             "targets": [
+#               {
+#                 "expr": "up{job=~\"aia-.*\"}",
+#                 "legendFormat": "{{instance}}"
+#               }
+#             ],
+#             "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+#             "options": {
+#               "colorMode": "background",
+#               "graphMode": "area",
+#               "justifyMode": "auto",
+#               "orientation": "auto"
+#             }
+#           },
+#           {
+#             "id": 2,
+#             "title": "Blue-Green Deployment Status",
+#             "type": "table",
+#             "targets": [
+#               {
+#                 "expr": "kube_deployment_status_replicas{namespace=~\"aia-.*\"}",
+#                 "format": "table"
+#               }
+#             ],
+#             "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0}
+#           },
+#           {
+#             "id": 3,
+#             "title": "API Response Time (95th percentile)",
+#             "type": "graph",
+#             "targets": [
+#               {
+#                 "expr": "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job=\"aia-api\"}[5m]))",
+#                 "legendFormat": "95th percentile"
+#               }
+#             ],
+#             "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
+#             "yAxes": [
+#               {
+#                 "unit": "s",
+#                 "min": 0
+#               }
+#             ]
+#           },
+#           {
+#             "id": 4,
+#             "title": "3D Rendering Performance (FPS)",
+#             "type": "graph",
+#             "targets": [
+#               {
+#                 "expr": "webxr_fps",
+#                 "legendFormat": "WebXR FPS"
+#               },
+#               {
+#                 "expr": "threejs_fps",
+#                 "legendFormat": "Three.js FPS"
+#               }
+#             ],
+#             "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
+#             "yAxes": [
+#               {
+#                 "unit": "fps",
+#                 "min": 0,
+#                 "max": 120
+#               }
+#             ]
+#           },
+#           {
+#             "id": 5,
+#             "title": "ML Pipeline Health",
+#             "type": "heatmap",
+#             "targets": [
+#               {
+#                 "expr": "ml_drift_score",
+#                 "legendFormat": "Drift Score"
+#               }
+#             ],
+#             "gridPos": {"h": 8, "w": 24, "x": 0, "y": 16}
+#           },
+#           {
+#             "id": 6,
+#             "title": "Enterprise Partner Activity",
+#             "type": "stat",
+#             "targets": [
+#               {
+#                 "expr": "sum(rate(http_requests_total{host=\"partners.013a.tech\"}[5m]))",
+#                 "legendFormat": "Partner API Requests/sec"
+#               }
+#             ],
+#             "gridPos": {"h": 4, "w": 6, "x": 0, "y": 24}
+#           },
+#           {
+#             "id": 7,
+#             "title": "AIA Token Economics",
+#             "type": "graph",
+#             "targets": [
+#               {
+#                 "expr": "aia_tokens_minted_total",
+#                 "legendFormat": "Tokens Minted"
+#               },
+#               {
+#                 "expr": "aia_tokens_spent_total",
+#                 "legendFormat": "Tokens Spent"
+#               }
+#             ],
+#             "gridPos": {"h": 4, "w": 6, "x": 6, "y": 24}
+#           },
+#           {
+#             "id": 8,
+#             "title": "WebXR Session Analytics",
+#             "type": "graph",
+#             "targets": [
+#               {
+#                 "expr": "webxr_active_sessions",
+#                 "legendFormat": "Active VR Sessions"
+#               },
+#               {
+#                 "expr": "webxr_average_session_duration",
+#                 "legendFormat": "Avg Session Duration (min)"
+#               }
+#             ],
+#             "gridPos": {"h": 4, "w": 6, "x": 12, "y": 24}
+#           },
+#           {
+#             "id": 9,
+#             "title": "Cloudflare Edge Performance",
+#             "type": "graph",
+#             "targets": [
+#               {
+#                 "expr": "cloudflare_cache_hit_ratio",
+#                 "legendFormat": "Cache Hit Ratio"
+#               },
+#               {
+#                 "expr": "cloudflare_origin_response_time",
+#                 "legendFormat": "Origin Response Time"
+#               }
+#             ],
+#             "gridPos": {"h": 4, "w": 6, "x": 18, "y": 24}
+#           }
+#         ],
+#         "time": {
+#           "from": "now-1h",
+#           "to": "now"
+#         },
+#         "timepicker": {
+#           "refresh_intervals": ["5s", "10s", "30s", "1m", "5m", "15m", "30m", "1h", "2h", "1d"]
+#         }
+#       }
+#     }
+# 
+# ---
+# # 🔐 Falco Security Rules
+# apiVersion: v1
+# kind: ConfigMap
+# metadata:
+#   name: aia-falco-config
+#   namespace: aia-security-monitoring
+# data:
+#   falco.yaml: |
+#     # AIA-specific security rules
+#     rules_file:
+#       - /etc/falco/aia_security_rules.yaml
+#       - /etc/falco/k8s_audit_rules.yaml
+# 
+#     json_output: true
+#     json_include_output_property: true
+#     log_stderr: true
+#     log_syslog: true
+# 
+#     # Output channels
+#     outputs:
+#       rate: 1
+#       max_burst: 1000
+# 
+#     file_output:
+#       enabled: true
+#       keep_alive: false
+#       filename: /var/log/falco_events.log
+# 
+#     stdout_output:
+#       enabled: true
+# 
+#     syslog_output:
+#       enabled: true
+# 
+#   aia_security_rules.yaml: |
+#     # AIA Multi-Agent System Security Rules
+#     - rule: AIA Unauthorized Container Access
+#       desc: Detect unauthorized access to AIA containers
+#       condition: >
+#         container and container.image.repository contains "aia" and
+#         (spawned_process or proc.name != "python" and proc.name != "uvicorn")
+#       output: >
+#         Unauthorized access to AIA container
+#         (user=%user.name command=%proc.cmdline image=%container.image)
+#       priority: CRITICAL
+# 
+#     - rule: AIA Crypto Key Access
+#       desc: Detect access to cryptographic materials
+#       condition: >
+#         open_read and fd.name contains "crypto" and
+#         container.image.repository contains "aia"
+#       output: >
+#         Crypto key file accessed in AIA container
+#         (user=%user.name file=%fd.name image=%container.image)
+#       priority: CRITICAL
+# 
+#     - rule: AIA ML Model Tampering
+#       desc: Detect unauthorized ML model modifications
+#       condition: >
+#         open_write and fd.name contains "model" and
+#         container.image.repository contains "aia"
+#       output: >
+#         ML model file modified in AIA container
+#         (user=%user.name file=%fd.name command=%proc.cmdline)
+#       priority: HIGH
+# 
+#     - rule: AIA Network Anomaly
+#       desc: Detect unusual network activity
+#       condition: >
+#         inbound and container.image.repository contains "aia" and
+#         fd.sport not in (80, 443, 8000, 5432, 6379, 9090, 3000)
+#       output: >
+#         Unusual network connection to AIA container
+#         (connection=%fd.cip:%fd.cport->%fd.sip:%fd.sport image=%container.image)
+#       priority: WARNING
+# 
+# ---
+# # 🚨 Alert Manager Configuration
+# apiVersion: v1
+# kind: ConfigMap
+# metadata:
+#   name: aia-alertmanager-config
+#   namespace: aia-security-monitoring
+# data:
+#   alertmanager.yml: |
+#     global:
+#       smtp_smarthost: 'localhost:587'
+#       smtp_from: 'alerts@013a.tech'
+#       smtp_auth_username: 'hello@013a.tech'
+#       smtp_auth_password: 'fgpz-mjdy-xlzm-okev'
+# 
+#     route:
+#       group_by: ['alertname', 'team']
+#       group_wait: 10s
+#       group_interval: 10s
+#       repeat_interval: 1h
+#       receiver: 'aia-team-alerts'
+#       routes:
+#       - match:
+#           severity: critical
+#         receiver: 'aia-critical-alerts'
+#       - match:
+#           team: ml-ops-specialist
+#         receiver: 'aia-mlops-alerts'
+#       - match:
+#           team: three-js-ui-optimizer
+#         receiver: 'aia-3d-alerts'
+# 
+#     receivers:
+#     - name: 'aia-team-alerts'
+#       email_configs:
+#       - to: 'team@013a.tech'
+#         subject: '[AIA] Alert: {{ .GroupLabels.alertname }}'
+#         body: |
+#           {{ range .Alerts }}
+#           Alert: {{ .Annotations.summary }}
+#           Description: {{ .Annotations.description }}
+#           {{ end }}
+# 
+#     - name: 'aia-critical-alerts'
+#       email_configs:
+#       - to: 'critical@013a.tech'
+#         subject: '[AIA CRITICAL] {{ .GroupLabels.alertname }}'
+#         body: |
+#           CRITICAL ALERT - Immediate Action Required
+# 
+#           {{ range .Alerts }}
+#           Alert: {{ .Annotations.summary }}
+#           Description: {{ .Annotations.description }}
+#           Environment: {{ .Labels.namespace }}
+#           {{ end }}
+# 
+#     - name: 'aia-mlops-alerts'
+#       email_configs:
+#       - to: 'mlops@013a.tech'
+#         subject: '[AIA MLOps] {{ .GroupLabels.alertname }}'
+# 
+#     - name: 'aia-3d-alerts'
+#       email_configs:
+#       - to: '3d-performance@013a.tech'
+#         subject: '[AIA 3D] {{ .GroupLabels.alertname }}'

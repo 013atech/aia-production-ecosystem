@@ -1,0 +1,535 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "AIA Platform API",
+    "description": "Enterprise-grade AI platform API with neural intelligence, Fortune 500 integrations, and 3D analytics capabilities.",
+    "version": "v2.0 Enterprise",
+    "contact": {
+      "name": "Enterprise Support",
+      "email": "enterprise@013a.tech",
+      "url": "https://013a.tech/support"
+    },
+    "license": {
+      "name": "Enterprise License",
+      "url": "https://013a.tech/license/enterprise"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://api.013a.tech/v2",
+      "description": "Production API Server"
+    },
+    {
+      "url": "https://staging-api.013a.tech/v2",
+      "description": "Staging Environment"
+    }
+  ],
+  "paths": {
+    "/api/v2/auth/enterprise/login": {
+      "post": {
+        "tags": [
+          "Authentication & Users"
+        ],
+        "summary": "Enterprise SSO Authentication",
+        "description": "Authenticate enterprise users with SSO integration (Okta, Azure AD, Google Workspace)",
+        "operationId": "post__api_v2_auth_enterprise_login",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authentication successful",
+            "content": {
+              "access_token": "string",
+              "enterprise_features": [
+                "list"
+              ]
+            }
+          },
+          "401": {
+            "description": "Authentication failed"
+          },
+          "403": {
+            "description": "Enterprise license required"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "sso_provider": {
+                    "type": "string",
+                    "enum": [
+                      "okta",
+                      "azure_ad",
+                      "google"
+                    ]
+                  },
+                  "domain": {
+                    "type": "string",
+                    "example": "company.okta.com"
+                  },
+                  "token": {
+                    "type": "string",
+                    "description": "SSO authentication token"
+                  }
+                },
+                "required": [
+                  "sso_provider",
+                  "domain",
+                  "token"
+                ]
+              }
+            }
+          }
+        },
+        "x-enterprise-features": {
+          "features": [
+            "SSO Integration",
+            "Multi-tenant Security"
+          ],
+          "integrations": [
+            "Okta",
+            "Azure AD",
+            "Google Workspace"
+          ]
+        }
+      }
+    },
+    "/api/v2/users/enterprise": {
+      "get": {
+        "tags": [
+          "Authentication & Users"
+        ],
+        "summary": "List Enterprise Users",
+        "description": "Retrieve paginated list of enterprise users with advanced filtering",
+        "operationId": "get__api_v2_users_enterprise",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Users retrieved successfully"
+          },
+          "403": {
+            "description": "Insufficient permissions"
+          }
+        },
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "type": "integer",
+            "default": 1
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "type": "integer",
+            "default": 50,
+            "maximum": 1000
+          },
+          {
+            "name": "department",
+            "in": "query",
+            "type": "string",
+            "description": "Filter by department"
+          },
+          {
+            "name": "role",
+            "in": "query",
+            "type": "string",
+            "description": "Filter by user role"
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "type": "string",
+            "enum": [
+              "active",
+              "inactive",
+              "pending"
+            ]
+          }
+        ],
+        "x-enterprise-features": {
+          "features": [
+            "Advanced User Management",
+            "Department Filtering",
+            "Role-based Access"
+          ],
+          "integrations": [
+            "Active Directory",
+            "LDAP",
+            "SCIM"
+          ]
+        }
+      }
+    },
+    "/api/v2/neural/agents": {
+      "post": {
+        "tags": [
+          "Neural Intelligence"
+        ],
+        "summary": "Create Neural-Enhanced Agent",
+        "description": "Deploy AI agent with quantum-enhanced neural intelligence capabilities",
+        "operationId": "post__api_v2_neural_agents",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "description": "Agent name"
+                  },
+                  "capabilities": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "Agent capabilities"
+                  },
+                  "neural_config": {
+                    "type": "object",
+                    "properties": {
+                      "quantum_enhanced": {
+                        "type": "boolean",
+                        "default": true
+                      },
+                      "cognitive_profile": {
+                        "type": "string",
+                        "enum": [
+                          "analytical",
+                          "creative",
+                          "hybrid"
+                        ]
+                      },
+                      "learning_rate": {
+                        "type": "number",
+                        "minimum": 0.001,
+                        "maximum": 0.1
+                      }
+                    }
+                  },
+                  "enterprise_integrations": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "required": [
+                  "name",
+                  "capabilities"
+                ]
+              }
+            }
+          }
+        },
+        "x-enterprise-features": {
+          "features": [
+            "Quantum Enhancement",
+            "Cognitive Profiles",
+            "Enterprise Connectors"
+          ],
+          "integrations": [
+            "Salesforce",
+            "Tableau",
+            "Power BI",
+            "SAP"
+          ]
+        }
+      }
+    },
+    "/api/v2/marketplace/knowledge": {
+      "get": {
+        "tags": [
+          "A2A Marketplace"
+        ],
+        "summary": "Browse Agent Knowledge Marketplace",
+        "description": "Discover and purchase agent knowledge from A2A marketplace",
+        "operationId": "get__api_v2_marketplace_knowledge",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Knowledge listings retrieved"
+          },
+          "402": {
+            "description": "Insufficient AIA tokens"
+          }
+        },
+        "parameters": [
+          {
+            "name": "category",
+            "in": "query",
+            "type": "string"
+          },
+          {
+            "name": "price_min",
+            "in": "query",
+            "type": "number"
+          },
+          {
+            "name": "price_max",
+            "in": "query",
+            "type": "number"
+          },
+          {
+            "name": "enterprise_only",
+            "in": "query",
+            "type": "boolean",
+            "default": false
+          }
+        ],
+        "x-enterprise-features": {
+          "features": [
+            "Premium Knowledge Access",
+            "Bulk Purchase Options"
+          ],
+          "integrations": [
+            "Enterprise Payment Systems"
+          ]
+        }
+      }
+    },
+    "/api/v2/analytics/3d/visualizations": {
+      "post": {
+        "tags": [
+          "3D Analytics & WebXR"
+        ],
+        "summary": "Create 3D Data Visualization",
+        "description": "Generate immersive 3D data visualizations with WebXR support",
+        "operationId": "post__api_v2_analytics_3d_visualizations",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "dataset": {
+                    "type": "object",
+                    "description": "Data to visualize"
+                  },
+                  "visualization_type": {
+                    "type": "string",
+                    "enum": [
+                      "scatter3d",
+                      "heatmap3d",
+                      "network3d",
+                      "timeseries3d"
+                    ]
+                  },
+                  "webxr_enabled": {
+                    "type": "boolean",
+                    "default": false
+                  },
+                  "enterprise_branding": {
+                    "type": "object",
+                    "description": "Custom branding configuration"
+                  }
+                },
+                "required": [
+                  "dataset",
+                  "visualization_type"
+                ]
+              }
+            }
+          }
+        },
+        "x-enterprise-features": {
+          "features": [
+            "WebXR Support",
+            "Custom Branding",
+            "Advanced Visualizations"
+          ],
+          "integrations": [
+            "VR Headsets",
+            "Enterprise Displays"
+          ]
+        }
+      }
+    },
+    "/api/v2/connectors/fortune500": {
+      "get": {
+        "tags": [
+          "Enterprise Connectors"
+        ],
+        "summary": "List Available Fortune 500 Connectors",
+        "description": "Get list of pre-built enterprise system connectors",
+        "operationId": "get__api_v2_connectors_fortune500",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Connectors retrieved successfully"
+          }
+        },
+        "x-enterprise-features": {
+          "features": [],
+          "integrations": [
+            "Salesforce",
+            "SAP",
+            "Oracle",
+            "Microsoft",
+            "ServiceNow"
+          ]
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "Enterprise JWT token authentication"
+      },
+      "ApiKeyAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-API-Key",
+        "description": "API key for enterprise customers"
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "EnterpriseUser": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "name": {
+            "type": "string"
+          },
+          "department": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string"
+          },
+          "enterprise_features": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    }
+  },
+  "security": [
+    {
+      "BearerAuth": []
+    },
+    {
+      "ApiKeyAuth": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Authentication & Users",
+      "description": "Enterprise authentication and user management",
+      "externalDocs": {
+        "description": "Authentication & Users Documentation",
+        "url": "https://docs.013a.tech/authentication-&-users"
+      }
+    },
+    {
+      "name": "Neural Intelligence",
+      "description": "AI agents with quantum-enhanced capabilities",
+      "externalDocs": {
+        "description": "Neural Intelligence Documentation",
+        "url": "https://docs.013a.tech/neural-intelligence"
+      }
+    },
+    {
+      "name": "A2A Marketplace",
+      "description": "Agent-to-agent knowledge trading platform",
+      "externalDocs": {
+        "description": "A2A Marketplace Documentation",
+        "url": "https://docs.013a.tech/a2a-marketplace"
+      }
+    },
+    {
+      "name": "3D Analytics & WebXR",
+      "description": "Immersive data visualization and VR/AR experiences",
+      "externalDocs": {
+        "description": "3D Analytics & WebXR Documentation",
+        "url": "https://docs.013a.tech/3d-analytics-&-webxr"
+      }
+    },
+    {
+      "name": "Enterprise Connectors",
+      "description": "Pre-built Fortune 500 system integrations",
+      "externalDocs": {
+        "description": "Enterprise Connectors Documentation",
+        "url": "https://docs.013a.tech/enterprise-connectors"
+      }
+    }
+  ]
+}

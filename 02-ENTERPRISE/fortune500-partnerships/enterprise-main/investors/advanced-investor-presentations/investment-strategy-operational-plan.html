@@ -1,0 +1,986 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AIA Investment Strategy - Operational Plan</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0A0A0A 0%, #1A1A2E 50%, #16213E 100%);
+            color: #F5F5DC;
+            overflow: hidden;
+            font-weight: 300;
+        }
+
+        .slideshow-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        .slide {
+            display: none;
+            padding: 80px 60px;
+            height: 100vh;
+            position: relative;
+            background: linear-gradient(135deg, #0A0A0A 0%, #1A1A2E 50%, #16213E 100%);
+            animation: slideIn 1s ease-out;
+        }
+
+        .slide.active {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .slide h1 {
+            font-size: 4.5rem;
+            font-weight: 200;
+            margin-bottom: 2rem;
+            background: linear-gradient(45deg, #00BFFF, #FFD700, #FF69B4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-align: center;
+            line-height: 1.1;
+            letter-spacing: -0.02em;
+        }
+
+        .slide h2 {
+            font-size: 3.2rem;
+            font-weight: 300;
+            margin-bottom: 2.5rem;
+            background: linear-gradient(45deg, #00BFFF, #FFD700);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-align: center;
+            letter-spacing: -0.01em;
+        }
+
+        .slide h3 {
+            font-size: 2rem;
+            font-weight: 400;
+            margin-bottom: 1.5rem;
+            color: #00BFFF;
+            text-align: left;
+        }
+
+        .slide p {
+            font-size: 1.4rem;
+            line-height: 1.7;
+            margin-bottom: 2rem;
+            text-align: center;
+            font-weight: 300;
+            opacity: 0.9;
+        }
+
+        .phase-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 2.5rem;
+            margin: 3rem 0;
+        }
+
+        .phase-card {
+            background: linear-gradient(145deg, rgba(0, 191, 255, 0.05), rgba(255, 215, 0, 0.05));
+            border: 1px solid rgba(0, 191, 255, 0.2);
+            border-radius: 20px;
+            padding: 2.5rem;
+            backdrop-filter: blur(20px);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .phase-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(45deg, #00BFFF, #FFD700);
+        }
+
+        .phase-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 40px rgba(0, 191, 255, 0.3);
+        }
+
+        .phase-number {
+            font-size: 3rem;
+            font-weight: 200;
+            color: #FFD700;
+            margin-bottom: 1rem;
+        }
+
+        .phase-title {
+            font-size: 1.8rem;
+            font-weight: 500;
+            color: #00BFFF;
+            margin-bottom: 1rem;
+        }
+
+        .phase-duration {
+            font-size: 1rem;
+            color: #FF69B4;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 1.5rem;
+            font-weight: 400;
+        }
+
+        .phase-content {
+            font-size: 1.2rem;
+            line-height: 1.6;
+            color: #F5F5DC;
+            opacity: 0.9;
+        }
+
+        .step-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .step-list li {
+            font-size: 1.3rem;
+            margin-bottom: 1.5rem;
+            padding-left: 2.5rem;
+            position: relative;
+            font-weight: 300;
+            opacity: 0.9;
+            transition: all 0.3s ease;
+        }
+
+        .step-list li::before {
+            content: "→";
+            color: #00BFFF;
+            font-weight: 400;
+            position: absolute;
+            left: 0;
+            font-size: 1.5rem;
+        }
+
+        .step-list li:hover {
+            opacity: 1;
+            transform: translateX(10px);
+            color: #FFD700;
+        }
+
+        .timeline-visual {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 3rem 0;
+            position: relative;
+        }
+
+        .timeline-visual::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 10%;
+            right: 10%;
+            height: 2px;
+            background: linear-gradient(45deg, #00BFFF, #FFD700);
+            z-index: 1;
+        }
+
+        .timeline-milestone {
+            background: linear-gradient(145deg, rgba(0, 0, 0, 0.6), rgba(0, 191, 255, 0.1));
+            border: 2px solid #00BFFF;
+            border-radius: 15px;
+            padding: 1.5rem;
+            text-align: center;
+            min-width: 150px;
+            position: relative;
+            z-index: 2;
+            transition: all 0.3s ease;
+        }
+
+        .timeline-milestone:hover {
+            transform: scale(1.05);
+            box-shadow: 0 15px 30px rgba(0, 191, 255, 0.4);
+        }
+
+        .milestone-week {
+            font-size: 1rem;
+            color: #FFD700;
+            font-weight: 400;
+            margin-bottom: 0.5rem;
+        }
+
+        .milestone-title {
+            font-size: 1.1rem;
+            color: #F5F5DC;
+            font-weight: 500;
+        }
+
+        .metrics-dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            margin: 3rem 0;
+        }
+
+        .metric-tile {
+            background: rgba(0, 191, 255, 0.1);
+            border: 1px solid rgba(0, 191, 255, 0.3);
+            border-radius: 15px;
+            padding: 2rem;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .metric-tile:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 25px rgba(0, 191, 255, 0.2);
+        }
+
+        .metric-value {
+            font-size: 2.5rem;
+            font-weight: 200;
+            color: #FFD700;
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+
+        .metric-label {
+            font-size: 1.1rem;
+            color: #F5F5DC;
+            opacity: 0.8;
+            font-weight: 300;
+        }
+
+        .action-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin: 2rem 0;
+        }
+
+        .action-item {
+            background: linear-gradient(145deg, rgba(255, 105, 180, 0.05), rgba(0, 191, 255, 0.05));
+            border: 1px solid rgba(255, 105, 180, 0.3);
+            border-radius: 15px;
+            padding: 2rem;
+            transition: all 0.3s ease;
+        }
+
+        .action-item:hover {
+            transform: translateY(-3px);
+            border-color: rgba(255, 105, 180, 0.6);
+        }
+
+        .action-priority {
+            font-size: 0.9rem;
+            color: #FF69B4;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 1rem;
+            font-weight: 500;
+        }
+
+        .action-title {
+            font-size: 1.4rem;
+            color: #F5F5DC;
+            margin-bottom: 1rem;
+            font-weight: 400;
+        }
+
+        .action-description {
+            font-size: 1.1rem;
+            color: #F5F5DC;
+            opacity: 0.8;
+            line-height: 1.5;
+        }
+
+        .navigation {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            display: flex;
+            gap: 15px;
+            z-index: 1000;
+        }
+
+        .nav-btn {
+            background: rgba(0, 191, 255, 0.1);
+            border: 1px solid rgba(0, 191, 255, 0.3);
+            color: #00BFFF;
+            padding: 12px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(20px);
+            font-weight: 300;
+        }
+
+        .nav-btn:hover {
+            background: rgba(0, 191, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .slide-counter {
+            position: fixed;
+            bottom: 30px;
+            left: 30px;
+            color: #F5F5DC;
+            font-size: 1.1rem;
+            opacity: 0.7;
+            font-weight: 300;
+        }
+
+        .logo {
+            position: absolute;
+            top: 30px;
+            left: 30px;
+            font-size: 1.8rem;
+            font-weight: 200;
+            background: linear-gradient(45deg, #00BFFF, #FFD700);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .chart-container {
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 15px;
+            padding: 2rem;
+            margin: 2rem 0;
+            height: 400px;
+        }
+
+        .risk-matrix {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 3rem;
+            margin: 2rem 0;
+        }
+
+        .risk-category {
+            background: rgba(255, 69, 0, 0.1);
+            border: 1px solid rgba(255, 69, 0, 0.3);
+            border-radius: 15px;
+            padding: 2rem;
+        }
+
+        .risk-title {
+            font-size: 1.4rem;
+            color: #FF4500;
+            margin-bottom: 1rem;
+            font-weight: 400;
+        }
+
+        .cta-section {
+            text-align: center;
+            margin: 3rem 0;
+        }
+
+        .cta-button {
+            background: linear-gradient(45deg, #00BFFF, #FFD700);
+            color: #000;
+            padding: 1.2rem 2.5rem;
+            border: none;
+            border-radius: 25px;
+            font-size: 1.2rem;
+            font-weight: 500;
+            cursor: pointer;
+            margin: 1rem;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .cta-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 30px rgba(0, 191, 255, 0.4);
+        }
+    </style>
+</head>
+<body>
+    <div class="slideshow-container">
+        <div class="logo">013a AIA</div>
+
+        <!-- Slide 1: Title -->
+        <div class="slide active">
+            <h1>Investment Strategy</h1>
+            <p style="font-size: 2.2rem; margin-bottom: 3rem; font-weight: 300;">Operational Execution Plan</p>
+            <p style="font-size: 1.6rem; opacity: 0.8;">Step-by-Step Series A Fundraising Strategy</p>
+            <div class="cta-section">
+                <button class="cta-button" onclick="nextSlide()">Begin Strategy</button>
+            </div>
+        </div>
+
+        <!-- Slide 2: Executive Overview -->
+        <div class="slide">
+            <h2>Strategic Overview</h2>
+            <div class="metrics-dashboard">
+                <div class="metric-tile">
+                    <span class="metric-value">$25M</span>
+                    <span class="metric-label">Series A Target</span>
+                </div>
+                <div class="metric-tile">
+                    <span class="metric-value">90 Days</span>
+                    <span class="metric-label">Execution Timeline</span>
+                </div>
+                <div class="metric-tile">
+                    <span class="metric-value">4 Tiers</span>
+                    <span class="metric-label">Investor Segments</span>
+                </div>
+                <div class="metric-tile">
+                    <span class="metric-value">15-25x</span>
+                    <span class="metric-label">Target Returns</span>
+                </div>
+            </div>
+            <p style="font-size: 1.6rem; text-align: center; margin-top: 2rem;">
+                Comprehensive approach targeting <span style="color: #FFD700;">tier-1 enterprise-focused VCs</span> with proven track records in B2B SaaS and AI platforms
+            </p>
+        </div>
+
+        <!-- Slide 3: Phase 1 - Preparation -->
+        <div class="slide">
+            <h2>Phase 1: Foundation & Preparation</h2>
+            <div class="phase-container">
+                <div class="phase-card">
+                    <div class="phase-number">01</div>
+                    <div class="phase-title">Investment Materials</div>
+                    <div class="phase-duration">Week 1-2</div>
+                    <div class="phase-content">
+                        Complete pitch deck finalization, financial model validation, and data room preparation with comprehensive due diligence materials
+                    </div>
+                </div>
+                <div class="phase-card">
+                    <div class="phase-number">02</div>
+                    <div class="phase-title">Legal & Compliance</div>
+                    <div class="phase-duration">Week 1-3</div>
+                    <div class="phase-content">
+                        Engage top-tier law firm, complete cap table cleanup, and finalize investment documentation templates
+                    </div>
+                </div>
+                <div class="phase-card">
+                    <div class="phase-number">03</div>
+                    <div class="phase-title">Leadership Team</div>
+                    <div class="phase-duration">Week 2-4</div>
+                    <div class="phase-content">
+                        Secure commitments from CEO, CTO candidates and establish advisory board with industry veterans
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 4: Phase 2 - Investor Outreach -->
+        <div class="slide">
+            <h2>Phase 2: Strategic Investor Outreach</h2>
+            <div class="timeline-visual">
+                <div class="timeline-milestone">
+                    <div class="milestone-week">Week 3</div>
+                    <div class="milestone-title">Tier 1 VCs</div>
+                </div>
+                <div class="timeline-milestone">
+                    <div class="milestone-week">Week 4</div>
+                    <div class="milestone-title">Strategic Investors</div>
+                </div>
+                <div class="timeline-milestone">
+                    <div class="milestone-week">Week 5</div>
+                    <div class="milestone-title">AI Specialists</div>
+                </div>
+                <div class="timeline-milestone">
+                    <div class="milestone-week">Week 6</div>
+                    <div class="milestone-title">Follow-up Round</div>
+                </div>
+            </div>
+            <div class="action-grid">
+                <div class="action-item">
+                    <div class="action-priority">Critical Priority</div>
+                    <div class="action-title">Warm Introductions</div>
+                    <div class="action-description">Leverage network connections for introductions to partners at Andreessen Horowitz, Sequoia Capital, and Greylock Partners</div>
+                </div>
+                <div class="action-item">
+                    <div class="action-priority">High Priority</div>
+                    <div class="action-title">Direct Outreach</div>
+                    <div class="action-description">Personalized outreach to Google Ventures, NEA, and Kleiner Perkins with customized value propositions</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 5: Phase 3 - Due Diligence -->
+        <div class="slide">
+            <h2>Phase 3: Due Diligence Management</h2>
+            <div class="phase-container">
+                <div class="phase-card">
+                    <div class="phase-number">01</div>
+                    <div class="phase-title">Technical Validation</div>
+                    <div class="phase-duration">Week 4-7</div>
+                    <div class="phase-content">
+                        Live demonstrations of 569-atom processing simulation, architecture deep dives, and scalability proof points
+                    </div>
+                </div>
+                <div class="phase-card">
+                    <div class="phase-number">02</div>
+                    <div class="phase-title">Market Validation</div>
+                    <div class="phase-duration">Week 5-8</div>
+                    <div class="phase-content">
+                        Customer discovery calls, market sizing validation, competitive analysis, and TAM verification with target customers
+                    </div>
+                </div>
+                <div class="phase-card">
+                    <div class="phase-number">03</div>
+                    <div class="phase-title">Financial Review</div>
+                    <div class="phase-duration">Week 6-9</div>
+                    <div class="phase-content">
+                        Unit economics validation, revenue projections review, and burn rate optimization planning
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 6: Phase 4 - Term Sheet Negotiation -->
+        <div class="slide">
+            <h2>Phase 4: Term Sheet & Closing</h2>
+            <div class="timeline-visual">
+                <div class="timeline-milestone">
+                    <div class="milestone-week">Week 7-8</div>
+                    <div class="milestone-title">Term Sheets</div>
+                </div>
+                <div class="timeline-milestone">
+                    <div class="milestone-week">Week 9-10</div>
+                    <div class="milestone-title">Negotiation</div>
+                </div>
+                <div class="timeline-milestone">
+                    <div class="milestone-week">Week 11-12</div>
+                    <div class="milestone-title">Legal Process</div>
+                </div>
+                <div class="timeline-milestone">
+                    <div class="milestone-week">Week 12-13</div>
+                    <div class="milestone-title">Closing</div>
+                </div>
+            </div>
+            <div class="step-list">
+                <li>Receive and evaluate multiple term sheets from tier-1 investors</li>
+                <li>Negotiate optimal terms focusing on valuation, board composition, and protective provisions</li>
+                <li>Complete legal documentation and final due diligence requirements</li>
+                <li>Wire transfer and official Series A announcement</li>
+            </div>
+        </div>
+
+        <!-- Slide 7: Target Investor Segments -->
+        <div class="slide">
+            <h2>Investor Segmentation Strategy</h2>
+            <div class="phase-container">
+                <div class="phase-card">
+                    <div class="phase-title">Tier 1 Enterprise VCs</div>
+                    <div class="phase-content">
+                        <strong>Targets:</strong> Andreessen Horowitz, Sequoia Capital, Kleiner Perkins<br><br>
+                        <strong>Focus:</strong> Enterprise software expertise, network access, brand credibility
+                    </div>
+                </div>
+                <div class="phase-card">
+                    <div class="phase-title">AI Specialist Firms</div>
+                    <div class="phase-content">
+                        <strong>Targets:</strong> Greylock Partners, NEA, Accel Partners<br><br>
+                        <strong>Focus:</strong> AI/ML technical expertise, portfolio synergies, category understanding
+                    </div>
+                </div>
+                <div class="phase-card">
+                    <div class="phase-title">Strategic Investors</div>
+                    <div class="phase-content">
+                        <strong>Targets:</strong> Google Ventures, Microsoft Ventures, Amazon Alexa Fund<br><br>
+                        <strong>Focus:</strong> Platform integration, customer access, strategic partnerships
+                    </div>
+                </div>
+                <div class="phase-card">
+                    <div class="phase-title">Growth-Stage Firms</div>
+                    <div class="phase-content">
+                        <strong>Targets:</strong> General Catalyst, Bessemer, Battery Ventures<br><br>
+                        <strong>Focus:</strong> Scaling operations, international expansion, IPO preparation
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 8: Key Metrics & KPIs -->
+        <div class="slide">
+            <h2>Success Metrics & KPIs</h2>
+            <div class="chart-container">
+                <canvas id="progressChart"></canvas>
+            </div>
+            <div class="metrics-dashboard">
+                <div class="metric-tile">
+                    <span class="metric-value">15+</span>
+                    <span class="metric-label">Initial Meetings Target</span>
+                </div>
+                <div class="metric-tile">
+                    <span class="metric-value">5-8</span>
+                    <span class="metric-label">Deep Due Diligence</span>
+                </div>
+                <div class="metric-tile">
+                    <span class="metric-value">3-5</span>
+                    <span class="metric-label">Term Sheets Goal</span>
+                </div>
+                <div class="metric-tile">
+                    <span class="metric-value">1</span>
+                    <span class="metric-label">Lead Investor</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 9: Risk Management -->
+        <div class="slide">
+            <h2>Risk Mitigation Strategy</h2>
+            <div class="risk-matrix">
+                <div class="risk-category">
+                    <div class="risk-title">Market Risks</div>
+                    <ul class="step-list">
+                        <li>Economic downturn affecting VC funding</li>
+                        <li>Competitive market saturation</li>
+                        <li>Customer adoption slower than projected</li>
+                        <li><strong>Mitigation:</strong> Diversified investor pipeline, strong unit economics demonstration</li>
+                    </ul>
+                </div>
+                <div class="risk-category">
+                    <div class="risk-title">Execution Risks</div>
+                    <ul class="step-list">
+                        <li>Key team member departure during fundraise</li>
+                        <li>Technical demonstration failures</li>
+                        <li>Legal or compliance issues</li>
+                        <li><strong>Mitigation:</strong> Robust technical validation, experienced legal counsel</li>
+                    </ul>
+                </div>
+            </div>
+            <p style="text-align: center; font-size: 1.4rem; margin-top: 2rem; color: #FFD700;">
+                Contingency planning includes bridge funding options and alternative investor tiers
+            </p>
+        </div>
+
+        <!-- Slide 10: Execution Timeline -->
+        <div class="slide">
+            <h2>90-Day Execution Timeline</h2>
+            <div class="timeline-visual" style="flex-direction: column; gap: 2rem;">
+                <div class="timeline-milestone" style="width: 100%; max-width: 600px;">
+                    <div class="milestone-week">Days 1-21: Foundation</div>
+                    <div class="milestone-title">Materials preparation, legal setup, team assembly</div>
+                </div>
+                <div class="timeline-milestone" style="width: 100%; max-width: 600px;">
+                    <div class="milestone-week">Days 22-42: Outreach</div>
+                    <div class="milestone-title">Investor meetings, pitch presentations, initial interest</div>
+                </div>
+                <div class="timeline-milestone" style="width: 100%; max-width: 600px;">
+                    <div class="milestone-week">Days 43-63: Due Diligence</div>
+                    <div class="milestone-title">Technical validation, market validation, financial review</div>
+                </div>
+                <div class="timeline-milestone" style="width: 100%; max-width: 600px;">
+                    <div class="milestone-week">Days 64-84: Negotiation</div>
+                    <div class="milestone-title">Term sheet evaluation, negotiation, legal documentation</div>
+                </div>
+                <div class="timeline-milestone" style="width: 100%; max-width: 600px;">
+                    <div class="milestone-week">Days 85-90: Closing</div>
+                    <div class="milestone-title">Final signatures, wire transfer, announcement</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 11: Success Factors -->
+        <div class="slide">
+            <h2>Critical Success Factors</h2>
+            <div class="action-grid">
+                <div class="action-item">
+                    <div class="action-priority">Essential</div>
+                    <div class="action-title">Technical Credibility</div>
+                    <div class="action-description">Flawless demonstration of 569-atom processing simulation and multi-agent coordination capabilities</div>
+                </div>
+                <div class="action-item">
+                    <div class="action-priority">Essential</div>
+                    <div class="action-title">Market Validation</div>
+                    <div class="action-description">Strong customer discovery results and pilot program commitments from target enterprise accounts</div>
+                </div>
+                <div class="action-item">
+                    <div class="action-priority">Critical</div>
+                    <div class="action-title">Team Strength</div>
+                    <div class="action-description">World-class leadership team with proven enterprise software and AI experience</div>
+                </div>
+                <div class="action-item">
+                    <div class="action-priority">Critical</div>
+                    <div class="action-title">Competitive Positioning</div>
+                    <div class="action-description">Clear differentiation and sustainable competitive moats in autonomous analytics market</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 12: Immediate Next Steps -->
+        <div class="slide">
+            <h2>Immediate Action Items</h2>
+            <div class="phase-container">
+                <div class="phase-card">
+                    <div class="phase-number">01</div>
+                    <div class="phase-title">This Week</div>
+                    <div class="phase-duration">Priority 1</div>
+                    <div class="phase-content">
+                        <ul class="step-list" style="margin-top: 1rem;">
+                            <li>Finalize pitch deck with latest metrics</li>
+                            <li>Engage Cooley or Fenwick for legal counsel</li>
+                            <li>Complete data room setup</li>
+                            <li>Schedule first investor meetings</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="phase-card">
+                    <div class="phase-number">02</div>
+                    <div class="phase-title">Next 2 Weeks</div>
+                    <div class="phase-duration">Priority 2</div>
+                    <div class="phase-content">
+                        <ul class="step-list" style="margin-top: 1rem;">
+                            <li>Begin Andreessen Horowitz outreach</li>
+                            <li>Prepare technical demonstration environment</li>
+                            <li>Initiate customer discovery calls</li>
+                            <li>Establish PR and communications strategy</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="cta-section">
+                <button class="cta-button">Begin Execution</button>
+                <button class="cta-button" style="background: linear-gradient(45deg, #FF69B4, #00BFFF);">Review Materials</button>
+            </div>
+        </div>
+
+        <!-- Slide 13: Contingency Planning -->
+        <div class="slide">
+            <h2>Contingency & Alternative Scenarios</h2>
+            <div class="phase-container">
+                <div class="phase-card">
+                    <div class="phase-title">Scenario A: Oversubscribed Round</div>
+                    <div class="phase-content">
+                        <strong>Situation:</strong> Multiple term sheets above target valuation<br><br>
+                        <strong>Action:</strong> Auction process, optimize for strategic value beyond valuation, potentially increase round size to $30M
+                    </div>
+                </div>
+                <div class="phase-card">
+                    <div class="phase-title">Scenario B: Market Downturn</div>
+                    <div class="phase-content">
+                        <strong>Situation:</strong> Economic conditions affect VC funding appetite<br><br>
+                        <strong>Action:</strong> Bridge funding from existing investors, extend runway, focus on revenue generation
+                    </div>
+                </div>
+                <div class="phase-card">
+                    <div class="phase-title">Scenario C: Competitive Threat</div>
+                    <div class="phase-content">
+                        <strong>Situation:</strong> Major tech company announces competing solution<br><br>
+                        <strong>Action:</strong> Accelerate customer acquisition, emphasize technical differentiation, consider strategic partnerships
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 14: Post-Funding Strategy -->
+        <div class="slide">
+            <h2>Post-Series A Execution</h2>
+            <div class="timeline-visual">
+                <div class="timeline-milestone">
+                    <div class="milestone-week">Month 1-3</div>
+                    <div class="milestone-title">Team Scaling</div>
+                </div>
+                <div class="timeline-milestone">
+                    <div class="milestone-week">Month 4-6</div>
+                    <div class="milestone-title">Product Development</div>
+                </div>
+                <div class="timeline-milestone">
+                    <div class="milestone-week">Month 7-9</div>
+                    <div class="milestone-title">Market Expansion</div>
+                </div>
+                <div class="timeline-milestone">
+                    <div class="milestone-week">Month 10-12</div>
+                    <div class="milestone-title">Series B Prep</div>
+                </div>
+            </div>
+            <div class="metrics-dashboard">
+                <div class="metric-tile">
+                    <span class="metric-value">65</span>
+                    <span class="metric-label">Team Size Target</span>
+                </div>
+                <div class="metric-tile">
+                    <span class="metric-value">$4.2M</span>
+                    <span class="metric-label">ARR Target Year 1</span>
+                </div>
+                <div class="metric-tile">
+                    <span class="metric-value">25</span>
+                    <span class="metric-label">Enterprise Customers</span>
+                </div>
+                <div class="metric-tile">
+                    <span class="metric-value">Series B</span>
+                    <span class="metric-label">Next Milestone</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 15: Final Authorization -->
+        <div class="slide">
+            <h1 style="font-size: 3.5rem;">Authorization Required</h1>
+            <p style="font-size: 2rem; margin-bottom: 3rem; color: #FFD700;">Ready to Execute Investment Strategy</p>
+
+            <div class="action-grid">
+                <div class="action-item">
+                    <div class="action-priority">Approval Needed</div>
+                    <div class="action-title">Investor Outreach Authorization</div>
+                    <div class="action-description">Permission to send personalized investment proposals to target VCs and initiate formal fundraising process</div>
+                </div>
+                <div class="action-item">
+                    <div class="action-priority">Approval Needed</div>
+                    <div class="action-title">Financial Terms Authority</div>
+                    <div class="action-description">Authorization to negotiate within $20-30M range at $150M+ pre-money valuation</div>
+                </div>
+                <div class="action-item">
+                    <div class="action-priority">Approval Needed</div>
+                    <div class="action-title">Legal Engagement</div>
+                    <div class="action-description">Authorization to engage top-tier legal counsel and begin documentation preparation</div>
+                </div>
+                <div class="action-item">
+                    <div class="action-priority">Approval Needed</div>
+                    <div class="action-title">Demo Environment Setup</div>
+                    <div class="action-description">Permission to prepare production-grade demonstration environment for investor presentations</div>
+                </div>
+            </div>
+
+            <div class="cta-section">
+                <p style="font-size: 1.4rem; margin-bottom: 2rem; color: #F5F5DC;">
+                    Awaiting authorization to proceed with Series A execution
+                </p>
+                <button class="cta-button">Authorize Execution</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="navigation">
+        <button class="nav-btn" onclick="prevSlide()">← Previous</button>
+        <button class="nav-btn" onclick="nextSlide()">Next →</button>
+    </div>
+
+    <div class="slide-counter">
+        <span id="currentSlide">1</span> / <span id="totalSlides">15</span>
+    </div>
+
+    <script>
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide');
+        const totalSlides = slides.length;
+
+        document.getElementById('totalSlides').textContent = totalSlides;
+
+        function showSlide(n) {
+            slides[currentSlide].classList.remove('active');
+            currentSlide = (n + totalSlides) % totalSlides;
+            slides[currentSlide].classList.add('active');
+            document.getElementById('currentSlide').textContent = currentSlide + 1;
+
+            // Initialize progress chart on metrics slide
+            if (currentSlide === 7) {
+                setTimeout(initProgressChart, 500);
+            }
+        }
+
+        function nextSlide() {
+            showSlide(currentSlide + 1);
+        }
+
+        function prevSlide() {
+            showSlide(currentSlide - 1);
+        }
+
+        // Progress tracking chart
+        function initProgressChart() {
+            const ctx = document.getElementById('progressChart');
+            if (!ctx || ctx.chart) return;
+
+            ctx.chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['Week 1', 'Week 3', 'Week 5', 'Week 7', 'Week 9', 'Week 11', 'Week 13'],
+                    datasets: [{
+                        label: 'Investor Meetings',
+                        data: [0, 5, 12, 18, 15, 8, 3],
+                        borderColor: '#00BFFF',
+                        backgroundColor: 'rgba(0, 191, 255, 0.1)',
+                        tension: 0.4,
+                        pointRadius: 5,
+                        pointBackgroundColor: '#FFD700'
+                    }, {
+                        label: 'Due Diligence Active',
+                        data: [0, 0, 2, 6, 8, 5, 2],
+                        borderColor: '#FFD700',
+                        backgroundColor: 'rgba(255, 215, 0, 0.1)',
+                        tension: 0.4,
+                        pointRadius: 5,
+                        pointBackgroundColor: '#FF69B4'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: '#F5F5DC',
+                                font: { size: 14, weight: 300 }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                            ticks: { color: '#F5F5DC', font: { size: 12 } }
+                        },
+                        x: {
+                            grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                            ticks: { color: '#F5F5DC', font: { size: 12 } }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Keyboard navigation
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'ArrowRight' || e.key === ' ') {
+                nextSlide();
+            } else if (e.key === 'ArrowLeft') {
+                prevSlide();
+            } else if (e.key === 'Home') {
+                showSlide(0);
+            } else if (e.key === 'End') {
+                showSlide(totalSlides - 1);
+            }
+        });
+
+        // Touch/swipe support
+        let touchStartX = 0;
+        document.addEventListener('touchstart', function(e) {
+            touchStartX = e.changedTouches[0].screenX;
+        });
+
+        document.addEventListener('touchend', function(e) {
+            const touchEndX = e.changedTouches[0].screenX;
+            if (touchStartX - touchEndX > 50) {
+                nextSlide();
+            } else if (touchEndX - touchStartX > 50) {
+                prevSlide();
+            }
+        });
+
+        // Initialize
+        setTimeout(() => showSlide(0), 100);
+    </script>
+</body>
+</html>

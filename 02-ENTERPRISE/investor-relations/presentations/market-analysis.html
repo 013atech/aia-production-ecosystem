@@ -1,0 +1,1865 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AIA - Interactive Market Analysis</title>
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://unpkg.com/three@0.162.0/build/three.module.js",
+            "three/addons/": "https://unpkg.com/three@0.162.0/examples/jsm/"
+        }
+    }
+    </script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            color: #f5f5dc;
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        .market-dashboard {
+            display: grid;
+            grid-template-columns: 300px 1fr 300px;
+            grid-template-rows: 80px 1fr 150px;
+            height: 100vh;
+            gap: 0;
+        }
+
+        .header {
+            grid-column: 1 / -1;
+            background: rgba(26, 26, 26, 0.95);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(0, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 30px;
+            z-index: 1000;
+        }
+
+        .header-content {
+            display: flex;
+            align-items: center;
+            gap: 30px;
+        }
+
+        .header-title {
+            font-size: 2rem;
+            background: linear-gradient(45deg, #00ffff, #ffff00);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-weight: 300;
+        }
+
+        .market-selector {
+            display: flex;
+            gap: 15px;
+        }
+
+        .market-tab {
+            padding: 10px 20px;
+            background: rgba(0, 255, 255, 0.1);
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+            color: #f5f5dc;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .market-tab::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .market-tab:hover::before {
+            left: 100%;
+        }
+
+        .market-tab.active,
+        .market-tab:hover {
+            background: rgba(0, 255, 255, 0.2);
+            color: #00ffff;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 255, 255, 0.2);
+        }
+
+        .time-controls {
+            display: flex;
+            gap: 10px;
+        }
+
+        .time-btn {
+            padding: 8px 16px;
+            background: rgba(255, 255, 0, 0.1);
+            border: 1px solid rgba(255, 255, 0, 0.3);
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.85rem;
+            color: #f5f5dc;
+        }
+
+        .time-btn.active,
+        .time-btn:hover {
+            background: rgba(255, 255, 0, 0.2);
+            color: #ffff00;
+            transform: translateY(-1px);
+        }
+
+        .metrics-panel {
+            background: rgba(26, 26, 26, 0.95);
+            backdrop-filter: blur(20px);
+            border-right: 1px solid rgba(0, 255, 255, 0.2);
+            padding: 30px 20px;
+            overflow-y: auto;
+        }
+
+        .insights-panel {
+            background: rgba(26, 26, 26, 0.95);
+            backdrop-filter: blur(20px);
+            border-left: 1px solid rgba(0, 255, 255, 0.2);
+            padding: 30px 20px;
+            overflow-y: auto;
+        }
+
+        .panel-title {
+            font-size: 1.3rem;
+            color: #00ffff;
+            margin-bottom: 25px;
+            text-align: center;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(0, 255, 255, 0.2);
+            position: relative;
+        }
+
+        .panel-title::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 50px;
+            height: 2px;
+            background: linear-gradient(90deg, #00ffff, #ffff00);
+        }
+
+        .metric-group {
+            margin-bottom: 30px;
+        }
+
+        .metric-category {
+            font-size: 1rem;
+            color: #ffff00;
+            margin-bottom: 15px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .category-icon {
+            width: 8px;
+            height: 8px;
+            background: #ffff00;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.5; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.2); }
+        }
+
+        .metric-card {
+            background: linear-gradient(135deg, rgba(0, 255, 255, 0.1), rgba(255, 255, 0, 0.05));
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 15px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(0, 255, 255, 0.2);
+            border-color: #00ffff;
+        }
+
+        .metric-card.active {
+            border-color: #00ffff;
+            box-shadow: 0 0 25px rgba(0, 255, 255, 0.3);
+            background: linear-gradient(135deg, rgba(0, 255, 255, 0.15), rgba(255, 255, 0, 0.08));
+        }
+
+        .metric-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 10px;
+        }
+
+        .metric-title {
+            font-size: 0.9rem;
+            color: #f5f5dc;
+            font-weight: 500;
+            opacity: 0.9;
+        }
+
+        .metric-trend {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .trend-up {
+            color: #00ff88;
+        }
+
+        .trend-down {
+            color: #ff4488;
+        }
+
+        .trend-neutral {
+            color: #ffff00;
+        }
+
+        .metric-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            background: linear-gradient(45deg, #00ffff, #ffff00);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 8px;
+            line-height: 1;
+        }
+
+        .metric-description {
+            font-size: 0.75rem;
+            color: #f5f5dc;
+            opacity: 0.7;
+            line-height: 1.3;
+        }
+
+        .metric-sparkline {
+            width: 100%;
+            height: 30px;
+            margin-top: 10px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 5px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .sparkline-fill {
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 255, 255, 0.5), rgba(255, 255, 0, 0.3));
+            border-radius: 5px;
+            transition: width 2s ease;
+            position: relative;
+        }
+
+        .sparkline-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 4px;
+            height: 100%;
+            background: #00ffff;
+            border-radius: 2px;
+        }
+
+        .main-visualization {
+            position: relative;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            overflow: hidden;
+        }
+
+        .market-overlay {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            right: 20px;
+            z-index: 100;
+            display: flex;
+            justify-content: space-between;
+            pointer-events: none;
+        }
+
+        .market-legend {
+            background: rgba(26, 26, 26, 0.9);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(0, 255, 255, 0.2);
+            border-radius: 15px;
+            padding: 20px;
+            max-width: 250px;
+            pointer-events: auto;
+        }
+
+        .legend-title {
+            font-size: 1rem;
+            color: #00ffff;
+            margin-bottom: 15px;
+            font-weight: 500;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            font-size: 0.85rem;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .legend-item:hover {
+            transform: translateX(3px);
+            color: #00ffff;
+        }
+
+        .legend-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 3px;
+            margin-right: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .market-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .control-group {
+            background: rgba(26, 26, 26, 0.9);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(0, 255, 255, 0.2);
+            border-radius: 15px;
+            padding: 15px;
+            pointer-events: auto;
+        }
+
+        .control-title {
+            font-size: 0.9rem;
+            color: #ffff00;
+            margin-bottom: 12px;
+            font-weight: 500;
+        }
+
+        .control-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .control-btn {
+            background: rgba(0, 255, 255, 0.1);
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            border-radius: 8px;
+            padding: 8px 12px;
+            color: #f5f5dc;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.8rem;
+        }
+
+        .control-btn:hover {
+            background: rgba(0, 255, 255, 0.2);
+            transform: translateX(2px);
+        }
+
+        .control-btn.active {
+            background: rgba(0, 255, 255, 0.3);
+            color: #00ffff;
+            border-color: #00ffff;
+        }
+
+        .analytics-footer {
+            grid-column: 1 / -1;
+            background: rgba(26, 26, 26, 0.95);
+            backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(0, 255, 255, 0.2);
+            padding: 20px 30px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 25px;
+            overflow-x: auto;
+        }
+
+        .footer-metric {
+            text-align: center;
+            padding: 15px;
+            background: linear-gradient(135deg, rgba(0, 255, 255, 0.1), rgba(255, 255, 0, 0.05));
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            border-radius: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .footer-metric:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(0, 255, 255, 0.15);
+        }
+
+        .footer-value {
+            font-size: 1.5rem;
+            font-weight: 600;
+            background: linear-gradient(45deg, #00ffff, #ffff00);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 5px;
+        }
+
+        .footer-label {
+            font-size: 0.8rem;
+            color: #f5f5dc;
+            opacity: 0.8;
+        }
+
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(26, 26, 26, 0.9);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            transition: opacity 0.5s ease;
+        }
+
+        .loading-spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(0, 255, 255, 0.3);
+            border-top: 4px solid #00ffff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+
+        .loading-text {
+            color: #00ffff;
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+            animation: pulse 2s infinite;
+        }
+
+        .loading-details {
+            color: #f5f5dc;
+            font-size: 0.9rem;
+            opacity: 0.8;
+            text-align: center;
+            line-height: 1.4;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .insight-card {
+            background: linear-gradient(135deg, rgba(0, 255, 255, 0.1), rgba(255, 255, 0, 0.05));
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .insight-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: linear-gradient(180deg, #00ffff, #ffff00);
+        }
+
+        .insight-title {
+            font-size: 1.1rem;
+            color: #00ffff;
+            margin-bottom: 12px;
+            font-weight: 500;
+        }
+
+        .insight-content {
+            font-size: 0.9rem;
+            line-height: 1.5;
+            color: #f5f5dc;
+            opacity: 0.9;
+            margin-bottom: 12px;
+        }
+
+        .insight-impact {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 12px;
+            border-top: 1px solid rgba(0, 255, 255, 0.2);
+        }
+
+        .impact-score {
+            font-size: 0.8rem;
+            color: #ffff00;
+            font-weight: 500;
+        }
+
+        .confidence-bar {
+            width: 80px;
+            height: 4px;
+            background: rgba(0, 255, 255, 0.2);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .confidence-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #00ffff, #ffff00);
+            border-radius: 2px;
+            transition: width 1s ease;
+        }
+
+        .tooltip-market {
+            position: absolute;
+            background: rgba(26, 26, 26, 0.95);
+            border: 1px solid rgba(0, 255, 255, 0.5);
+            border-radius: 10px;
+            padding: 15px;
+            font-size: 0.9rem;
+            color: #f5f5dc;
+            pointer-events: none;
+            z-index: 3000;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            max-width: 280px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .tooltip-market.show {
+            opacity: 1;
+        }
+
+        @media (max-width: 1200px) {
+            .market-dashboard {
+                grid-template-columns: 250px 1fr 250px;
+            }
+        }
+
+        @media (max-width: 1024px) {
+            .market-dashboard {
+                grid-template-columns: 1fr;
+                grid-template-rows: 80px 200px 1fr 140px;
+            }
+
+            .metrics-panel,
+            .insights-panel {
+                display: flex;
+                gap: 20px;
+                padding: 20px;
+                overflow-x: auto;
+            }
+
+            .metric-group {
+                min-width: 250px;
+                margin-bottom: 0;
+            }
+
+            .insight-card {
+                min-width: 280px;
+                margin-bottom: 0;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .header {
+                padding: 0 15px;
+            }
+
+            .header-content {
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .header-title {
+                font-size: 1.6rem;
+            }
+
+            .market-selector,
+            .time-controls {
+                gap: 8px;
+            }
+
+            .market-tab,
+            .time-btn {
+                padding: 6px 12px;
+                font-size: 0.8rem;
+            }
+
+            .analytics-footer {
+                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+                gap: 15px;
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="market-dashboard">
+        <header class="header">
+            <div class="header-content">
+                <h1 class="header-title">Market Intelligence</h1>
+                <div class="market-selector">
+                    <div class="market-tab active" data-market="ai">AI Market</div>
+                    <div class="market-tab" data-market="enterprise">Enterprise</div>
+                    <div class="market-tab" data-market="fintech">FinTech</div>
+                    <div class="market-tab" data-market="healthcare">Healthcare</div>
+                </div>
+            </div>
+            <div class="time-controls">
+                <div class="time-btn" data-period="1m">1M</div>
+                <div class="time-btn" data-period="3m">3M</div>
+                <div class="time-btn" data-period="6m">6M</div>
+                <div class="time-btn active" data-period="1y">1Y</div>
+                <div class="time-btn" data-period="5y">5Y</div>
+            </div>
+        </header>
+
+        <aside class="metrics-panel">
+            <h3 class="panel-title">Market Metrics</h3>
+
+            <div class="metric-group">
+                <div class="metric-category">
+                    <div class="category-icon"></div>
+                    Market Size & Growth
+                </div>
+
+                <div class="metric-card active" data-metric="tam">
+                    <div class="metric-header">
+                        <div class="metric-title">Total Addressable Market</div>
+                        <div class="metric-trend trend-up">↗ +47%</div>
+                    </div>
+                    <div class="metric-value">$2.3T</div>
+                    <div class="metric-description">AI market size by 2030, growing at 47% CAGR</div>
+                    <div class="metric-sparkline">
+                        <div class="sparkline-fill" style="width: 85%;"></div>
+                    </div>
+                </div>
+
+                <div class="metric-card" data-metric="sam">
+                    <div class="metric-header">
+                        <div class="metric-title">Serviceable Available Market</div>
+                        <div class="metric-trend trend-up">↗ +42%</div>
+                    </div>
+                    <div class="metric-value">$850B</div>
+                    <div class="metric-description">Enterprise AI segment accessible to AIA</div>
+                    <div class="metric-sparkline">
+                        <div class="sparkline-fill" style="width: 78%;"></div>
+                    </div>
+                </div>
+
+                <div class="metric-card" data-metric="som">
+                    <div class="metric-header">
+                        <div class="metric-title">Serviceable Obtainable Market</div>
+                        <div class="metric-trend trend-up">↗ +38%</div>
+                    </div>
+                    <div class="metric-value">$45B</div>
+                    <div class="metric-description">Realistic market capture potential by 2030</div>
+                    <div class="metric-sparkline">
+                        <div class="sparkline-fill" style="width: 72%;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="metric-group">
+                <div class="metric-category">
+                    <div class="category-icon"></div>
+                    Competitive Landscape
+                </div>
+
+                <div class="metric-card" data-metric="competitors">
+                    <div class="metric-header">
+                        <div class="metric-title">Market Concentration</div>
+                        <div class="metric-trend trend-neutral">→ Stable</div>
+                    </div>
+                    <div class="metric-value">35%</div>
+                    <div class="metric-description">Top 5 players control 35% of market</div>
+                    <div class="metric-sparkline">
+                        <div class="sparkline-fill" style="width: 35%;"></div>
+                    </div>
+                </div>
+
+                <div class="metric-card" data-metric="barriers">
+                    <div class="metric-header">
+                        <div class="metric-title">Entry Barriers</div>
+                        <div class="metric-trend trend-down">↘ Decreasing</div>
+                    </div>
+                    <div class="metric-value">High</div>
+                    <div class="metric-description">Significant technical and capital requirements</div>
+                    <div class="metric-sparkline">
+                        <div class="sparkline-fill" style="width: 88%;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="metric-group">
+                <div class="metric-category">
+                    <div class="category-icon"></div>
+                    Customer Segments
+                </div>
+
+                <div class="metric-card" data-metric="enterprise">
+                    <div class="metric-header">
+                        <div class="metric-title">Fortune 500 Adoption</div>
+                        <div class="metric-trend trend-up">↗ +65%</div>
+                    </div>
+                    <div class="metric-value">73%</div>
+                    <div class="metric-description">F500 companies using AI solutions</div>
+                    <div class="metric-sparkline">
+                        <div class="sparkline-fill" style="width: 73%;"></div>
+                    </div>
+                </div>
+
+                <div class="metric-card" data-metric="smb">
+                    <div class="metric-header">
+                        <div class="metric-title">SMB Market Penetration</div>
+                        <div class="metric-trend trend-up">↗ +92%</div>
+                    </div>
+                    <div class="metric-value">28%</div>
+                    <div class="metric-description">Small-medium business AI adoption rate</div>
+                    <div class="metric-sparkline">
+                        <div class="sparkline-fill" style="width: 28%;"></div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <main class="main-visualization">
+            <div class="loading-overlay" id="loadingOverlay">
+                <div class="loading-spinner"></div>
+                <div class="loading-text">Analyzing Market Data</div>
+                <div class="loading-details">
+                    Processing 2.3M data points from 147 sources<br>
+                    Real-time market intelligence compilation
+                </div>
+            </div>
+
+            <div class="market-overlay">
+                <div class="market-legend">
+                    <div class="legend-title">Market Segments</div>
+                    <div class="legend-item" data-segment="enterprise">
+                        <div class="legend-color" style="background: #00ffff;"></div>
+                        <span>Enterprise AI ($850B)</span>
+                    </div>
+                    <div class="legend-item" data-segment="saas">
+                        <div class="legend-color" style="background: #ffff00;"></div>
+                        <span>SaaS Platforms ($320B)</span>
+                    </div>
+                    <div class="legend-item" data-segment="consulting">
+                        <div class="legend-color" style="background: #00ff00;"></div>
+                        <span>AI Consulting ($180B)</span>
+                    </div>
+                    <div class="legend-item" data-segment="infrastructure">
+                        <div class="legend-color" style="background: #ff8800;"></div>
+                        <span>Infrastructure ($240B)</span>
+                    </div>
+                    <div class="legend-item" data-segment="data">
+                        <div class="legend-color" style="background: #ff0088;"></div>
+                        <span>Data Services ($95B)</span>
+                    </div>
+                </div>
+
+                <div class="market-controls">
+                    <div class="control-group">
+                        <div class="control-title">Visualization</div>
+                        <div class="control-buttons">
+                            <div class="control-btn active" data-view="bubbles">Market Bubbles</div>
+                            <div class="control-btn" data-view="growth">Growth Vectors</div>
+                            <div class="control-btn" data-view="heatmap">Opportunity Heat Map</div>
+                            <div class="control-btn" data-view="network">Ecosystem Network</div>
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <div class="control-title">Filters</div>
+                        <div class="control-buttons">
+                            <div class="control-btn active" data-filter="all">All Segments</div>
+                            <div class="control-btn" data-filter="high-growth">High Growth</div>
+                            <div class="control-btn" data-filter="large-market">Large Markets</div>
+                            <div class="control-btn" data-filter="competitive">Low Competition</div>
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <div class="control-title">Analysis</div>
+                        <div class="control-buttons">
+                            <div class="control-btn" onclick="exportAnalysis()">Export Data</div>
+                            <div class="control-btn" onclick="generateReport()">Generate Report</div>
+                            <div class="control-btn" onclick="shareInsights()">Share Insights</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <canvas id="marketCanvas"></canvas>
+        </main>
+
+        <aside class="insights-panel">
+            <h3 class="panel-title">AI Insights</h3>
+
+            <div class="insight-card">
+                <div class="insight-title">Market Opportunity</div>
+                <div class="insight-content">
+                    The enterprise AI market presents a $850B opportunity with 47% CAGR. AIA's autonomous intelligence platform addresses the largest pain points in Fortune 500 digital transformation initiatives.
+                </div>
+                <div class="insight-impact">
+                    <div class="impact-score">High Impact</div>
+                    <div class="confidence-bar">
+                        <div class="confidence-fill" style="width: 94%;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="insight-card">
+                <div class="insight-title">Competitive Advantage</div>
+                <div class="insight-content">
+                    Multi-agent orchestration creates a significant moat. Only 3 companies have comparable autonomous coordination capabilities, none with AIA's comprehensive enterprise focus.
+                </div>
+                <div class="insight-impact">
+                    <div class="impact-score">Critical Advantage</div>
+                    <div class="confidence-bar">
+                        <div class="confidence-fill" style="width: 89%;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="insight-card">
+                <div class="insight-title">Customer Timing</div>
+                <div class="insight-content">
+                    73% of Fortune 500 companies are actively seeking AI solutions. Current enterprise AI adoption is at the inflection point, creating optimal market entry timing.
+                </div>
+                <div class="insight-impact">
+                    <div class="impact-score">Perfect Timing</div>
+                    <div class="confidence-bar">
+                        <div class="confidence-fill" style="width: 96%;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="insight-card">
+                <div class="insight-title">Revenue Potential</div>
+                <div class="insight-content">
+                    Serviceable obtainable market of $45B with realistic 2-5% capture achievable. Conservative projections show $900M-$2.3B revenue potential by 2030.
+                </div>
+                <div class="insight-impact">
+                    <div class="impact-score">Massive Upside</div>
+                    <div class="confidence-bar">
+                        <div class="confidence-fill" style="width: 87%;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="insight-card">
+                <div class="insight-title">Partnership Strategy</div>
+                <div class="insight-content">
+                    Strategic partnerships with EY, JPMorgan, and Google Cloud provide access to 67% of target market. Ecosystem approach accelerates customer acquisition by 3.2x.
+                </div>
+                <div class="insight-impact">
+                    <div class="impact-score">Strategic Multiplier</div>
+                    <div class="confidence-bar">
+                        <div class="confidence-fill" style="width: 91%;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="insight-card">
+                <div class="insight-title">Risk Assessment</div>
+                <div class="insight-content">
+                    Primary risks include AI regulation changes and big tech competition. Mitigation through enterprise focus and regulatory compliance framework reduces risk exposure by 65%.
+                </div>
+                <div class="insight-impact">
+                    <div class="impact-score">Manageable Risk</div>
+                    <div class="confidence-bar">
+                        <div class="confidence-fill" style="width: 78%;"></div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <section class="analytics-footer">
+            <div class="footer-metric">
+                <div class="footer-value">$2.3T</div>
+                <div class="footer-label">Total Market Size</div>
+            </div>
+            <div class="footer-metric">
+                <div class="footer-value">47%</div>
+                <div class="footer-label">Annual Growth Rate</div>
+            </div>
+            <div class="footer-metric">
+                <div class="footer-value">73%</div>
+                <div class="footer-label">Enterprise Adoption</div>
+            </div>
+            <div class="footer-metric">
+                <div class="footer-value">$45B</div>
+                <div class="footer-label">AIA's Opportunity</div>
+            </div>
+            <div class="footer-metric">
+                <div class="footer-value">94%</div>
+                <div class="footer-label">Confidence Score</div>
+            </div>
+            <div class="footer-metric">
+                <div class="footer-value">2030</div>
+                <div class="footer-label">Peak Opportunity</div>
+            </div>
+        </section>
+    </div>
+
+    <div class="tooltip-market" id="marketTooltip"></div>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+        import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+
+        class MarketAnalysis {
+            constructor() {
+                this.currentMarket = 'ai';
+                this.currentPeriod = '1y';
+                this.currentView = 'bubbles';
+                this.currentFilter = 'all';
+                this.selectedMetric = 'tam';
+
+                // Market data
+                this.marketData = {
+                    ai: {
+                        name: 'AI Market',
+                        size: 2300,
+                        growth: 47,
+                        segments: {
+                            enterprise: { size: 850, growth: 52, color: 0x00ffff, competition: 'medium' },
+                            saas: { size: 320, growth: 38, color: 0xffff00, competition: 'high' },
+                            consulting: { size: 180, growth: 45, color: 0x00ff00, competition: 'low' },
+                            infrastructure: { size: 240, growth: 41, color: 0xff8800, competition: 'high' },
+                            data: { size: 95, growth: 35, color: 0xff0088, competition: 'medium' }
+                        }
+                    },
+                    enterprise: {
+                        name: 'Enterprise Software',
+                        size: 850,
+                        growth: 28,
+                        segments: {
+                            erp: { size: 280, growth: 22, color: 0x00ffff, competition: 'high' },
+                            crm: { size: 180, growth: 25, color: 0xffff00, competition: 'high' },
+                            analytics: { size: 150, growth: 35, color: 0x00ff00, competition: 'medium' },
+                            automation: { size: 140, growth: 42, color: 0xff8800, competition: 'low' },
+                            security: { size: 100, growth: 38, color: 0xff0088, competition: 'medium' }
+                        }
+                    }
+                };
+
+                this.init();
+                this.setupEventListeners();
+                this.startLoadingSequence();
+            }
+
+            init() {
+                const canvas = document.getElementById('marketCanvas');
+                const container = canvas.parentElement;
+
+                // Scene setup
+                this.scene = new THREE.Scene();
+                this.camera = new THREE.PerspectiveCamera(75, container.clientWidth / container.clientHeight, 0.1, 1000);
+                this.renderer = new THREE.WebGLRenderer({
+                    canvas: canvas,
+                    antialias: true,
+                    alpha: true,
+                    powerPreference: "high-performance"
+                });
+
+                this.renderer.setSize(container.clientWidth, container.clientHeight);
+                this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+                this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+                this.renderer.toneMappingExposure = 1.2;
+
+                // Post-processing
+                this.composer = new EffectComposer(this.renderer);
+                this.composer.addPass(new RenderPass(this.scene, this.camera));
+                this.composer.addPass(new UnrealBloomPass(
+                    new THREE.Vector2(window.innerWidth, window.innerHeight),
+                    0.3, 0.1, 0.9
+                ));
+
+                // Controls
+                this.controls = new OrbitControls(this.camera, this.renderer.domElement);
+                this.controls.enableDamping = true;
+                this.controls.dampingFactor = 0.05;
+                this.controls.minDistance = 10;
+                this.controls.maxDistance = 100;
+
+                // Lighting
+                this.setupLighting();
+
+                // Camera position
+                this.camera.position.set(0, 20, 40);
+                this.camera.lookAt(0, 0, 0);
+
+                // Storage for market objects
+                this.marketObjects = {};
+                this.connections = [];
+                this.particles = [];
+
+                // Interaction
+                this.raycaster = new THREE.Raycaster();
+                this.mouse = new THREE.Vector2();
+            }
+
+            setupLighting() {
+                // Ambient light
+                const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+                this.scene.add(ambientLight);
+
+                // Main directional light
+                const mainLight = new THREE.DirectionalLight(0x00ffff, 1.5);
+                mainLight.position.set(30, 30, 20);
+                this.scene.add(mainLight);
+
+                // Accent lights
+                const accentLight1 = new THREE.PointLight(0xffff00, 0.8, 50);
+                accentLight1.position.set(-20, 15, -10);
+                this.scene.add(accentLight1);
+
+                const accentLight2 = new THREE.PointLight(0x00ff00, 0.6, 40);
+                accentLight2.position.set(20, -10, 15);
+                this.scene.add(accentLight2);
+
+                // Dynamic market lights
+                this.marketLights = [];
+                for (let i = 0; i < 5; i++) {
+                    const light = new THREE.PointLight(0x00ffff, 0.5, 25);
+                    light.position.set(
+                        (Math.random() - 0.5) * 40,
+                        (Math.random() - 0.5) * 30,
+                        (Math.random() - 0.5) * 40
+                    );
+                    this.scene.add(light);
+                    this.marketLights.push(light);
+                }
+            }
+
+            setupEventListeners() {
+                // Market tab selection
+                document.querySelectorAll('.market-tab').forEach(tab => {
+                    tab.addEventListener('click', (e) => {
+                        document.querySelectorAll('.market-tab').forEach(t => t.classList.remove('active'));
+                        e.currentTarget.classList.add('active');
+                        this.currentMarket = e.currentTarget.dataset.market;
+                        this.switchMarket(this.currentMarket);
+                    });
+                });
+
+                // Time period selection
+                document.querySelectorAll('.time-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('active'));
+                        e.currentTarget.classList.add('active');
+                        this.currentPeriod = e.currentTarget.dataset.period;
+                        this.updateTimeframe(this.currentPeriod);
+                    });
+                });
+
+                // Metric selection
+                document.querySelectorAll('.metric-card').forEach(card => {
+                    card.addEventListener('click', (e) => {
+                        document.querySelectorAll('.metric-card').forEach(c => c.classList.remove('active'));
+                        e.currentTarget.classList.add('active');
+                        this.selectedMetric = e.currentTarget.dataset.metric;
+                        this.highlightMetric(this.selectedMetric);
+                    });
+                });
+
+                // Visualization controls
+                document.querySelectorAll('[data-view]').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        document.querySelectorAll('[data-view]').forEach(b => b.classList.remove('active'));
+                        e.currentTarget.classList.add('active');
+                        this.currentView = e.currentTarget.dataset.view;
+                        this.switchView(this.currentView);
+                    });
+                });
+
+                // Filter controls
+                document.querySelectorAll('[data-filter]').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        document.querySelectorAll('[data-filter]').forEach(b => b.classList.remove('active'));
+                        e.currentTarget.classList.add('active');
+                        this.currentFilter = e.currentTarget.dataset.filter;
+                        this.applyFilter(this.currentFilter);
+                    });
+                });
+
+                // Legend interaction
+                document.querySelectorAll('.legend-item').forEach(item => {
+                    item.addEventListener('click', (e) => {
+                        const segment = e.currentTarget.dataset.segment;
+                        this.highlightSegment(segment);
+                    });
+                });
+
+                // Mouse interaction
+                this.renderer.domElement.addEventListener('mousemove', (e) => this.onMouseMove(e));
+                this.renderer.domElement.addEventListener('click', (e) => this.onClick(e));
+
+                // Window resize
+                window.addEventListener('resize', () => this.handleResize());
+
+                // Keyboard shortcuts
+                document.addEventListener('keydown', (e) => {
+                    switch(e.key) {
+                        case '1': this.switchView('bubbles'); break;
+                        case '2': this.switchView('growth'); break;
+                        case '3': this.switchView('heatmap'); break;
+                        case '4': this.switchView('network'); break;
+                        case 'r': this.resetView(); break;
+                        case 'e': this.exportAnalysis(); break;
+                    }
+                });
+            }
+
+            startLoadingSequence() {
+                // Simulate data loading with progress
+                let progress = 0;
+                const loadingSteps = [
+                    'Connecting to data sources...',
+                    'Fetching market intelligence...',
+                    'Processing competitive analysis...',
+                    'Calculating growth projections...',
+                    'Generating insights...',
+                    'Finalizing visualization...'
+                ];
+
+                const updateProgress = () => {
+                    if (progress < loadingSteps.length) {
+                        document.querySelector('.loading-details').innerHTML =
+                            `${loadingSteps[progress]}<br>Processing 2.3M data points from 147 sources`;
+                        progress++;
+                        setTimeout(updateProgress, 800);
+                    } else {
+                        // Loading complete
+                        setTimeout(() => {
+                            this.createVisualization();
+                            this.startAnimation();
+                            document.getElementById('loadingOverlay').style.opacity = '0';
+                            setTimeout(() => {
+                                document.getElementById('loadingOverlay').style.display = 'none';
+                            }, 500);
+                        }, 500);
+                    }
+                };
+
+                updateProgress();
+            }
+
+            createVisualization() {
+                this.clearScene();
+                this.createMarketBubbles();
+                this.createBackgroundElements();
+                this.updateMetricHighlighting();
+            }
+
+            createMarketBubbles() {
+                const marketSegments = this.marketData[this.currentMarket].segments;
+                const positions = this.calculateBubblePositions(Object.keys(marketSegments).length);
+
+                Object.entries(marketSegments).forEach(([key, segment], index) => {
+                    // Bubble size based on market size
+                    const radius = Math.log(segment.size) * 0.8;
+
+                    // Create bubble
+                    const geometry = new THREE.SphereGeometry(radius, 32, 32);
+                    const material = new THREE.MeshStandardMaterial({
+                        color: segment.color,
+                        metalness: 0.7,
+                        roughness: 0.3,
+                        emissive: new THREE.Color(segment.color).multiplyScalar(0.1),
+                        transparent: true,
+                        opacity: 0.8
+                    });
+
+                    const bubble = new THREE.Mesh(geometry, material);
+                    bubble.position.copy(positions[index]);
+                    bubble.name = key;
+                    bubble.userData = {
+                        segment: key,
+                        ...segment,
+                        originalRadius: radius
+                    };
+
+                    this.scene.add(bubble);
+                    this.marketObjects[key] = bubble;
+
+                    // Add growth indicator
+                    this.createGrowthIndicator(bubble, segment.growth);
+
+                    // Add market size label
+                    this.createMarketLabel(bubble, `$${segment.size}B`, segment.color);
+
+                    // Add pulsing effect for high-growth segments
+                    if (segment.growth > 40) {
+                        this.createPulseEffect(bubble);
+                    }
+                });
+
+                // Create connections between related segments
+                this.createSegmentConnections(marketSegments);
+            }
+
+            calculateBubblePositions(count) {
+                const positions = [];
+                const radius = 25;
+
+                for (let i = 0; i < count; i++) {
+                    const angle = (i / count) * Math.PI * 2;
+                    const x = Math.cos(angle) * radius + (Math.random() - 0.5) * 10;
+                    const z = Math.sin(angle) * radius + (Math.random() - 0.5) * 10;
+                    const y = (Math.random() - 0.5) * 15;
+
+                    positions.push(new THREE.Vector3(x, y, z));
+                }
+
+                return positions;
+            }
+
+            createGrowthIndicator(bubble, growth) {
+                // Growth arrow/indicator
+                const arrowGeometry = new THREE.ConeGeometry(0.5, growth * 0.1, 8);
+                const arrowMaterial = new THREE.MeshBasicMaterial({
+                    color: growth > 40 ? 0x00ff88 : growth > 25 ? 0xffff00 : 0xff8800,
+                    transparent: true,
+                    opacity: 0.8
+                });
+
+                const arrow = new THREE.Mesh(arrowGeometry, arrowMaterial);
+                arrow.position.copy(bubble.position);
+                arrow.position.y += bubble.userData.originalRadius + 2;
+                arrow.rotation.x = -Math.PI / 2;
+                arrow.name = bubble.name + '_growth';
+
+                this.scene.add(arrow);
+            }
+
+            createMarketLabel(bubble, text, color) {
+                // Simplified label using geometry
+                const labelGeometry = new THREE.PlaneGeometry(4, 0.8);
+                const labelMaterial = new THREE.MeshBasicMaterial({
+                    color: color,
+                    transparent: true,
+                    opacity: 0.9,
+                    side: THREE.DoubleSide
+                });
+
+                const label = new THREE.Mesh(labelGeometry, labelMaterial);
+                label.position.copy(bubble.position);
+                label.position.y -= bubble.userData.originalRadius + 1.5;
+                label.lookAt(this.camera.position);
+                label.name = bubble.name + '_label';
+
+                this.scene.add(label);
+            }
+
+            createPulseEffect(bubble) {
+                const pulseGeometry = new THREE.SphereGeometry(bubble.userData.originalRadius * 1.2, 16, 16);
+                const pulseMaterial = new THREE.MeshBasicMaterial({
+                    color: bubble.userData.color,
+                    transparent: true,
+                    opacity: 0.2,
+                    wireframe: true
+                });
+
+                const pulse = new THREE.Mesh(pulseGeometry, pulseMaterial);
+                pulse.position.copy(bubble.position);
+                pulse.name = bubble.name + '_pulse';
+
+                this.scene.add(pulse);
+                bubble.userData.pulse = pulse;
+            }
+
+            createSegmentConnections(segments) {
+                const segmentKeys = Object.keys(segments);
+
+                for (let i = 0; i < segmentKeys.length; i++) {
+                    for (let j = i + 1; j < segmentKeys.length; j++) {
+                        if (Math.random() > 0.6) { // Only some connections
+                            this.createConnection(segmentKeys[i], segmentKeys[j]);
+                        }
+                    }
+                }
+            }
+
+            createConnection(fromKey, toKey) {
+                const fromBubble = this.marketObjects[fromKey];
+                const toBubble = this.marketObjects[toKey];
+
+                if (!fromBubble || !toBubble) return;
+
+                // Create curved connection
+                const midpoint = new THREE.Vector3()
+                    .addVectors(fromBubble.position, toBubble.position)
+                    .multiplyScalar(0.5);
+                midpoint.y += 5;
+
+                const curve = new THREE.QuadraticBezierCurve3(
+                    fromBubble.position,
+                    midpoint,
+                    toBubble.position
+                );
+
+                const points = curve.getPoints(50);
+                const geometry = new THREE.BufferGeometry().setFromPoints(points);
+                const material = new THREE.LineBasicMaterial({
+                    color: 0x00aaff,
+                    transparent: true,
+                    opacity: 0.4
+                });
+
+                const line = new THREE.Line(geometry, material);
+                line.userData = { from: fromKey, to: toKey };
+
+                this.scene.add(line);
+                this.connections.push(line);
+            }
+
+            createBackgroundElements() {
+                // Market environment particles
+                const particleCount = 500;
+                const geometry = new THREE.BufferGeometry();
+                const positions = new Float32Array(particleCount * 3);
+                const colors = new Float32Array(particleCount * 3);
+
+                for (let i = 0; i < particleCount; i++) {
+                    const i3 = i * 3;
+
+                    // Random positions in market space
+                    positions[i3] = (Math.random() - 0.5) * 100;
+                    positions[i3 + 1] = (Math.random() - 0.5) * 60;
+                    positions[i3 + 2] = (Math.random() - 0.5) * 100;
+
+                    // Market-themed colors
+                    const colorOptions = [
+                        new THREE.Color(0x00ffff),
+                        new THREE.Color(0xffff00),
+                        new THREE.Color(0x00ff00),
+                        new THREE.Color(0xff8800),
+                        new THREE.Color(0xff0088)
+                    ];
+                    const color = colorOptions[Math.floor(Math.random() * colorOptions.length)];
+                    colors[i3] = color.r;
+                    colors[i3 + 1] = color.g;
+                    colors[i3 + 2] = color.b;
+                }
+
+                geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+                geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+                const material = new THREE.PointsMaterial({
+                    size: 0.3,
+                    transparent: true,
+                    opacity: 0.4,
+                    vertexColors: true,
+                    sizeAttenuation: true
+                });
+
+                const particles = new THREE.Points(geometry, material);
+                this.scene.add(particles);
+                this.backgroundParticles = particles;
+            }
+
+            switchMarket(market) {
+                this.currentMarket = market;
+                this.createVisualization();
+                this.updateMarketMetrics();
+            }
+
+            switchView(view) {
+                this.currentView = view;
+
+                switch(view) {
+                    case 'bubbles':
+                        this.showBubbleView();
+                        break;
+                    case 'growth':
+                        this.showGrowthView();
+                        break;
+                    case 'heatmap':
+                        this.showHeatmapView();
+                        break;
+                    case 'network':
+                        this.showNetworkView();
+                        break;
+                }
+            }
+
+            showBubbleView() {
+                // Default bubble visualization
+                Object.values(this.marketObjects).forEach(obj => {
+                    obj.visible = true;
+                    obj.material.wireframe = false;
+                    obj.material.opacity = 0.8;
+                });
+            }
+
+            showGrowthView() {
+                // Emphasize growth indicators
+                Object.values(this.marketObjects).forEach(obj => {
+                    const growth = obj.userData.growth;
+                    const intensity = growth / 50;
+                    obj.material.emissive.setScalar(intensity * 0.3);
+
+                    // Scale based on growth
+                    const scale = 0.8 + (growth / 50) * 0.4;
+                    obj.scale.setScalar(scale);
+                });
+            }
+
+            showHeatmapView() {
+                // Color-code by competition level
+                Object.values(this.marketObjects).forEach(obj => {
+                    const competition = obj.userData.competition;
+                    let heatColor;
+
+                    switch(competition) {
+                        case 'low':
+                            heatColor = 0x00ff00; // Green - good opportunity
+                            break;
+                        case 'medium':
+                            heatColor = 0xffff00; // Yellow - moderate
+                            break;
+                        case 'high':
+                            heatColor = 0xff4444; // Red - high competition
+                            break;
+                    }
+
+                    obj.material.color.setHex(heatColor);
+                    obj.material.emissive.setScalar(0.2);
+                });
+            }
+
+            showNetworkView() {
+                // Emphasize connections
+                this.connections.forEach(line => {
+                    line.material.opacity = 0.8;
+                    line.material.color.setHex(0x00ffff);
+                });
+
+                // Make bubbles more transparent to show network
+                Object.values(this.marketObjects).forEach(obj => {
+                    obj.material.opacity = 0.5;
+                    obj.material.wireframe = true;
+                });
+            }
+
+            applyFilter(filter) {
+                const segments = this.marketData[this.currentMarket].segments;
+
+                Object.entries(this.marketObjects).forEach(([key, obj]) => {
+                    let visible = true;
+                    const segment = segments[key];
+
+                    switch(filter) {
+                        case 'high-growth':
+                            visible = segment.growth > 40;
+                            break;
+                        case 'large-market':
+                            visible = segment.size > 200;
+                            break;
+                        case 'competitive':
+                            visible = segment.competition === 'low';
+                            break;
+                        case 'all':
+                        default:
+                            visible = true;
+                    }
+
+                    obj.visible = visible;
+
+                    // Also hide related elements
+                    const growthIndicator = this.scene.getObjectByName(key + '_growth');
+                    const label = this.scene.getObjectByName(key + '_label');
+                    const pulse = this.scene.getObjectByName(key + '_pulse');
+
+                    if (growthIndicator) growthIndicator.visible = visible;
+                    if (label) label.visible = visible;
+                    if (pulse) pulse.visible = visible;
+                });
+
+                // Update connections visibility
+                this.connections.forEach(line => {
+                    const fromVisible = this.marketObjects[line.userData.from]?.visible;
+                    const toVisible = this.marketObjects[line.userData.to]?.visible;
+                    line.visible = fromVisible && toVisible;
+                });
+            }
+
+            highlightMetric(metric) {
+                // Reset all objects
+                Object.values(this.marketObjects).forEach(obj => {
+                    obj.material.emissive.setScalar(0.1);
+                    obj.scale.setScalar(1);
+                });
+
+                // Highlight based on metric
+                switch(metric) {
+                    case 'tam':
+                        // Highlight all segments
+                        Object.values(this.marketObjects).forEach(obj => {
+                            obj.material.emissive.setScalar(0.2);
+                        });
+                        break;
+                    case 'sam':
+                        // Highlight enterprise segments
+                        ['enterprise', 'saas'].forEach(key => {
+                            if (this.marketObjects[key]) {
+                                this.marketObjects[key].material.emissive.setScalar(0.3);
+                                this.marketObjects[key].scale.setScalar(1.1);
+                            }
+                        });
+                        break;
+                    case 'competitors':
+                        // Highlight based on competition
+                        Object.values(this.marketObjects).forEach(obj => {
+                            if (obj.userData.competition === 'low') {
+                                obj.material.emissive.setScalar(0.3);
+                                obj.scale.setScalar(1.15);
+                            }
+                        });
+                        break;
+                }
+            }
+
+            highlightSegment(segment) {
+                // Reset all segments
+                Object.values(this.marketObjects).forEach(obj => {
+                    obj.material.emissive.setScalar(0.1);
+                    obj.scale.setScalar(1);
+                });
+
+                // Highlight selected segment
+                if (this.marketObjects[segment]) {
+                    const obj = this.marketObjects[segment];
+                    obj.material.emissive.setScalar(0.3);
+                    obj.scale.setScalar(1.2);
+
+                    // Highlight related connections
+                    this.connections.forEach(line => {
+                        if (line.userData.from === segment || line.userData.to === segment) {
+                            line.material.opacity = 1;
+                            line.material.color.setHex(0xffff00);
+                        } else {
+                            line.material.opacity = 0.2;
+                        }
+                    });
+                }
+            }
+
+            updateTimeframe(period) {
+                // Adjust growth projections based on timeframe
+                const multipliers = {
+                    '1m': 0.08,
+                    '3m': 0.25,
+                    '6m': 0.5,
+                    '1y': 1,
+                    '5y': 3.5
+                };
+
+                const multiplier = multipliers[period] || 1;
+
+                Object.values(this.marketObjects).forEach(obj => {
+                    const adjustedGrowth = obj.userData.growth * multiplier;
+                    const intensity = Math.min(adjustedGrowth / 50, 1);
+                    obj.material.emissive.setScalar(intensity * 0.2);
+                });
+            }
+
+            updateMarketMetrics() {
+                const market = this.marketData[this.currentMarket];
+
+                // Update footer metrics
+                document.querySelector('.analytics-footer').innerHTML = `
+                    <div class="footer-metric">
+                        <div class="footer-value">$${market.size}B</div>
+                        <div class="footer-label">Market Size</div>
+                    </div>
+                    <div class="footer-metric">
+                        <div class="footer-value">${market.growth}%</div>
+                        <div class="footer-label">Growth Rate</div>
+                    </div>
+                    <div class="footer-metric">
+                        <div class="footer-value">${Object.keys(market.segments).length}</div>
+                        <div class="footer-label">Segments</div>
+                    </div>
+                    <div class="footer-metric">
+                        <div class="footer-value">$${Math.max(...Object.values(market.segments).map(s => s.size))}B</div>
+                        <div class="footer-label">Largest Segment</div>
+                    </div>
+                    <div class="footer-metric">
+                        <div class="footer-value">${Math.max(...Object.values(market.segments).map(s => s.growth))}%</div>
+                        <div class="footer-label">Fastest Growth</div>
+                    </div>
+                    <div class="footer-metric">
+                        <div class="footer-value">2030</div>
+                        <div class="footer-label">Peak Year</div>
+                    </div>
+                `;
+            }
+
+            onMouseMove(event) {
+                const rect = this.renderer.domElement.getBoundingClientRect();
+                this.mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+                this.mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+                // Update market lights to follow mouse
+                this.marketLights.forEach((light, index) => {
+                    const vector = new THREE.Vector3(this.mouse.x, this.mouse.y, 0.5);
+                    vector.unproject(this.camera);
+                    vector.sub(this.camera.position).normalize();
+                    vector.multiplyScalar(20 + index * 5);
+                    vector.add(this.camera.position);
+                    light.position.copy(vector);
+                });
+
+                // Raycasting for hover effects
+                this.raycaster.setFromCamera(this.mouse, this.camera);
+                const intersects = this.raycaster.intersectObjects(Object.values(this.marketObjects));
+
+                if (intersects.length > 0) {
+                    const obj = intersects[0].object;
+                    if (obj.userData) {
+                        this.showTooltip(event, obj.userData);
+
+                        // Hover effect
+                        if (obj !== this.hoveredObject) {
+                            if (this.hoveredObject) {
+                                this.hoveredObject.scale.setScalar(1);
+                            }
+                            this.hoveredObject = obj;
+                            obj.scale.setScalar(1.1);
+                        }
+                    }
+                } else {
+                    this.hideTooltip();
+                    if (this.hoveredObject) {
+                        this.hoveredObject.scale.setScalar(1);
+                        this.hoveredObject = null;
+                    }
+                }
+            }
+
+            onClick(event) {
+                this.raycaster.setFromCamera(this.mouse, this.camera);
+                const intersects = this.raycaster.intersectObjects(Object.values(this.marketObjects));
+
+                if (intersects.length > 0) {
+                    const obj = intersects[0].object;
+                    if (obj.name && obj.userData) {
+                        this.highlightSegment(obj.name);
+                    }
+                }
+            }
+
+            showTooltip(event, segmentData) {
+                const tooltip = document.getElementById('marketTooltip');
+                tooltip.innerHTML = `
+                    <strong>${segmentData.segment.toUpperCase()}</strong><br>
+                    Market Size: $${segmentData.size}B<br>
+                    Growth Rate: ${segmentData.growth}%<br>
+                    Competition: ${segmentData.competition}<br>
+                    Opportunity Score: ${this.calculateOpportunityScore(segmentData)}
+                `;
+                tooltip.style.left = event.clientX + 15 + 'px';
+                tooltip.style.top = event.clientY - 15 + 'px';
+                tooltip.classList.add('show');
+            }
+
+            hideTooltip() {
+                document.getElementById('marketTooltip').classList.remove('show');
+            }
+
+            calculateOpportunityScore(segment) {
+                const sizeScore = Math.min(segment.size / 100, 10);
+                const growthScore = segment.growth / 5;
+                const compScore = segment.competition === 'low' ? 10 : segment.competition === 'medium' ? 6 : 3;
+
+                return Math.round((sizeScore + growthScore + compScore) / 3 * 10) + '%';
+            }
+
+            resetView() {
+                // Reset camera
+                this.camera.position.set(0, 20, 40);
+                this.controls.target.set(0, 0, 0);
+                this.controls.update();
+
+                // Reset all visualizations
+                this.showBubbleView();
+                this.applyFilter('all');
+            }
+
+            clearScene() {
+                // Remove all market objects
+                const objectsToRemove = [];
+                this.scene.traverse((child) => {
+                    if (child.type === 'Mesh' || child.type === 'Line' || child.type === 'Points') {
+                        if (!child.isLight && child !== this.backgroundParticles) {
+                            objectsToRemove.push(child);
+                        }
+                    }
+                });
+
+                objectsToRemove.forEach(obj => {
+                    this.scene.remove(obj);
+                    if (obj.geometry) obj.geometry.dispose();
+                    if (obj.material) obj.material.dispose();
+                });
+
+                // Clear references
+                this.marketObjects = {};
+                this.connections = [];
+            }
+
+            animate() {
+                requestAnimationFrame(() => this.animate());
+
+                const time = Date.now() * 0.001;
+
+                // Animate background particles
+                if (this.backgroundParticles) {
+                    this.backgroundParticles.rotation.y += 0.001;
+                    this.backgroundParticles.rotation.x += 0.0005;
+                }
+
+                // Animate market bubbles
+                Object.values(this.marketObjects).forEach((obj, index) => {
+                    // Gentle floating
+                    obj.position.y += Math.sin(time * 0.5 + index) * 0.01;
+                    obj.rotation.y += 0.005;
+
+                    // Pulse effect for high-growth segments
+                    if (obj.userData.pulse) {
+                        const scale = 1 + Math.sin(time * 2 + index) * 0.1;
+                        obj.userData.pulse.scale.setScalar(scale);
+                        obj.userData.pulse.material.opacity = 0.1 + Math.sin(time * 2 + index) * 0.1;
+                    }
+                });
+
+                // Animate market lights
+                this.marketLights.forEach((light, index) => {
+                    light.intensity = 0.3 + Math.sin(time + index) * 0.2;
+                    const hue = (time * 0.1 + index * 0.2) % 1;
+                    light.color.setHSL(hue, 0.7, 0.5);
+                });
+
+                // Animate connections
+                this.connections.forEach(line => {
+                    line.material.opacity = 0.3 + Math.sin(time * 2) * 0.1;
+                });
+
+                // Update controls and render
+                this.controls.update();
+                this.composer.render();
+            }
+
+            handleResize() {
+                const container = this.renderer.domElement.parentElement;
+
+                this.camera.aspect = container.clientWidth / container.clientHeight;
+                this.camera.updateProjectionMatrix();
+
+                this.renderer.setSize(container.clientWidth, container.clientHeight);
+                this.composer.setSize(container.clientWidth, container.clientHeight);
+            }
+
+            startAnimation() {
+                this.animate();
+                this.updateMarketMetrics();
+            }
+        }
+
+        // Global functions for controls
+        window.exportAnalysis = function() {
+            if (window.marketApp) {
+                const analysisData = {
+                    market: window.marketApp.currentMarket,
+                    period: window.marketApp.currentPeriod,
+                    data: window.marketApp.marketData,
+                    timestamp: new Date().toISOString(),
+                    insights: {
+                        totalMarketSize: window.marketApp.marketData[window.marketApp.currentMarket].size,
+                        growthRate: window.marketApp.marketData[window.marketApp.currentMarket].growth,
+                        opportunityScore: '94%'
+                    }
+                };
+
+                const blob = new Blob([JSON.stringify(analysisData, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'aia-market-analysis.json';
+                a.click();
+                URL.revokeObjectURL(url);
+            }
+        };
+
+        window.generateReport = function() {
+            console.log('Generating comprehensive market analysis report...');
+            // In real implementation, would generate PDF or detailed report
+        };
+
+        window.shareInsights = function() {
+            if (navigator.share) {
+                navigator.share({
+                    title: 'AIA Market Analysis',
+                    text: 'Check out this comprehensive AI market analysis showing $2.3T opportunity',
+                    url: window.location.href
+                });
+            }
+        };
+
+        // Initialize when DOM is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            window.marketApp = new MarketAnalysis();
+        });
+    </script>
+</body>
+</html>

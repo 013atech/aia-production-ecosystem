@@ -1,0 +1,181 @@
+/**
+ * AIA SDK Enterprise Edition - TypeScript Examples
+ * ================================================
+ * Complete examples for Fortune 500 enterprise integration
+ */
+
+import {
+    AIAClient,
+    Agent,
+    AgentCapability,
+    EnterpriseConnectorFactory,
+    NeuralIntelligenceSDK,
+    A2AMarketplaceSDK,
+    ThreeAnalytics,
+    WebXRManager
+} from '@aia/sdk';
+
+interface EnterpriseConfig {
+    apiKey: string;
+    apiBaseUrl: string;
+    enterpriseFeatures: boolean;
+    ssoProvider: string;
+    companyDomain: string;
+}
+
+class EnterpriseAIADemo {
+    private client: AIAClient;
+    private neuralSDK: NeuralIntelligenceSDK;
+    private marketplace: A2AMarketplaceSDK;
+
+    constructor(config: EnterpriseConfig) {
+        this.client = new AIAClient(config);
+        this.neuralSDK = new NeuralIntelligenceSDK(this.client);
+        this.marketplace = new A2AMarketplaceSDK(this.neuralSDK, this.client);
+    }
+
+    async demonstrateEnterpriseFeatures() {
+        console.log('🚀 Starting Enterprise AIA Demo...');
+
+        // 1. Enterprise Authentication
+        console.log('🔐 Enterprise SSO Authentication...');
+        const authResult = await this.client.authenticateEnterprise({
+            ssoProvider: 'okta',
+            domain: 'acme-corp.okta.com',
+            token: 'enterprise_sso_token'
+        });
+        console.log(`✅ Authenticated with features: ${authResult.enterpriseFeatures}`);
+
+        // 2. Create Neural-Enhanced Agent
+        console.log('\n🧠 Creating Neural-Enhanced AI Agent...');
+        const agent = new Agent({
+            name: 'EnterpriseDataAnalyst',
+            capabilities: [
+                AgentCapability.DATA_ANALYSIS,
+                AgentCapability.PREDICTION,
+                AgentCapability.VISUALIZATION,
+                AgentCapability.ENTERPRISE_INTEGRATION
+            ],
+            neuralConfig: {
+                quantumEnhanced: true,
+                cognitiveProfile: 'analytical',
+                learningRate: 0.01,
+                enterpriseOptimized: true
+            }
+        });
+
+        const deployedAgent = await this.client.deployAgent(agent);
+        console.log(`✅ Neural agent deployed: ${deployedAgent.id}`);
+
+        // 3. 3D Analytics with WebXR
+        console.log('\n🥽 Creating 3D Analytics with WebXR...');
+
+        const analytics = new ThreeAnalytics({
+            client: this.client,
+            container: document.getElementById('analytics-container'),
+            neuralEnhanced: true,
+            enterpriseBranding: {
+                companyName: 'ACME Corporation',
+                logoUrl: 'https://acme-corp.com/logo.png',
+                colorScheme: 'corporate_blue'
+            }
+        });
+
+        // Create 3D visualization
+        await analytics.createDataVisualization({
+            dataset: await this.getSampleEnterpriseData(),
+            visualizationType: 'enterprise_dashboard_3d',
+            interactiveFeatures: ['drill_down', 'real_time_updates', 'collaboration']
+        });
+
+        // Enable WebXR for immersive experience
+        const xrManager = new WebXRManager(analytics);
+        const xrSession = await xrManager.startXRSession('immersive-vr');
+        console.log(`✅ WebXR session started: ${xrSession.id}`);
+
+        // 4. Enterprise Connectors
+        console.log('\n🏢 Setting up Fortune 500 Integrations...');
+
+        const salesforceConnector = EnterpriseConnectorFactory.createConnector(
+            'salesforce',
+            {
+                instanceUrl: 'https://acme-corp.salesforce.com',
+                clientId: 'salesforce_client_id',
+                clientSecret: 'salesforce_client_secret',
+                username: 'admin@acme-corp.com',
+                password: 'password',
+                securityToken: 'security_token'
+            },
+            this.neuralSDK
+        );
+
+        await salesforceConnector.authenticate();
+        console.log('✅ Salesforce connector configured');
+
+        // 5. A2A Marketplace
+        console.log('\n🤝 A2A Marketplace Operations...');
+
+        const listing = await this.marketplace.publishAgentKnowledge(
+            agent,
+            {
+                knowledgeType: 'enterprise_data_analysis',
+                price: 50.0, // AIA tokens
+                description: 'Fortune 500 data analysis patterns and insights'
+            }
+        );
+        console.log(`✅ Knowledge published: listing ${listing.id}`);
+
+        return {
+            agentId: deployedAgent.id,
+            xrSessionId: xrSession.id,
+            marketplaceListing: listing.id,
+            integrations: ['salesforce']
+        };
+    }
+
+    private async getSampleEnterpriseData() {
+        // Generate sample enterprise dataset
+        return {
+            sales: Array.from({length: 1000}, () => ({
+                amount: Math.random() * 100000,
+                region: ['North', 'South', 'East', 'West'][Math.floor(Math.random() * 4)],
+                quarter: Math.floor(Math.random() * 4) + 1,
+                product: ['Software', 'Hardware', 'Services'][Math.floor(Math.random() * 3)]
+            })),
+            customers: Array.from({length: 500}, () => ({
+                value: Math.random() * 1000000,
+                industry: ['Finance', 'Healthcare', 'Manufacturing', 'Retail'][Math.floor(Math.random() * 4)],
+                size: ['SMB', 'Mid-Market', 'Enterprise'][Math.floor(Math.random() * 3)]
+            }))
+        };
+    }
+}
+
+// Usage Example
+async function runEnterpriseDemo() {
+    const config: EnterpriseConfig = {
+        apiKey: 'aia_ent_key_...',
+        apiBaseUrl: 'https://api.013a.tech/v2',
+        enterpriseFeatures: true,
+        ssoProvider: 'okta',
+        companyDomain: 'acme-corp.okta.com'
+    };
+
+    const demo = new EnterpriseAIADemo(config);
+
+    try {
+        const results = await demo.demonstrateEnterpriseFeatures();
+        console.log('\n🎉 Enterprise Demo Complete!');
+        console.log('='.repeat(50));
+        console.log(results);
+    } catch (error) {
+        console.error(`❌ Demo failed: ${error}`);
+    }
+}
+
+// Auto-run demo when page loads
+if (typeof window !== 'undefined') {
+    window.addEventListener('load', runEnterpriseDemo);
+} else {
+    runEnterpriseDemo();
+}

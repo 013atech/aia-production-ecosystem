@@ -1,0 +1,731 @@
+# =====================================================
+# AIA ENTERPRISE INGRESS CONFIGURATION
+# Comprehensive Production Domain Routing
+# =====================================================
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: aia-enterprise-ingress
+  namespace: aia-production
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "100m"
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "600"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "600"
+    nginx.ingress.kubernetes.io/server-snippet: |
+      # Enterprise security headers
+      add_header X-Frame-Options "SAMEORIGIN" always;
+      add_header X-Content-Type-Options "nosniff" always;
+      add_header X-XSS-Protection "1; mode=block" always;
+      add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+      add_header Permissions-Policy "geolocation=(self), microphone=(self), camera=(self), accelerometer=(self), gyroscope=(self), magnetometer=(self), xr-spatial-tracking=(self)" always;
+
+      # WebXR and 3D application support
+      add_header Cross-Origin-Embedder-Policy "require-corp" always;
+      add_header Cross-Origin-Opener-Policy "same-origin" always;
+
+      # Performance optimization
+      gzip on;
+      gzip_vary on;
+      gzip_min_length 1024;
+      gzip_types text/plain text/css text/xml text/javascript application/javascript application/xml+rss application/json application/wasm;
+
+      # Rate limiting
+      limit_req_zone $binary_remote_addr zone=enterprise_api:10m rate=100r/s;
+      limit_req_zone $binary_remote_addr zone=partner_api:10m rate=50r/s;
+      limit_req_zone $binary_remote_addr zone=public_api:10m rate=20r/s;
+spec:
+  tls:
+  - hosts:
+    # Core domains
+    - 013a.tech
+    - www.013a.tech
+    - app.013a.tech
+    - api.013a.tech
+    # Service domains
+    - analytics.013a.tech
+    - enterprise.013a.tech
+    - ml.013a.tech
+    - marketplace.013a.tech
+    - docs.013a.tech
+    # Immersive domains
+    - immersive.013a.tech
+    - 3d.013a.tech
+    - webxr.013a.tech
+    - spatial.013a.tech
+    # Partner domains
+    - ey.013a.tech
+    - jpmorgan.013a.tech
+    - google.013a.tech
+    - apple.013a.tech
+    # Infrastructure domains
+    - monitoring.013a.tech
+    - admin.013a.tech
+    - status.013a.tech
+    - cdn.013a.tech
+    # Regional domains
+    - us.013a.tech
+    - eu.013a.tech
+    - asia.013a.tech
+    secretName: enterprise-ssl-cert
+  rules:
+  # =====================================================
+  # CORE DOMAIN ROUTING
+  # =====================================================
+  - host: 013a.tech
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-frontend-service
+            port:
+              number: 80
+  - host: www.013a.tech
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-frontend-service
+            port:
+              number: 80
+  - host: app.013a.tech
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-frontend-service
+            port:
+              number: 80
+  - host: api.013a.tech
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-backend-service
+            port:
+              number: 80
+
+  # =====================================================
+  # SERVICE-SPECIFIC DOMAIN ROUTING
+  # =====================================================
+  - host: analytics.013a.tech
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-backend-service
+            port:
+              number: 80
+      - path: /api/analytics
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-backend-service
+            port:
+              number: 80
+      - path: /dashboard
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-frontend-service
+            port:
+              number: 80
+
+  - host: enterprise.013a.tech
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-enterprise-partners-service
+            port:
+              number: 80
+      - path: /api/enterprise
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-enterprise-partners-service
+            port:
+              number: 80
+
+  - host: ml.013a.tech
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-ml-processor-service
+            port:
+              number: 80
+      - path: /api/ml
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-ml-processor-service
+            port:
+              number: 80
+
+  - host: marketplace.013a.tech
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-backend-service
+            port:
+              number: 80
+      - path: /api/marketplace
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-backend-service
+            port:
+              number: 80
+
+  - host: docs.013a.tech
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-frontend-service
+            port:
+              number: 80
+      - path: /docs
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-backend-service
+            port:
+              number: 80
+
+  # =====================================================
+  # IMMERSIVE 3D DOMAIN ROUTING
+  # =====================================================
+  - host: immersive.013a.tech
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-frontend-service
+            port:
+              number: 80
+      - path: /api
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-backend-service
+            port:
+              number: 80
+
+  - host: 3d.013a.tech
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-frontend-service
+            port:
+              number: 80
+      - path: /api/3d
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-backend-service
+            port:
+              number: 80
+
+  - host: webxr.013a.tech
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-frontend-service
+            port:
+              number: 80
+      - path: /api/webxr
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-backend-service
+            port:
+              number: 80
+
+  - host: spatial.013a.tech
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-frontend-service
+            port:
+              number: 80
+      - path: /api/spatial
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-backend-service
+            port:
+              number: 80
+
+  # =====================================================
+  # FORTUNE 500 PARTNER DOMAIN ROUTING
+  # =====================================================
+  - host: ey.013a.tech
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-enterprise-partners-service
+            port:
+              number: 80
+      - path: /api/ey
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-enterprise-partners-service
+            port:
+              number: 80
+      - path: /dashboard/ey
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-frontend-service
+            port:
+              number: 80
+
+  - host: jpmorgan.013a.tech
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-enterprise-partners-service
+            port:
+              number: 80
+      - path: /api/jpmorgan
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-enterprise-partners-service
+            port:
+              number: 80
+      - path: /dashboard/jpmorgan
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-frontend-service
+            port:
+              number: 80
+
+  - host: google.013a.tech
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-enterprise-partners-service
+            port:
+              number: 80
+      - path: /api/google
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-enterprise-partners-service
+            port:
+              number: 80
+
+  - host: apple.013a.tech
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-enterprise-partners-service
+            port:
+              number: 80
+      - path: /api/apple
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-enterprise-partners-service
+            port:
+              number: 80
+      - path: /spatial
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-frontend-service
+            port:
+              number: 80
+
+  # =====================================================
+  # INFRASTRUCTURE DOMAIN ROUTING
+  # =====================================================
+  - host: monitoring.013a.tech
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: grafana-service
+            port:
+              number: 3000
+      - path: /prometheus
+        pathType: Prefix
+        backend:
+          service:
+            name: prometheus-service
+            port:
+              number: 9090
+
+  - host: admin.013a.tech
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-backend-service
+            port:
+              number: 80
+      - path: /api/admin
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-backend-service
+            port:
+              number: 80
+
+  - host: status.013a.tech
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-backend-service
+            port:
+              number: 80
+      - path: /health
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-backend-service
+            port:
+              number: 80
+      - path: /status
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-backend-service
+            port:
+              number: 80
+
+  - host: cdn.013a.tech
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-frontend-service
+            port:
+              number: 80
+
+  # =====================================================
+  # REGIONAL DOMAIN ROUTING
+  # =====================================================
+  - host: us.013a.tech
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-frontend-service
+            port:
+              number: 80
+      - path: /api
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-backend-service
+            port:
+              number: 80
+
+  - host: eu.013a.tech
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-frontend-service
+            port:
+              number: 80
+      - path: /api
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-backend-service
+            port:
+              number: 80
+
+  - host: asia.013a.tech
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-frontend-service
+            port:
+              number: 80
+      - path: /api
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-backend-service
+            port:
+              number: 80
+kind: ManagedCertificate
+metadata:
+  name: aia-ssl-certificate
+  namespace: aia-production
+spec:
+  domains:
+    - aia-production.013a.tech
+    - api.aia-production.013a.tech
+    - analytics.aia-production.013a.tech
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-frontend-service
+  namespace: aia-production
+  labels:
+    app: aia-frontend
+    tier: frontend
+  annotations:
+    cloud.google.com/load-balancer-type: "External"
+    cloud.google.com/backend-config: '{"ports": {"80":"aia-frontend-backendconfig"}}'
+spec:
+  type: NodePort
+  ports:
+  - port: 80
+    targetPort: 80
+    protocol: TCP
+    name: http
+  - port: 443
+    targetPort: 80
+    protocol: TCP
+    name: https
+  selector:
+    app: aia-frontend
+    tier: frontend
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-backend-service
+  namespace: aia-production
+  labels:
+    app: aia-backend
+    tier: backend
+  annotations:
+    cloud.google.com/load-balancer-type: "External"
+spec:
+  type: NodePort
+  ports:
+  - port: 8000
+    targetPort: 8000
+    protocol: TCP
+    name: api
+  selector:
+    app: aia-backend
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-ml-processor-service
+  namespace: aia-production
+  labels:
+    app: aia-ml-processor
+    tier: processing
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8003
+    targetPort: 8003
+    protocol: TCP
+    name: ml-api
+  selector:
+    app: aia-ml-processor
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-payment-processor-service
+  namespace: aia-production
+  labels:
+    app: aia-payment-processor
+    tier: payment
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8004
+    targetPort: 8004
+    protocol: TCP
+    name: payment-api
+  selector:
+    app: aia-payment-processor
+---
+apiVersion: cloud.google.com/v1
+kind: BackendConfig
+metadata:
+  name: aia-frontend-backendconfig
+  namespace: aia-production
+spec:
+  timeoutSec: 30
+  connectionDraining:
+    drainingTimeoutSec: 60
+  healthCheck:
+    checkIntervalSec: 10
+    port: 80
+    type: HTTP
+    requestPath: /health
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: aia-enterprise-ingress
+  namespace: aia-production
+  annotations:
+    kubernetes.io/ingress.global-static-ip-name: "aia-production-ip"
+    networking.gke.io/managed-certificates: "aia-ssl-certificate"
+    kubernetes.io/ingress.class: "gce"
+    cloud.google.com/backend-config: '{"default": "aia-frontend-backendconfig"}'
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+spec:
+  rules:
+  - host: aia-production.013a.tech
+    http:
+      paths:
+      - path: /*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-frontend-service
+            port:
+              number: 80
+  - host: api.aia-production.013a.tech
+    http:
+      paths:
+      - path: /*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-backend-service
+            port:
+              number: 8000
+      - path: /ml/*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-ml-processor-service
+            port:
+              number: 8003
+      - path: /payment/*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-payment-processor-service
+            port:
+              number: 8004
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-enterprise-partners-service
+  namespace: aia-production
+  labels:
+    app: aia-enterprise-partners
+    tier: partners
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8002
+    targetPort: 8002
+    protocol: TCP
+    name: partners-api
+  selector:
+    app: aia-enterprise-partners
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: aia-network-policy
+  namespace: aia-production
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: aia-production
+    - namespaceSelector:
+        matchLabels:
+          name: aia-monitoring
+  egress:
+  - {}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: aia-application-config
+  namespace: aia-production
+data:
+  ENVIRONMENT: "production"
+  LOG_LEVEL: "INFO"
+  METRICS_ENABLED: "true"
+  HEALTH_CHECK_ENDPOINT: "/health"
+  DATABASE_TIMEOUT: "30s"
+  API_RATE_LIMIT: "1000"
+  CACHE_TTL: "3600"

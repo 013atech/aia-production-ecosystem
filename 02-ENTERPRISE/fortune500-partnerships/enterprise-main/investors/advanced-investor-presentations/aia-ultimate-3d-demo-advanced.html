@@ -1,0 +1,1698 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AIA - Ultimate 3D Interactive Demo</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.9/dat.gui.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/cannon@0.20.0/build/cannon.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #000;
+            color: #F5F5DC;
+            overflow: hidden;
+            cursor: none;
+            user-select: none;
+        }
+
+        .loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: radial-gradient(ellipse at center, #0F0F23 0%, #000 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            opacity: 1;
+            transition: opacity 2s ease-out;
+        }
+
+        .loading-screen.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .hologram-loader {
+            position: relative;
+            width: 300px;
+            height: 300px;
+            border: 2px solid rgba(0, 255, 255, 0.3);
+            border-radius: 50%;
+            animation: hologramSpin 3s linear infinite;
+        }
+
+        @keyframes hologramSpin {
+            0% { transform: rotate(0deg) scale(1); border-color: rgba(0, 255, 255, 0.3); }
+            33% { transform: rotate(120deg) scale(1.1); border-color: rgba(255, 215, 0, 0.5); }
+            66% { transform: rotate(240deg) scale(0.9); border-color: rgba(255, 105, 180, 0.4); }
+            100% { transform: rotate(360deg) scale(1); border-color: rgba(0, 255, 255, 0.3); }
+        }
+
+        .hologram-loader::before,
+        .hologram-loader::after {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            animation: hologramPulse 2s ease-in-out infinite;
+        }
+
+        .hologram-loader::before {
+            animation-delay: 0.5s;
+            transform: scale(0.8);
+        }
+
+        .hologram-loader::after {
+            animation-delay: 1s;
+            transform: scale(0.6);
+        }
+
+        @keyframes hologramPulse {
+            0%, 100% { transform: scale(0.8); opacity: 0.3; }
+            50% { transform: scale(1.2); opacity: 0.8; }
+        }
+
+        .loading-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 1.5rem;
+            color: #00FFFF;
+            text-align: center;
+            animation: textGlow 2s ease-in-out infinite;
+        }
+
+        @keyframes textGlow {
+            0%, 100% { text-shadow: 0 0 10px #00FFFF; }
+            50% { text-shadow: 0 0 30px #00FFFF, 0 0 40px #FFD700; }
+        }
+
+        .quantum-cursor {
+            position: fixed;
+            width: 30px;
+            height: 30px;
+            pointer-events: none;
+            z-index: 9999;
+            mix-blend-mode: difference;
+            transition: all 0.1s ease;
+        }
+
+        .quantum-cursor::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 20px;
+            height: 20px;
+            background: radial-gradient(circle, #00FFFF, transparent);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            animation: quantumPulse 1.5s ease-in-out infinite;
+        }
+
+        .quantum-cursor::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 40px;
+            height: 40px;
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            animation: quantumRing 2s linear infinite;
+        }
+
+        @keyframes quantumPulse {
+            0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.6; }
+            50% { transform: translate(-50%, -50%) scale(1.5); opacity: 1; }
+        }
+
+        @keyframes quantumRing {
+            0% { transform: translate(-50%, -50%) rotate(0deg) scale(1); }
+            100% { transform: translate(-50%, -50%) rotate(360deg) scale(1.2); }
+        }
+
+        .slideshow-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            background: linear-gradient(135deg, #000000 0%, #0F0F23 30%, #1A1A3A 60%, #2D2D5A 100%);
+        }
+
+        .slide {
+            display: none;
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            padding: 0;
+            overflow: hidden;
+            perspective: 2000px;
+        }
+
+        .slide.active {
+            display: block;
+        }
+
+        .slide-content {
+            position: relative;
+            z-index: 10;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 60px;
+        }
+
+        .main-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        .overlay-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 5;
+            pointer-events: none;
+        }
+
+        .quantum-title {
+            font-size: 8rem;
+            font-weight: 100;
+            margin-bottom: 2rem;
+            background: linear-gradient(45deg, #00FFFF, #FFD700, #FF69B4, #00FF7F, #9370DB);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-size: 300% 300%;
+            animation: quantumGradient 5s ease-in-out infinite;
+            text-shadow: 0 0 100px rgba(0, 255, 255, 0.5);
+            transform: perspective(1000px) rotateX(15deg);
+            letter-spacing: 0.1em;
+        }
+
+        @keyframes quantumGradient {
+            0%, 100% { background-position: 0% 50%; }
+            33% { background-position: 100% 50%; }
+            66% { background-position: 50% 100%; }
+        }
+
+        .quantum-subtitle {
+            font-size: 2.5rem;
+            font-weight: 200;
+            opacity: 0.9;
+            margin-bottom: 4rem;
+            animation: quantumFloat 4s ease-in-out infinite;
+            text-shadow: 0 0 30px rgba(255, 215, 0, 0.4);
+        }
+
+        @keyframes quantumFloat {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+
+        .quantum-metric-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 3rem;
+            margin: 3rem 0;
+            max-width: 1400px;
+            perspective: 2000px;
+        }
+
+        .quantum-metric-card {
+            background: linear-gradient(145deg,
+                rgba(0, 255, 255, 0.05),
+                rgba(255, 105, 180, 0.05),
+                rgba(255, 215, 0, 0.05)
+            );
+            border: 1px solid rgba(0, 255, 255, 0.2);
+            border-radius: 25px;
+            padding: 3rem;
+            backdrop-filter: blur(30px);
+            transform-style: preserve-3d;
+            transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .quantum-metric-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: conic-gradient(
+                transparent,
+                rgba(0, 255, 255, 0.1),
+                transparent,
+                rgba(255, 215, 0, 0.1),
+                transparent
+            );
+            animation: quantumRotate 6s linear infinite;
+        }
+
+        @keyframes quantumRotate {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .quantum-metric-card:hover {
+            transform: rotateY(15deg) rotateX(10deg) translateZ(50px) scale(1.05);
+            border-color: rgba(0, 255, 255, 0.6);
+            box-shadow:
+                0 30px 80px rgba(0, 255, 255, 0.3),
+                inset 0 0 50px rgba(255, 215, 0, 0.1);
+        }
+
+        .metric-value-quantum {
+            font-size: 4rem;
+            font-weight: 100;
+            background: linear-gradient(45deg, #00FFFF, #FFD700);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: block;
+            margin-bottom: 1rem;
+            position: relative;
+            z-index: 2;
+            animation: quantumPulse 2s ease-in-out infinite;
+        }
+
+        @keyframes quantumPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .metric-label-quantum {
+            font-size: 1.3rem;
+            color: #F5F5DC;
+            opacity: 0.9;
+            font-weight: 300;
+            line-height: 1.6;
+            position: relative;
+            z-index: 2;
+        }
+
+        .holographic-chart-container {
+            position: relative;
+            width: 90%;
+            max-width: 1000px;
+            height: 500px;
+            margin: 3rem auto;
+            background: linear-gradient(145deg,
+                rgba(0, 0, 0, 0.8),
+                rgba(0, 255, 255, 0.05)
+            );
+            border: 2px solid rgba(0, 255, 255, 0.3);
+            border-radius: 25px;
+            backdrop-filter: blur(25px);
+            overflow: hidden;
+            transform: perspective(1500px) rotateX(5deg);
+            box-shadow:
+                0 50px 100px rgba(0, 255, 255, 0.2),
+                inset 0 0 100px rgba(255, 215, 0, 0.05);
+        }
+
+        .holographic-chart-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 200%;
+            height: 100%;
+            background: linear-gradient(90deg,
+                transparent,
+                rgba(255, 255, 255, 0.1),
+                transparent
+            );
+            animation: hologramSweep 4s ease-in-out infinite;
+        }
+
+        @keyframes hologramSweep {
+            0%, 100% { left: -100%; }
+            50% { left: 100%; }
+        }
+
+        .quantum-ai-visualization {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(ellipse at center,
+                rgba(0, 255, 255, 0.1) 0%,
+                transparent 70%
+            );
+        }
+
+        .ai-node {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            background: radial-gradient(circle, #00FFFF, transparent);
+            border-radius: 50%;
+            animation: aiNodePulse 3s ease-in-out infinite;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .ai-node:hover {
+            transform: scale(2);
+            background: radial-gradient(circle, #FFD700, transparent);
+        }
+
+        @keyframes aiNodePulse {
+            0%, 100% {
+                transform: scale(1);
+                opacity: 0.7;
+                box-shadow: 0 0 10px #00FFFF;
+            }
+            50% {
+                transform: scale(1.5);
+                opacity: 1;
+                box-shadow: 0 0 30px #00FFFF, 0 0 50px #FFD700;
+            }
+        }
+
+        .quantum-connection {
+            position: absolute;
+            height: 2px;
+            background: linear-gradient(90deg,
+                transparent,
+                rgba(0, 255, 255, 0.6),
+                rgba(255, 215, 0, 0.6),
+                transparent
+            );
+            transform-origin: left;
+            animation: quantumDataFlow 2s linear infinite;
+        }
+
+        @keyframes quantumDataFlow {
+            0% {
+                transform: scaleX(0);
+                opacity: 0;
+            }
+            50% {
+                opacity: 1;
+            }
+            100% {
+                transform: scaleX(1);
+                opacity: 0;
+            }
+        }
+
+        .morphing-geometry {
+            position: absolute;
+            width: 200px;
+            height: 200px;
+            border: 2px solid rgba(0, 255, 255, 0.4);
+            border-radius: 50%;
+            animation: morphGeometry 8s ease-in-out infinite;
+        }
+
+        @keyframes morphGeometry {
+            0%, 100% {
+                border-radius: 50%;
+                transform: rotate(0deg) scale(1);
+            }
+            25% {
+                border-radius: 0%;
+                transform: rotate(90deg) scale(1.2);
+            }
+            50% {
+                border-radius: 50% 0;
+                transform: rotate(180deg) scale(0.8);
+            }
+            75% {
+                border-radius: 0 50%;
+                transform: rotate(270deg) scale(1.1);
+            }
+        }
+
+        .quantum-performance-ring {
+            position: relative;
+            width: 300px;
+            height: 300px;
+            margin: 2rem auto;
+        }
+
+        .performance-ring-outer {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: conic-gradient(
+                #00FFFF 0deg,
+                #FFD700 98.4deg,
+                rgba(255, 255, 255, 0.1) 98.4deg
+            );
+            animation: quantumRingRotate 4s ease-in-out infinite;
+            position: relative;
+            padding: 10px;
+        }
+
+        @keyframes quantumRingRotate {
+            0%, 100% {
+                transform: rotate(0deg) scale(1);
+                filter: brightness(1);
+            }
+            50% {
+                transform: rotate(10deg) scale(1.05);
+                filter: brightness(1.3);
+            }
+        }
+
+        .performance-ring-inner {
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(ellipse at center,
+                rgba(0, 0, 0, 0.9),
+                rgba(0, 255, 255, 0.1)
+            );
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .performance-ring-inner::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 80%;
+            height: 80%;
+            border: 1px solid rgba(0, 255, 255, 0.2);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            animation: quantumInnerRing 3s linear infinite;
+        }
+
+        @keyframes quantumInnerRing {
+            0% { transform: translate(-50%, -50%) rotate(0deg) scale(1); }
+            100% { transform: translate(-50%, -50%) rotate(-360deg) scale(1.1); }
+        }
+
+        .interactive-control-panel {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            border-radius: 15px;
+            padding: 1rem;
+            backdrop-filter: blur(20px);
+            z-index: 1000;
+        }
+
+        .control-button {
+            background: rgba(0, 255, 255, 0.1);
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            color: #00FFFF;
+            padding: 8px 16px;
+            border-radius: 20px;
+            margin: 5px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .control-button:hover {
+            background: rgba(0, 255, 255, 0.2);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0, 255, 255, 0.3);
+        }
+
+        .quantum-navigation {
+            position: fixed;
+            bottom: 40px;
+            right: 40px;
+            display: flex;
+            gap: 20px;
+            z-index: 1000;
+        }
+
+        .quantum-nav-btn {
+            background: linear-gradient(145deg,
+                rgba(0, 255, 255, 0.1),
+                rgba(255, 215, 0, 0.1)
+            );
+            border: 2px solid rgba(0, 255, 255, 0.3);
+            color: #00FFFF;
+            padding: 15px 30px;
+            border-radius: 40px;
+            cursor: pointer;
+            font-size: 1.1rem;
+            font-weight: 300;
+            transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            backdrop-filter: blur(25px);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .quantum-nav-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg,
+                transparent,
+                rgba(255, 255, 255, 0.2),
+                transparent
+            );
+            transition: left 0.5s;
+        }
+
+        .quantum-nav-btn:hover::before {
+            left: 100%;
+        }
+
+        .quantum-nav-btn:hover {
+            transform: perspective(1000px) rotateX(10deg) translateY(-8px);
+            border-color: rgba(0, 255, 255, 0.8);
+            box-shadow:
+                0 20px 50px rgba(0, 255, 255, 0.4),
+                inset 0 0 30px rgba(255, 215, 0, 0.1);
+        }
+
+        .quantum-progress-indicator {
+            position: fixed;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 15px;
+            z-index: 1000;
+        }
+
+        .quantum-progress-dot {
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            cursor: pointer;
+            transition: all 0.4s ease;
+            position: relative;
+        }
+
+        .quantum-progress-dot.active {
+            background: radial-gradient(circle, #00FFFF, transparent);
+            box-shadow: 0 0 30px #00FFFF;
+            transform: scale(1.5);
+        }
+
+        .quantum-progress-dot::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 30px;
+            height: 30px;
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            opacity: 0;
+            transition: all 0.3s ease;
+        }
+
+        .quantum-progress-dot.active::before {
+            opacity: 1;
+            animation: quantumProgressRing 2s linear infinite;
+        }
+
+        @keyframes quantumProgressRing {
+            0% { transform: translate(-50%, -50%) rotate(0deg) scale(1); }
+            100% { transform: translate(-50%, -50%) rotate(360deg) scale(1.2); }
+        }
+
+        .quantum-logo {
+            position: fixed;
+            top: 40px;
+            left: 40px;
+            font-size: 3rem;
+            font-weight: 100;
+            background: linear-gradient(45deg, #00FFFF, #FFD700);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            z-index: 1000;
+            text-shadow: 0 0 50px rgba(0, 255, 255, 0.5);
+            transform: perspective(1000px) rotateY(5deg);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .quantum-logo:hover {
+            transform: perspective(1000px) rotateY(15deg) scale(1.1);
+            text-shadow: 0 0 100px rgba(0, 255, 255, 0.8);
+        }
+
+        .quantum-stats-overlay {
+            position: fixed;
+            top: 50%;
+            left: 20px;
+            transform: translateY(-50%);
+            background: rgba(0, 0, 0, 0.7);
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            border-radius: 15px;
+            padding: 2rem;
+            backdrop-filter: blur(20px);
+            z-index: 100;
+            min-width: 250px;
+        }
+
+        .quantum-stat {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 1rem 0;
+            font-family: 'Courier New', monospace;
+        }
+
+        .quantum-stat-label {
+            color: #00FFFF;
+            font-size: 0.9rem;
+        }
+
+        .quantum-stat-value {
+            color: #FFD700;
+            font-size: 1.1rem;
+            font-weight: bold;
+            text-shadow: 0 0 10px #FFD700;
+        }
+
+        .audio-visualizer {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 100px;
+            z-index: 5;
+            pointer-events: none;
+        }
+
+        .audio-bar {
+            position: absolute;
+            bottom: 0;
+            width: 4px;
+            background: linear-gradient(180deg, transparent, #00FFFF, #FFD700);
+            animation: audioVisualize 0.5s ease-in-out infinite;
+        }
+
+        @keyframes audioVisualize {
+            0%, 100% { height: 20px; opacity: 0.6; }
+            50% { height: 80px; opacity: 1; }
+        }
+
+        .quantum-field {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background:
+                radial-gradient(circle at 20% 30%, rgba(0, 255, 255, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 70%, rgba(255, 215, 0, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 60% 20%, rgba(255, 105, 180, 0.1) 0%, transparent 50%);
+            animation: quantumFieldShift 10s ease-in-out infinite;
+            pointer-events: none;
+        }
+
+        @keyframes quantumFieldShift {
+            0%, 100% {
+                background-position: 0% 0%, 100% 100%, 50% 0%;
+                filter: brightness(1);
+            }
+            50% {
+                background-position: 100% 50%, 0% 0%, 0% 100%;
+                filter: brightness(1.2);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .quantum-title { font-size: 4rem; }
+            .quantum-subtitle { font-size: 1.8rem; }
+            .quantum-metric-grid { grid-template-columns: 1fr; gap: 2rem; }
+            .metric-value-quantum { font-size: 2.5rem; }
+            .holographic-chart-container { height: 300px; }
+            .quantum-performance-ring { width: 200px; height: 200px; }
+            .quantum-stats-overlay { position: relative; margin: 2rem auto; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div class="loading-screen" id="loadingScreen">
+        <div class="hologram-loader">
+            <div class="loading-text" id="loadingText">
+                Initializing Quantum AI Systems...<br>
+                <span style="font-size: 1rem; opacity: 0.7;">Calibrating Multi-Agent Networks</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quantum Cursor -->
+    <div class="quantum-cursor" id="quantumCursor"></div>
+
+    <!-- Interactive Control Panel -->
+    <div class="interactive-control-panel">
+        <div style="font-size: 0.8rem; margin-bottom: 0.5rem; color: #00FFFF;">Controls</div>
+        <button class="control-button" onclick="toggleAutoPlay()">Auto Play</button>
+        <button class="control-button" onclick="toggleStats()">Stats</button>
+        <button class="control-button" onclick="resetDemo()">Reset</button>
+        <button class="control-button" onclick="toggleFullscreen()">Fullscreen</button>
+    </div>
+
+    <!-- Quantum Logo -->
+    <div class="quantum-logo" onclick="goToSlide(0)">013a AIA</div>
+
+    <!-- Quantum Stats Overlay -->
+    <div class="quantum-stats-overlay" id="statsOverlay" style="display: none;">
+        <div style="font-size: 1.2rem; margin-bottom: 1rem; color: #00FFFF; text-align: center;">Live Metrics</div>
+        <div class="quantum-stat">
+            <span class="quantum-stat-label">Agents Online:</span>
+            <span class="quantum-stat-value" id="agentsOnline">569</span>
+        </div>
+        <div class="quantum-stat">
+            <span class="quantum-stat-label">Processing Rate:</span>
+            <span class="quantum-stat-value" id="processingRate">110.6K/s</span>
+        </div>
+        <div class="quantum-stat">
+            <span class="quantum-stat-label">Success Rate:</span>
+            <span class="quantum-stat-value" id="successRateValue">98.4%</span>
+        </div>
+        <div class="quantum-stat">
+            <span class="quantum-stat-label">Coordination:</span>
+            <span class="quantum-stat-value" id="coordinationValue">90.2%</span>
+        </div>
+        <div class="quantum-stat">
+            <span class="quantum-stat-label">Quantum State:</span>
+            <span class="quantum-stat-value" id="quantumState">COHERENT</span>
+        </div>
+        <div class="quantum-stat">
+            <span class="quantum-stat-label">Temperature:</span>
+            <span class="quantum-stat-value" id="systemTemp">0.01K</span>
+        </div>
+    </div>
+
+    <div class="slideshow-container">
+        <!-- Slide 1: Quantum Initialization -->
+        <div class="slide active" id="slide1">
+            <canvas class="main-canvas" id="quantumCanvas1"></canvas>
+            <div class="quantum-field"></div>
+            <div class="slide-content">
+                <div class="quantum-title">AIA/013a</div>
+                <div class="quantum-subtitle">Quantum Multi-Agent Intelligence System</div>
+                <div class="quantum-performance-ring">
+                    <div class="performance-ring-outer">
+                        <div class="performance-ring-inner">
+                            <div class="metric-value-quantum" style="font-size: 3rem;">98.4%</div>
+                            <div class="metric-label-quantum">Quantum Coherence</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="audio-visualizer" id="audioViz1"></div>
+        </div>
+
+        <!-- Slide 2: Multi-Agent Orchestration -->
+        <div class="slide" id="slide2">
+            <canvas class="main-canvas" id="quantumCanvas2"></canvas>
+            <div class="quantum-field"></div>
+            <div class="slide-content">
+                <div class="quantum-title" style="font-size: 5rem;">Multi-Agent Orchestration</div>
+                <div class="quantum-ai-visualization" id="aiVisualization">
+                    <div class="quantum-metric-grid">
+                        <div class="quantum-metric-card" data-metric="atoms">
+                            <div class="metric-value-quantum" id="atomCount">569</div>
+                            <div class="metric-label-quantum">Atomic Processing Units<br/>Quantum Synchronized</div>
+                        </div>
+                        <div class="quantum-metric-card" data-metric="ops">
+                            <div class="metric-value-quantum" id="opsCount">110K</div>
+                            <div class="metric-label-quantum">Operations per Second<br/>Peak Throughput</div>
+                        </div>
+                        <div class="quantum-metric-card" data-metric="efficiency">
+                            <div class="metric-value-quantum" id="efficiencyValue">90.2%</div>
+                            <div class="metric-label-quantum">Coordination Efficiency<br/>Real-time Optimization</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 3: Market Transformation -->
+        <div class="slide" id="slide3">
+            <canvas class="main-canvas" id="quantumCanvas3"></canvas>
+            <div class="slide-content">
+                <div class="quantum-title" style="font-size: 4.5rem;">Market Transformation</div>
+                <div class="holographic-chart-container">
+                    <canvas id="quantumMarketChart" style="width: 100%; height: 100%;"></canvas>
+                </div>
+                <div class="quantum-metric-grid" style="grid-template-columns: repeat(2, 1fr);">
+                    <div class="quantum-metric-card">
+                        <div class="metric-value-quantum">$248B</div>
+                        <div class="metric-label-quantum">Total Addressable Market<br/>Quantum Disruption Potential</div>
+                    </div>
+                    <div class="quantum-metric-card">
+                        <div class="metric-value-quantum">90%</div>
+                        <div class="metric-label-quantum">Competitive Differentiation<br/>Quantum Advantage Factor</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 4: Revenue Projection -->
+        <div class="slide" id="slide4">
+            <canvas class="main-canvas" id="quantumCanvas4"></canvas>
+            <div class="slide-content">
+                <div class="quantum-title" style="font-size: 4rem;">Quantum Growth Trajectory</div>
+                <div class="holographic-chart-container">
+                    <canvas id="quantumRevenueChart" style="width: 100%; height: 100%;"></canvas>
+                </div>
+                <div class="quantum-metric-grid" style="grid-template-columns: repeat(3, 1fr);">
+                    <div class="quantum-metric-card">
+                        <div class="metric-value-quantum">$4.2M</div>
+                        <div class="metric-label-quantum">Year 1 ARR<br/>Quantum Launch</div>
+                    </div>
+                    <div class="quantum-metric-card">
+                        <div class="metric-value-quantum">$15.6M</div>
+                        <div class="metric-label-quantum">Year 2 ARR<br/>Market Penetration</div>
+                    </div>
+                    <div class="quantum-metric-card">
+                        <div class="metric-value-quantum">$45M</div>
+                        <div class="metric-label-quantum">Year 3 ARR<br/>Market Dominance</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 5: 3D System Visualization -->
+        <div class="slide" id="slide5">
+            <canvas class="main-canvas" id="quantumCanvas5"></canvas>
+            <div class="slide-content">
+                <div class="quantum-title" style="font-size: 4rem;">Live Quantum System</div>
+                <div style="position: absolute; bottom: 15%; left: 50%; transform: translateX(-50%); text-align: center;">
+                    <div class="quantum-metric-grid" style="grid-template-columns: repeat(4, 1fr); gap: 2rem;">
+                        <div class="quantum-metric-card" style="padding: 1.5rem;">
+                            <div class="metric-value-quantum" style="font-size: 2rem;" id="liveAgents">9</div>
+                            <div class="metric-label-quantum" style="font-size: 1rem;">Active Agents</div>
+                        </div>
+                        <div class="quantum-metric-card" style="padding: 1.5rem;">
+                            <div class="metric-value-quantum" style="font-size: 2rem;" id="liveTasks">0</div>
+                            <div class="metric-label-quantum" style="font-size: 1rem;">Tasks Processed</div>
+                        </div>
+                        <div class="quantum-metric-card" style="padding: 1.5rem;">
+                            <div class="metric-value-quantum" style="font-size: 2rem;" id="liveSuccess">98.4%</div>
+                            <div class="metric-label-quantum" style="font-size: 1rem;">Success Rate</div>
+                        </div>
+                        <div class="quantum-metric-card" style="padding: 1.5rem;">
+                            <div class="metric-value-quantum" style="font-size: 2rem;" id="quantumCoherence">HIGH</div>
+                            <div class="metric-label-quantum" style="font-size: 1rem;">Coherence</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 6: Investment Opportunity -->
+        <div class="slide" id="slide6">
+            <canvas class="main-canvas" id="quantumCanvas6"></canvas>
+            <div class="quantum-field"></div>
+            <div class="slide-content">
+                <div class="quantum-title" style="font-size: 4rem;">Investment Opportunity</div>
+                <div class="quantum-metric-grid">
+                    <div class="quantum-metric-card">
+                        <div class="metric-value-quantum">$25M</div>
+                        <div class="metric-label-quantum">Series A Target<br/>Quantum Capital Injection</div>
+                    </div>
+                    <div class="quantum-metric-card">
+                        <div class="metric-value-quantum">$150M</div>
+                        <div class="metric-label-quantum">Pre-money Valuation<br/>Quantum Value Assessment</div>
+                    </div>
+                    <div class="quantum-metric-card">
+                        <div class="metric-value-quantum">15-25x</div>
+                        <div class="metric-label-quantum">Projected Returns<br/>Quantum ROI Potential</div>
+                    </div>
+                    <div class="quantum-metric-card">
+                        <div class="metric-value-quantum">FIRST</div>
+                        <div class="metric-label-quantum">Autonomous Partner<br/>Quantum Category Creation</div>
+                    </div>
+                </div>
+                <div style="margin-top: 3rem;">
+                    <div class="quantum-subtitle" style="font-size: 2rem;">
+                        Join the Quantum Revolution in Autonomous Intelligence
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quantum Navigation -->
+    <div class="quantum-navigation">
+        <button class="quantum-nav-btn" onclick="prevSlide()">← Quantum Back</button>
+        <button class="quantum-nav-btn" onclick="nextSlide()">Quantum Next →</button>
+    </div>
+
+    <!-- Quantum Progress Indicator -->
+    <div class="quantum-progress-indicator" id="progressIndicator">
+        <div class="quantum-progress-dot active" onclick="goToSlide(0)"></div>
+        <div class="quantum-progress-dot" onclick="goToSlide(1)"></div>
+        <div class="quantum-progress-dot" onclick="goToSlide(2)"></div>
+        <div class="quantum-progress-dot" onclick="goToSlide(3)"></div>
+        <div class="quantum-progress-dot" onclick="goToSlide(4)"></div>
+        <div class="quantum-progress-dot" onclick="goToSlide(5)"></div>
+    </div>
+
+    <script>
+        // Global variables
+        let currentSlide = 0;
+        const totalSlides = 6;
+        let isAutoPlaying = false;
+        let autoPlayTimer;
+        let threeScenes = {};
+        let isStatsVisible = false;
+        let quantumState = {
+            coherence: 98.4,
+            agents: 569,
+            processingRate: 110.6,
+            temperature: 0.01
+        };
+
+        // Quantum cursor movement
+        document.addEventListener('mousemove', (e) => {
+            const cursor = document.getElementById('quantumCursor');
+            gsap.to(cursor, {
+                duration: 0.1,
+                x: e.clientX - 15,
+                y: e.clientY - 15,
+                ease: "power2.out"
+            });
+        });
+
+        // Loading screen
+        function hideLoadingScreen() {
+            const loadingScreen = document.getElementById('loadingScreen');
+            const loadingText = document.getElementById('loadingText');
+
+            // Animate loading text
+            let progress = 0;
+            const loadingInterval = setInterval(() => {
+                progress += Math.random() * 15 + 5;
+                if (progress > 100) progress = 100;
+
+                loadingText.innerHTML = `
+                    Quantum Initialization: ${Math.floor(progress)}%<br>
+                    <span style="font-size: 1rem; opacity: 0.7;">
+                        ${progress < 30 ? 'Calibrating Neural Networks...' :
+                          progress < 60 ? 'Synchronizing Agent Matrices...' :
+                          progress < 90 ? 'Establishing Quantum Coherence...' :
+                          'Quantum System Online'}
+                    </span>
+                `;
+
+                if (progress >= 100) {
+                    clearInterval(loadingInterval);
+                    setTimeout(() => {
+                        loadingScreen.classList.add('hidden');
+                        initializeDemo();
+                    }, 1000);
+                }
+            }, 100);
+        }
+
+        // Initialize Three.js scenes for each slide
+        function initThreeScene(canvasId, slideIndex) {
+            const canvas = document.getElementById(canvasId);
+            if (!canvas) return;
+
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            const renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true });
+
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setClearColor(0x000000, 0);
+
+            // Create different scenes for different slides
+            switch(slideIndex) {
+                case 0:
+                    createQuantumParticleField(scene, 2000);
+                    break;
+                case 1:
+                    createNeuralNetwork3D(scene);
+                    break;
+                case 2:
+                    createMarketVisualization3D(scene);
+                    break;
+                case 3:
+                    createDataFlow3D(scene);
+                    break;
+                case 4:
+                    createSystemVisualization3D(scene);
+                    break;
+                case 5:
+                    createInvestmentVisualization3D(scene);
+                    break;
+            }
+
+            camera.position.z = 20;
+
+            threeScenes[slideIndex] = { scene, camera, renderer };
+
+            function animate() {
+                requestAnimationFrame(animate);
+                updateScene(scene, slideIndex);
+                renderer.render(scene, camera);
+            }
+            animate();
+        }
+
+        // Create quantum particle field
+        function createQuantumParticleField(scene, count) {
+            const geometry = new THREE.BufferGeometry();
+            const positions = new Float32Array(count * 3);
+            const colors = new Float32Array(count * 3);
+            const sizes = new Float32Array(count);
+
+            for (let i = 0; i < count * 3; i += 3) {
+                positions[i] = (Math.random() - 0.5) * 50;
+                positions[i + 1] = (Math.random() - 0.5) * 50;
+                positions[i + 2] = (Math.random() - 0.5) * 50;
+
+                const color = new THREE.Color();
+                color.setHSL(Math.random() * 0.2 + 0.5, 1, 0.7);
+                colors[i] = color.r;
+                colors[i + 1] = color.g;
+                colors[i + 2] = color.b;
+
+                sizes[i / 3] = Math.random() * 2 + 0.5;
+            }
+
+            geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+            geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+
+            const material = new THREE.PointsMaterial({
+                size: 2,
+                vertexColors: true,
+                transparent: true,
+                opacity: 0.8,
+                sizeAttenuation: true
+            });
+
+            const particles = new THREE.Points(geometry, material);
+            scene.add(particles);
+        }
+
+        // Create 3D neural network
+        function createNeuralNetwork3D(scene) {
+            const nodes = [];
+            const connections = [];
+
+            // Create nodes
+            for (let i = 0; i < 50; i++) {
+                const geometry = new THREE.SphereGeometry(0.2, 8, 8);
+                const material = new THREE.MeshBasicMaterial({
+                    color: new THREE.Color().setHSL(Math.random() * 0.3 + 0.5, 1, 0.7),
+                    transparent: true,
+                    opacity: 0.8
+                });
+                const node = new THREE.Mesh(geometry, material);
+
+                node.position.set(
+                    (Math.random() - 0.5) * 30,
+                    (Math.random() - 0.5) * 30,
+                    (Math.random() - 0.5) * 30
+                );
+
+                scene.add(node);
+                nodes.push(node);
+            }
+
+            // Create connections
+            for (let i = 0; i < nodes.length; i++) {
+                for (let j = i + 1; j < nodes.length; j++) {
+                    if (Math.random() > 0.85) {
+                        const geometry = new THREE.BufferGeometry();
+                        const positions = new Float32Array(6);
+
+                        positions[0] = nodes[i].position.x;
+                        positions[1] = nodes[i].position.y;
+                        positions[2] = nodes[i].position.z;
+                        positions[3] = nodes[j].position.x;
+                        positions[4] = nodes[j].position.y;
+                        positions[5] = nodes[j].position.z;
+
+                        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+
+                        const material = new THREE.LineBasicMaterial({
+                            color: 0x00ffff,
+                            transparent: true,
+                            opacity: 0.3
+                        });
+
+                        const line = new THREE.Line(geometry, material);
+                        scene.add(line);
+                        connections.push(line);
+                    }
+                }
+            }
+
+            scene.userData = { nodes, connections };
+        }
+
+        // Create market visualization 3D
+        function createMarketVisualization3D(scene) {
+            const segments = [
+                { size: 85, color: 0x00ffff, label: 'Enterprise Consulting' },
+                { size: 45, color: 0xffd700, label: 'Financial Services' },
+                { size: 28, color: 0xff69b4, label: 'Regulatory Compliance' },
+                { size: 15, color: 0x00ff7f, label: 'Research Institutions' }
+            ];
+
+            let totalAngle = 0;
+            segments.forEach((segment, i) => {
+                const angle = (segment.size / 173) * Math.PI * 2;
+                const geometry = new THREE.RingGeometry(8, 15, 8, 8, totalAngle, angle);
+                const material = new THREE.MeshBasicMaterial({
+                    color: segment.color,
+                    transparent: true,
+                    opacity: 0.7,
+                    side: THREE.DoubleSide
+                });
+                const ring = new THREE.Mesh(geometry, material);
+                ring.rotation.x = Math.PI / 2;
+                scene.add(ring);
+                totalAngle += angle;
+            });
+        }
+
+        // Create data flow 3D
+        function createDataFlow3D(scene) {
+            for (let i = 0; i < 100; i++) {
+                const geometry = new THREE.SphereGeometry(0.1, 4, 4);
+                const material = new THREE.MeshBasicMaterial({
+                    color: new THREE.Color().setHSL(Math.random() * 0.3 + 0.5, 1, 0.8),
+                    transparent: true,
+                    opacity: 0.8
+                });
+                const sphere = new THREE.Mesh(geometry, material);
+
+                sphere.position.set(
+                    (Math.random() - 0.5) * 40,
+                    (Math.random() - 0.5) * 40,
+                    (Math.random() - 0.5) * 40
+                );
+
+                sphere.userData = {
+                    velocity: new THREE.Vector3(
+                        (Math.random() - 0.5) * 0.1,
+                        (Math.random() - 0.5) * 0.1,
+                        (Math.random() - 0.5) * 0.1
+                    )
+                };
+
+                scene.add(sphere);
+            }
+        }
+
+        // Create system visualization 3D
+        function createSystemVisualization3D(scene) {
+            // Create central hub
+            const hubGeometry = new THREE.SphereGeometry(2, 32, 32);
+            const hubMaterial = new THREE.MeshBasicMaterial({
+                color: 0x00ffff,
+                transparent: true,
+                opacity: 0.8
+            });
+            const hub = new THREE.Mesh(hubGeometry, hubMaterial);
+            scene.add(hub);
+
+            // Create orbiting agents
+            const agents = [];
+            for (let i = 0; i < 9; i++) {
+                const agentGeometry = new THREE.SphereGeometry(0.5, 16, 16);
+                const agentMaterial = new THREE.MeshBasicMaterial({
+                    color: new THREE.Color().setHSL(i / 9, 1, 0.7)
+                });
+                const agent = new THREE.Mesh(agentGeometry, agentMaterial);
+
+                const radius = 8 + Math.random() * 4;
+                const angle = (i / 9) * Math.PI * 2;
+                agent.position.set(
+                    Math.cos(angle) * radius,
+                    (Math.random() - 0.5) * 4,
+                    Math.sin(angle) * radius
+                );
+
+                scene.add(agent);
+                agents.push(agent);
+            }
+
+            scene.userData = { hub, agents };
+        }
+
+        // Create investment visualization 3D
+        function createInvestmentVisualization3D(scene) {
+            // Create floating investment metrics
+            const metrics = [
+                { value: '$25M', color: 0x00ffff, position: [0, 5, 0] },
+                { value: '$150M', color: 0xffd700, position: [5, 0, 0] },
+                { value: '15-25x', color: 0xff69b4, position: [-5, 0, 0] },
+                { value: 'FIRST', color: 0x00ff7f, position: [0, -5, 0] }
+            ];
+
+            metrics.forEach((metric, i) => {
+                const geometry = new THREE.BoxGeometry(3, 1.5, 0.2);
+                const material = new THREE.MeshBasicMaterial({
+                    color: metric.color,
+                    transparent: true,
+                    opacity: 0.7
+                });
+                const box = new THREE.Mesh(geometry, material);
+                box.position.set(...metric.position);
+                scene.add(box);
+            });
+
+            // Add orbiting particles
+            for (let i = 0; i < 200; i++) {
+                const geometry = new THREE.SphereGeometry(0.05, 4, 4);
+                const material = new THREE.MeshBasicMaterial({
+                    color: new THREE.Color().setHSL(Math.random(), 1, 0.8)
+                });
+                const particle = new THREE.Mesh(geometry, material);
+
+                const radius = 10 + Math.random() * 10;
+                const theta = Math.random() * Math.PI * 2;
+                const phi = Math.random() * Math.PI;
+
+                particle.position.set(
+                    radius * Math.sin(phi) * Math.cos(theta),
+                    radius * Math.sin(phi) * Math.sin(theta),
+                    radius * Math.cos(phi)
+                );
+
+                scene.add(particle);
+            }
+        }
+
+        // Update scene animations
+        function updateScene(scene, slideIndex) {
+            const time = Date.now() * 0.001;
+
+            scene.traverse((object) => {
+                if (object instanceof THREE.Points) {
+                    object.rotation.x = time * 0.1;
+                    object.rotation.y = time * 0.15;
+
+                    const positions = object.geometry.attributes.position.array;
+                    for (let i = 1; i < positions.length; i += 3) {
+                        positions[i] += Math.sin(time + positions[i * 0.01]) * 0.01;
+                    }
+                    object.geometry.attributes.position.needsUpdate = true;
+                }
+
+                if (object instanceof THREE.Mesh) {
+                    if (slideIndex === 1 && scene.userData.nodes) {
+                        // Neural network animation
+                        scene.userData.nodes.forEach((node, i) => {
+                            node.rotation.x += 0.01;
+                            node.rotation.y += 0.01;
+                            node.position.y += Math.sin(time + i) * 0.005;
+                        });
+                    }
+
+                    if (slideIndex === 3 && object.userData.velocity) {
+                        // Data flow animation
+                        object.position.add(object.userData.velocity);
+                        if (object.position.length() > 25) {
+                            object.position.normalize().multiplyScalar(25);
+                            object.userData.velocity.negate();
+                        }
+                    }
+
+                    if (slideIndex === 4 && scene.userData.agents) {
+                        // System visualization animation
+                        scene.userData.hub.rotation.y += 0.005;
+                        scene.userData.agents.forEach((agent, i) => {
+                            const angle = time * 0.2 + (i / 9) * Math.PI * 2;
+                            const radius = 8 + Math.sin(time + i) * 2;
+                            agent.position.x = Math.cos(angle) * radius;
+                            agent.position.z = Math.sin(angle) * radius;
+                            agent.position.y = Math.sin(time * 2 + i) * 2;
+                        });
+                    }
+                }
+            });
+        }
+
+        // Initialize charts
+        function initQuantumMarketChart() {
+            const ctx = document.getElementById('quantumMarketChart');
+            if (!ctx) return;
+
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Enterprise Consulting', 'Financial Services', 'Regulatory Compliance', 'Research Institutions'],
+                    datasets: [{
+                        data: [85, 45, 28, 15],
+                        backgroundColor: [
+                            'rgba(0, 255, 255, 0.8)',
+                            'rgba(255, 215, 0, 0.8)',
+                            'rgba(255, 105, 180, 0.8)',
+                            'rgba(0, 255, 127, 0.8)'
+                        ],
+                        borderWidth: 3,
+                        borderColor: 'rgba(255, 255, 255, 0.2)',
+                        hoverBorderWidth: 5,
+                        hoverBorderColor: 'rgba(255, 255, 255, 0.8)'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                color: '#F5F5DC',
+                                font: { size: 16, weight: 300 },
+                                padding: 30
+                            }
+                        }
+                    },
+                    animation: {
+                        animateRotate: true,
+                        duration: 3000,
+                        easing: 'easeOutQuart'
+                    }
+                }
+            });
+        }
+
+        function initQuantumRevenueChart() {
+            const ctx = document.getElementById('quantumRevenueChart');
+            if (!ctx) return;
+
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['Launch', 'Year 1', 'Year 2', 'Year 3', 'Year 4', 'Year 5'],
+                    datasets: [{
+                        label: 'ARR ($M)',
+                        data: [0, 4.2, 15.6, 45, 85, 200],
+                        borderColor: 'rgba(0, 255, 255, 1)',
+                        backgroundColor: 'rgba(0, 255, 255, 0.1)',
+                        borderWidth: 4,
+                        tension: 0.4,
+                        pointBackgroundColor: '#FFD700',
+                        pointBorderColor: '#00FFFF',
+                        pointRadius: 8,
+                        pointHoverRadius: 12,
+                        fill: true,
+                        pointBorderWidth: 3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: '#F5F5DC',
+                                font: { size: 18, weight: 300 }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)',
+                                lineWidth: 2
+                            },
+                            ticks: {
+                                color: '#F5F5DC',
+                                font: { size: 16 }
+                            }
+                        },
+                        x: {
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1),
+                                lineWidth: 2
+                            },
+                            ticks: {
+                                color: '#F5F5DC',
+                                font: { size: 16 }
+                            }
+                        }
+                    },
+                    animation: {
+                        duration: 3000,
+                        easing: 'easeOutQuint'
+                    }
+                }
+            });
+        }
+
+        // Create audio visualizer
+        function createAudioVisualizer(containerId) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+
+            for (let i = 0; i < 50; i++) {
+                const bar = document.createElement('div');
+                bar.className = 'audio-bar';
+                bar.style.left = (i * 2) + '%';
+                bar.style.animationDelay = Math.random() * 0.5 + 's';
+                bar.style.animationDuration = (0.3 + Math.random() * 0.4) + 's';
+                container.appendChild(bar);
+            }
+        }
+
+        // Live metrics updates
+        function updateLiveMetrics() {
+            const elements = {
+                agentsOnline: document.getElementById('agentsOnline'),
+                processingRate: document.getElementById('processingRate'),
+                successRateValue: document.getElementById('successRateValue'),
+                coordinationValue: document.getElementById('coordinationValue'),
+                quantumState: document.getElementById('quantumState'),
+                systemTemp: document.getElementById('systemTemp'),
+                liveAgents: document.getElementById('liveAgents'),
+                liveTasks: document.getElementById('liveTasks'),
+                liveSuccess: document.getElementById('liveSuccess'),
+                quantumCoherence: document.getElementById('quantumCoherence')
+            };
+
+            // Update values with slight variations
+            const variations = {
+                agents: 569 + Math.floor(Math.random() * 10 - 5),
+                processingRate: 110.6 + (Math.random() * 20 - 10),
+                success: 98.4 + (Math.random() * 2 - 1),
+                coordination: 90.2 + (Math.random() * 5 - 2.5),
+                temperature: 0.01 + (Math.random() * 0.02 - 0.01)
+            };
+
+            if (elements.agentsOnline) elements.agentsOnline.textContent = variations.agents;
+            if (elements.processingRate) elements.processingRate.textContent = variations.processingRate.toFixed(1) + 'K/s';
+            if (elements.successRateValue) elements.successRateValue.textContent = variations.success.toFixed(1) + '%';
+            if (elements.coordinationValue) elements.coordinationValue.textContent = variations.coordination.toFixed(1) + '%';
+            if (elements.systemTemp) elements.systemTemp.textContent = variations.temperature.toFixed(3) + 'K';
+            if (elements.quantumState) elements.quantumState.textContent = Math.random() > 0.9 ? 'SUPERPOSITION' : 'COHERENT';
+
+            // Update live counters
+            if (elements.liveAgents) elements.liveAgents.textContent = 9 + Math.floor(Math.random() * 3);
+            if (elements.liveTasks) {
+                const currentTasks = parseInt(elements.liveTasks.textContent) || 0;
+                elements.liveTasks.textContent = currentTasks + Math.floor(Math.random() * 5) + 1;
+            }
+            if (elements.liveSuccess) elements.liveSuccess.textContent = variations.success.toFixed(1) + '%';
+            if (elements.quantumCoherence) {
+                const states = ['HIGH', 'OPTIMAL', 'PEAK', 'MAXIMUM'];
+                elements.quantumCoherence.textContent = states[Math.floor(Math.random() * states.length)];
+            }
+        }
+
+        // Slide management
+        function showSlide(n) {
+            const slides = document.querySelectorAll('.slide');
+            const indicators = document.querySelectorAll('.quantum-progress-dot');
+
+            slides[currentSlide].classList.remove('active');
+            indicators[currentSlide].classList.remove('active');
+
+            currentSlide = (n + totalSlides) % totalSlides;
+
+            slides[currentSlide].classList.add('active');
+            indicators[currentSlide].classList.add('active');
+
+            // Initialize slide-specific content
+            setTimeout(() => {
+                if (currentSlide === 2) initQuantumMarketChart();
+                if (currentSlide === 3) initQuantumRevenueChart();
+            }, 500);
+
+            // GSAP slide transition
+            gsap.fromTo(slides[currentSlide],
+                { opacity: 0, y: 50 },
+                { opacity: 1, y: 0, duration: 1, ease: "power3.out" }
+            );
+        }
+
+        function nextSlide() {
+            showSlide(currentSlide + 1);
+        }
+
+        function prevSlide() {
+            showSlide(currentSlide - 1);
+        }
+
+        function goToSlide(n) {
+            showSlide(n);
+        }
+
+        // Control functions
+        function toggleAutoPlay() {
+            isAutoPlaying = !isAutoPlaying;
+            if (isAutoPlaying) {
+                autoPlayTimer = setInterval(() => {
+                    nextSlide();
+                }, 10000);
+            } else {
+                clearInterval(autoPlayTimer);
+            }
+        }
+
+        function toggleStats() {
+            const statsOverlay = document.getElementById('statsOverlay');
+            isStatsVisible = !isStatsVisible;
+            statsOverlay.style.display = isStatsVisible ? 'block' : 'none';
+        }
+
+        function resetDemo() {
+            goToSlide(0);
+            if (isAutoPlaying) {
+                clearInterval(autoPlayTimer);
+                isAutoPlaying = false;
+            }
+        }
+
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+            } else {
+                document.exitFullscreen();
+            }
+        }
+
+        // Initialize demo
+        function initializeDemo() {
+            // Initialize all Three.js scenes
+            for (let i = 0; i < totalSlides; i++) {
+                initThreeScene(`quantumCanvas${i + 1}`, i);
+            }
+
+            // Create audio visualizers
+            createAudioVisualizer('audioViz1');
+
+            // Start live metrics updates
+            setInterval(updateLiveMetrics, 1000);
+
+            // Add interaction listeners
+            document.addEventListener('keydown', handleKeydown);
+            document.addEventListener('wheel', handleWheel);
+
+            // Add touch support
+            let touchStartX = 0;
+            document.addEventListener('touchstart', (e) => {
+                touchStartX = e.changedTouches[0].screenX;
+            });
+
+            document.addEventListener('touchend', (e) => {
+                const touchEndX = e.changedTouches[0].screenX;
+                const diff = touchStartX - touchEndX;
+
+                if (Math.abs(diff) > 100) {
+                    if (diff > 0) nextSlide();
+                    else prevSlide();
+                }
+            });
+
+            // Initialize first slide
+            showSlide(0);
+        }
+
+        function handleKeydown(e) {
+            switch(e.key) {
+                case 'ArrowRight':
+                case ' ':
+                    nextSlide();
+                    break;
+                case 'ArrowLeft':
+                    prevSlide();
+                    break;
+                case 'Home':
+                    goToSlide(0);
+                    break;
+                case 'End':
+                    goToSlide(totalSlides - 1);
+                    break;
+                case 'Escape':
+                    toggleAutoPlay();
+                    break;
+                case 'f':
+                case 'F':
+                    toggleFullscreen();
+                    break;
+                case 's':
+                case 'S':
+                    toggleStats();
+                    break;
+            }
+        }
+
+        function handleWheel(e) {
+            if (Math.abs(e.deltaY) > 50) {
+                if (e.deltaY > 0) nextSlide();
+                else prevSlide();
+            }
+        }
+
+        // Prevent context menu
+        document.addEventListener('contextmenu', (e) => e.preventDefault());
+
+        // Start loading sequence
+        setTimeout(hideLoadingScreen, 2000);
+    </script>
+</body>
+</html>

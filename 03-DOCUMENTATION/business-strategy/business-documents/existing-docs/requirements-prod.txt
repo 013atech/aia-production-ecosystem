@@ -1,0 +1,37 @@
+# Production Requirements for AIA System
+# ======================================
+
+# Core dependencies (same as requirements.txt)
+-r requirements.txt
+
+# Additional production dependencies
+google-cloud-secret-manager==2.16.4
+google-cloud-workflows==1.14.1
+google-cloud-storage==2.10.0
+google-cloud-sql-connector==1.4.3
+google-cloud-logging==3.8.0
+google-cloud-monitoring==2.16.0
+
+# Performance and monitoring
+prometheus-client==0.19.0
+sentry-sdk[fastapi]==1.38.0
+
+# Additional security
+cryptography==41.0.7
+PyNaCl==1.5.0
+
+# Performance testing
+locust==2.17.0
+
+# Development tools (for CI/CD)
+pytest==7.4.3
+pytest-asyncio==0.21.1
+pytest-cov==4.1.0
+pytest-mock==3.12.0
+black==23.11.0
+flake8==6.1.0
+mypy==1.7.1
+
+# Deployment tools  
+kubernetes==28.1.0
+pyyaml==6.0.1

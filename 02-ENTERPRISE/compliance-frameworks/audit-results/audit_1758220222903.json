@@ -1,0 +1,113 @@
+{
+  "timestamp": "2025-09-18T18:29:58.733Z",
+  "url": "https://013a.tech",
+  "testResults": {
+    "landing-page-load": {
+      "status": "completed",
+      "details": [
+        {
+          "check": "HTTP Status",
+          "result": "PASS",
+          "value": 200
+        },
+        {
+          "check": "Page Title",
+          "result": "PASS",
+          "value": "013a - Advanced Intelligence Architecture"
+        }
+      ],
+      "score": 80
+    },
+    "sentient-canvas": {
+      "status": "completed",
+      "details": [
+        {
+          "check": "WebGL Support",
+          "result": "FAIL",
+          "value": false
+        },
+        {
+          "check": "Canvas Dimensions",
+          "result": "PASS",
+          "value": {
+            "width": 1280,
+            "height": 720,
+            "clientWidth": 1280,
+            "clientHeight": 720
+          }
+        }
+      ],
+      "score": 45
+    },
+    "navigation-ui": {
+      "status": "completed",
+      "details": [
+        {
+          "check": "Navigation Elements Found",
+          "result": "FAIL",
+          "value": 0
+        },
+        {
+          "check": "Glassmorphic Elements",
+          "result": "PASS",
+          "value": 1
+        }
+      ],
+      "score": 50
+    },
+    "signup-flow": {
+      "status": "completed",
+      "details": [
+        {
+          "check": "Signup Button Found",
+          "result": "FAIL",
+          "value": false
+        }
+      ],
+      "score": 25
+    },
+    "performance-metrics": {
+      "status": "completed",
+      "details": [
+        {
+          "check": "Performance Metrics",
+          "result": "PASS",
+          "value": {
+            "loadTime": 196,
+            "domContentLoaded": 193,
+            "firstPaint": 428
+          }
+        }
+      ],
+      "score": 70
+    },
+    "accessibility-compliance": {
+      "status": "completed",
+      "details": [
+        {
+          "check": "Image Alt Tags",
+          "result": "PASS",
+          "value": {
+            "total": 0,
+            "withAlt": 0,
+            "percentage": 100
+          }
+        },
+        {
+          "check": "ARIA Labels",
+          "result": "PARTIAL",
+          "value": 0
+        },
+        {
+          "check": "Semantic HTML",
+          "result": "PARTIAL",
+          "value": 0
+        }
+      ],
+      "score": 65
+    }
+  },
+  "overallScore": 0,
+  "criticalIssues": [],
+  "recommendations": []
+}

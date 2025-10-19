@@ -1,0 +1,62 @@
+{
+  "timestamp": "2025-09-18T18:29:26.512Z",
+  "url": "https://013a.tech",
+  "testResults": {
+    "landing-page-load": {
+      "status": "completed",
+      "details": [
+        {
+          "check": "HTTP Status",
+          "result": "PASS",
+          "value": 200
+        },
+        {
+          "check": "Page Title",
+          "result": "PASS",
+          "value": "013a - Advanced Intelligence Architecture"
+        }
+      ],
+      "score": 80
+    },
+    "sentient-canvas": {
+      "status": "completed",
+      "details": [
+        {
+          "check": "WebGL Support",
+          "result": "FAIL",
+          "value": false
+        },
+        {
+          "check": "Canvas Dimensions",
+          "result": "PASS",
+          "value": {
+            "width": 1280,
+            "height": 720,
+            "clientWidth": 1280,
+            "clientHeight": 720
+          }
+        }
+      ],
+      "score": 45
+    },
+    "navigation-ui": {
+      "status": "completed",
+      "details": [
+        {
+          "check": "Navigation Elements Found",
+          "result": "FAIL",
+          "value": 0
+        },
+        {
+          "check": "Glassmorphic Elements",
+          "result": "PASS",
+          "value": 1
+        }
+      ],
+      "score": 50
+    }
+  },
+  "overallScore": 0,
+  "criticalIssues": [],
+  "recommendations": []
+}

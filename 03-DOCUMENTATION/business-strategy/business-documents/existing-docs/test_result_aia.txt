@@ -1,0 +1,98 @@
+{
+  "executive_summary": {
+    "investment_thesis": "Based on multi-agent analysis of market dynamics",
+    "recommendation": "INVEST",
+    "confidence": 0.87,
+    "key_findings": [
+      "Market CAGR 2024-2029: 23.4%",
+      "TAM 2029: $457.8B",
+      "Risk-adjusted IRR: 28.5%"
+    ]
+  },
+  "market_analysis": {
+    "segments": {
+      "cloud_services": {
+        "cagr": "21.3%",
+        "tam_2029": "$234.5B"
+      },
+      "ai_infrastructure": {
+        "cagr": "28.7%",
+        "tam_2029": "$123.4B"
+      },
+      "data_analytics": {
+        "cagr": "19.8%",
+        "tam_2029": "$99.9B"
+      }
+    },
+    "competitive_metrics": {
+      "cr4": "42%",
+      "hhi": 1823,
+      "market_structure": "Moderately concentrated"
+    }
+  },
+  "financial_projections": {
+    "revenue_forecast": {
+      "2024": {
+        "Q1": 132.63786054888993,
+        "Q2": 114.11800812668224,
+        "Q3": 168.61571411577208,
+        "Q4": 166.68685819082026
+      },
+      "2025": {
+        "Q1": 128.85477139495748,
+        "Q2": 116.83047091158538,
+        "Q3": 169.95398304620602,
+        "Q4": 152.88286940721338
+      },
+      "2026": {
+        "Q1": 116.12826435599366,
+        "Q2": 118.73542004701915,
+        "Q3": 165.5613799401936,
+        "Q4": 168.2641455286869
+      },
+      "2027": {
+        "Q1": 113.94881484262973,
+        "Q2": 131.58530425473725,
+        "Q3": 147.53020360392873,
+        "Q4": 158.33965844065767
+      },
+      "2028": {
+        "Q1": 115.49711811822752,
+        "Q2": 123.17532550605273,
+        "Q3": 131.0087627771299,
+        "Q4": 135.96934413033767
+      },
+      "2029": {
+        "Q1": 132.0432679066097,
+        "Q2": 138.32596627429194,
+        "Q3": 152.19917073003796,
+        "Q4": 159.58299631371213
+      }
+    },
+    "valuation": {
+      "dcf": "$3.4B",
+      "comps": "$3.7B",
+      "precedent_transactions": "$3.2B"
+    }
+  },
+  "risk_assessment": {
+    "market_risk": "Medium",
+    "regulatory_risk": "Low",
+    "technology_risk": "Medium",
+    "var_95": "$234M"
+  },
+  "agent_consensus": {
+    "glac_agents": {
+      "recommendation": "INVEST",
+      "confidence": 0.85
+    },
+    "tsgla_agents": {
+      "recommendation": "INVEST",
+      "confidence": 0.89
+    },
+    "tasa_agents": {
+      "recommendation": "INVEST",
+      "confidence": 0.87
+    }
+  }
+}

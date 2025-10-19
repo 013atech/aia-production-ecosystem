@@ -1,0 +1,119 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    kubernetes.io/ingress.allow-http: "true"
+    kubernetes.io/ingress.class: gce
+    kubernetes.io/ingress.global-static-ip-name: "aia-global-ip"
+    ingress.gcp.kubernetes.io/managed-certificates: "enterprise-ssl-cert,immersive-ssl-cert"
+  name: consolidated-enterprise-domains-ingress
+  namespace: aia-enterprise-domains
+spec:
+  rules:
+  # 🏢 Consolidated Enterprise Domain (fortune500 + enterprise)
+  - host: enterprise.013a.tech
+    http:
+      paths:
+      # Fortune 500 services at /fortune500 path
+      - path: /fortune500/*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: fortune500-analytics-service
+            port:
+              number: 8010
+      # General enterprise services at root
+      - path: /*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: enterprise-unified-service
+            port:
+              number: 8050
+
+  # 🎮 Consolidated Immersive Domain (3d + webxr + xr + spatial)
+  - host: immersive.013a.tech
+    http:
+      paths:
+      # 3D visualization at /3d path
+      - path: /3d/*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: webxr-platform-service
+            port:
+              number: 8020
+      # WebXR at /webxr path
+      - path: /webxr/*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: webxr-platform-service
+            port:
+              number: 8020
+      # Extended reality at /xr path
+      - path: /xr/*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: webxr-platform-service
+            port:
+              number: 8020
+      # Spatial computing at /spatial path
+      - path: /spatial/*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: webxr-platform-service
+            port:
+              number: 8020
+      # Main immersive platform at root
+      - path: /*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: webxr-platform-service
+            port:
+              number: 8020
+
+  # 💰 Keep payments.013a.tech separate
+  - host: payments.013a.tech
+    http:
+      paths:
+      - path: /*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: payment-processor-service
+            port:
+              number: 8030
+
+  # 📊 Keep ml.013a.tech separate for analytics
+  - host: ml.013a.tech
+    http:
+      paths:
+      - path: /*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: ml-analytics-service
+            port:
+              number: 8040
+---
+apiVersion: networking.gcp.kubernetes.io/v1
+kind: ManagedCertificate
+metadata:
+  name: enterprise-ssl-cert
+  namespace: aia-enterprise-domains
+spec:
+  domains:
+    - enterprise.013a.tech
+---
+apiVersion: networking.gcp.kubernetes.io/v1
+kind: ManagedCertificate
+metadata:
+  name: immersive-ssl-cert
+  namespace: aia-enterprise-domains
+spec:
+  domains:
+    - immersive.013a.tech

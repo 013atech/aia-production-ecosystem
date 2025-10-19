@@ -1,0 +1,322 @@
+# =====================================================
+# AIA ENTERPRISE INGRESS CONFIGURATION - FIXED
+# Complete 23-Domain Production Routing
+# =====================================================
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: aia-comprehensive-ingress
+  namespace: aia-production
+  annotations:
+    kubernetes.io/ingress.class: "gce"
+    kubernetes.io/ingress.global-static-ip-name: "aia-production-ip"
+    networking.gke.io/managed-certificates: "aia-ssl-certificate"
+    cloud.google.com/backend-config: '{"default": "aia-frontend-backendconfig"}'
+spec:
+  rules:
+  # =====================================================
+  # CORE DOMAIN ROUTING
+  # =====================================================
+  - host: 013a.tech
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-frontend-service
+            port:
+              number: 80
+  - host: www.013a.tech
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-frontend-service
+            port:
+              number: 80
+  - host: app.013a.tech
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-frontend-service
+            port:
+              number: 80
+  - host: api.013a.tech
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-backend-service
+            port:
+              number: 8000
+
+  # =====================================================
+  # SERVICE-SPECIFIC DOMAIN ROUTING
+  # =====================================================
+  - host: analytics.013a.tech
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-backend-service
+            port:
+              number: 8000
+  - host: enterprise.013a.tech
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-enterprise-partners-service
+            port:
+              number: 80
+  - host: ml.013a.tech
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-ml-processor-service
+            port:
+              number: 8003
+  - host: marketplace.013a.tech
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-backend-service
+            port:
+              number: 8000
+  - host: docs.013a.tech
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-frontend-service
+            port:
+              number: 80
+
+  # =====================================================
+  # IMMERSIVE 3D DOMAIN ROUTING
+  # =====================================================
+  - host: immersive.013a.tech
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-frontend-service
+            port:
+              number: 80
+  - host: 3d.013a.tech
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-frontend-service
+            port:
+              number: 80
+  - host: webxr.013a.tech
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-frontend-service
+            port:
+              number: 80
+  - host: spatial.013a.tech
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-frontend-service
+            port:
+              number: 80
+
+  # =====================================================
+  # FORTUNE 500 PARTNER DOMAIN ROUTING
+  # =====================================================
+  - host: ey.013a.tech
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-enterprise-partners-service
+            port:
+              number: 80
+  - host: jpmorgan.013a.tech
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-enterprise-partners-service
+            port:
+              number: 80
+  - host: google.013a.tech
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-enterprise-partners-service
+            port:
+              number: 80
+  - host: apple.013a.tech
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-enterprise-partners-service
+            port:
+              number: 80
+
+  # =====================================================
+  # INFRASTRUCTURE DOMAIN ROUTING
+  # =====================================================
+  - host: monitoring.013a.tech
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-backend-service
+            port:
+              number: 8000
+  - host: admin.013a.tech
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-backend-service
+            port:
+              number: 8000
+  - host: status.013a.tech
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-backend-service
+            port:
+              number: 8000
+  - host: cdn.013a.tech
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-frontend-service
+            port:
+              number: 80
+
+  # =====================================================
+  # REGIONAL DOMAIN ROUTING
+  # =====================================================
+  - host: us.013a.tech
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-frontend-service
+            port:
+              number: 80
+  - host: eu.013a.tech
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-frontend-service
+            port:
+              number: 80
+  - host: asia.013a.tech
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-frontend-service
+            port:
+              number: 80
+
+---
+# =====================================================
+# MANAGED SSL CERTIFICATE FOR ALL DOMAINS
+# =====================================================
+apiVersion: networking.gke.io/v1
+kind: ManagedCertificate
+metadata:
+  name: aia-comprehensive-ssl-cert
+  namespace: aia-production
+spec:
+  domains:
+  # Core domains
+  - 013a.tech
+  - www.013a.tech
+  - app.013a.tech
+  - api.013a.tech
+  # Service domains
+  - analytics.013a.tech
+  - enterprise.013a.tech
+  - ml.013a.tech
+  - marketplace.013a.tech
+  - docs.013a.tech
+  # Immersive domains
+  - immersive.013a.tech
+  - 3d.013a.tech
+  - webxr.013a.tech
+  - spatial.013a.tech
+  # Partner domains
+  - ey.013a.tech
+  - jpmorgan.013a.tech
+  - google.013a.tech
+  - apple.013a.tech
+  # Infrastructure domains
+  - monitoring.013a.tech
+  - admin.013a.tech
+  - status.013a.tech
+  - cdn.013a.tech
+  # Regional domains
+  - us.013a.tech
+  - eu.013a.tech
+  - asia.013a.tech

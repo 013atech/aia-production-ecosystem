@@ -1,0 +1,1904 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AIA - 3D Platform Architecture Visualization</title>
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://unpkg.com/three@0.162.0/build/three.module.js",
+            "three/addons/": "https://unpkg.com/three@0.162.0/examples/jsm/"
+        }
+    }
+    </script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            color: #f5f5dc;
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        .architecture-container {
+            display: grid;
+            grid-template-columns: 320px 1fr 280px;
+            grid-template-rows: 70px 1fr;
+            height: 100vh;
+            gap: 0;
+        }
+
+        .header {
+            grid-column: 1 / -1;
+            background: rgba(26, 26, 26, 0.95);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(0, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 30px;
+            z-index: 1000;
+        }
+
+        .header-title {
+            font-size: 1.8rem;
+            background: linear-gradient(45deg, #00ffff, #ffff00);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-weight: 300;
+        }
+
+        .view-controls {
+            display: flex;
+            gap: 15px;
+        }
+
+        .view-btn {
+            padding: 8px 16px;
+            background: rgba(0, 255, 255, 0.1);
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+            color: #f5f5dc;
+        }
+
+        .view-btn.active,
+        .view-btn:hover {
+            background: rgba(0, 255, 255, 0.2);
+            color: #00ffff;
+            transform: translateY(-1px);
+            box-shadow: 0 5px 15px rgba(0, 255, 255, 0.2);
+        }
+
+        .layers-panel {
+            background: rgba(26, 26, 26, 0.95);
+            backdrop-filter: blur(20px);
+            border-right: 1px solid rgba(0, 255, 255, 0.2);
+            padding: 30px 20px;
+            overflow-y: auto;
+        }
+
+        .components-panel {
+            background: rgba(26, 26, 26, 0.95);
+            backdrop-filter: blur(20px);
+            border-left: 1px solid rgba(0, 255, 255, 0.2);
+            padding: 30px 20px;
+            overflow-y: auto;
+        }
+
+        .panel-title {
+            font-size: 1.2rem;
+            color: #00ffff;
+            margin-bottom: 25px;
+            text-align: center;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(0, 255, 255, 0.2);
+        }
+
+        .layer-section {
+            margin-bottom: 30px;
+        }
+
+        .layer-category {
+            font-size: 1rem;
+            color: #ffff00;
+            margin-bottom: 15px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .layer-toggle {
+            width: 12px;
+            height: 12px;
+            border: 2px solid #ffff00;
+            border-radius: 2px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .layer-toggle.active {
+            background: #ffff00;
+        }
+
+        .layer-toggle.active::after {
+            content: '✓';
+            position: absolute;
+            top: -2px;
+            left: 1px;
+            color: #1a1a1a;
+            font-size: 8px;
+            font-weight: bold;
+        }
+
+        .layer-item {
+            background: linear-gradient(135deg, rgba(0, 255, 255, 0.1), rgba(255, 255, 0, 0.05));
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .layer-item:hover {
+            transform: translateX(3px);
+            box-shadow: 0 5px 20px rgba(0, 255, 255, 0.15);
+        }
+
+        .layer-item.active {
+            border-color: #00ffff;
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.3);
+            background: linear-gradient(135deg, rgba(0, 255, 255, 0.2), rgba(255, 255, 0, 0.1));
+        }
+
+        .layer-name {
+            font-size: 0.9rem;
+            color: #f5f5dc;
+            font-weight: 500;
+            margin-bottom: 5px;
+        }
+
+        .layer-description {
+            font-size: 0.75rem;
+            color: #f5f5dc;
+            opacity: 0.7;
+            line-height: 1.3;
+        }
+
+        .layer-status {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #00ff88;
+        }
+
+        .layer-status.warning {
+            background: #ffff00;
+        }
+
+        .layer-status.error {
+            background: #ff4444;
+        }
+
+        .component-detail {
+            background: linear-gradient(135deg, rgba(0, 255, 255, 0.1), rgba(255, 255, 0, 0.05));
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .component-title {
+            font-size: 1.1rem;
+            color: #00ffff;
+            margin-bottom: 15px;
+            font-weight: 500;
+        }
+
+        .component-metrics {
+            display: grid;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .metric-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.8rem;
+        }
+
+        .metric-label {
+            color: #f5f5dc;
+            opacity: 0.8;
+        }
+
+        .metric-value {
+            color: #00ffff;
+            font-weight: 500;
+        }
+
+        .component-connections {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid rgba(0, 255, 255, 0.2);
+        }
+
+        .connection-title {
+            font-size: 0.8rem;
+            color: #ffff00;
+            margin-bottom: 8px;
+        }
+
+        .connection-item {
+            font-size: 0.75rem;
+            color: #f5f5dc;
+            opacity: 0.7;
+            margin-bottom: 3px;
+        }
+
+        .main-visualization {
+            position: relative;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            overflow: hidden;
+        }
+
+        .architecture-overlay {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            right: 20px;
+            bottom: 20px;
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        .performance-indicator {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background: rgba(26, 26, 26, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0, 255, 255, 0.2);
+            border-radius: 10px;
+            padding: 15px;
+            pointer-events: auto;
+        }
+
+        .perf-title {
+            font-size: 0.9rem;
+            color: #00ffff;
+            margin-bottom: 10px;
+        }
+
+        .perf-metric {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 0.8rem;
+        }
+
+        .perf-label {
+            color: #f5f5dc;
+            opacity: 0.8;
+        }
+
+        .perf-value {
+            color: #00ff88;
+            font-weight: 500;
+        }
+
+        .navigation-controls {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 15px;
+            background: rgba(26, 26, 26, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0, 255, 255, 0.2);
+            border-radius: 25px;
+            padding: 15px 25px;
+            pointer-events: auto;
+        }
+
+        .nav-control {
+            background: rgba(0, 255, 255, 0.1);
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            border-radius: 8px;
+            padding: 8px 12px;
+            color: #f5f5dc;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.8rem;
+        }
+
+        .nav-control:hover {
+            background: rgba(0, 255, 255, 0.2);
+            transform: translateY(-1px);
+        }
+
+        .loading-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(26, 26, 26, 0.9);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            transition: opacity 0.5s ease;
+        }
+
+        .loading-animation {
+            width: 80px;
+            height: 80px;
+            border: 4px solid rgba(0, 255, 255, 0.3);
+            border-top: 4px solid #00ffff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+
+        .loading-text {
+            color: #00ffff;
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+        }
+
+        .loading-progress {
+            width: 200px;
+            height: 4px;
+            background: rgba(0, 255, 255, 0.2);
+            border-radius: 2px;
+            overflow: hidden;
+            margin-bottom: 15px;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #00ffff, #ffff00);
+            border-radius: 2px;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .loading-status {
+            color: #f5f5dc;
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .data-flow-visualization {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 300px;
+            height: 200px;
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            border-radius: 15px;
+            background: rgba(26, 26, 26, 0.8);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            display: none;
+            pointer-events: auto;
+            z-index: 1000;
+        }
+
+        .flow-title {
+            color: #00ffff;
+            font-size: 1rem;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .flow-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            font-size: 0.8rem;
+        }
+
+        .flow-icon {
+            width: 8px;
+            height: 8px;
+            background: #00ffff;
+            border-radius: 50%;
+            margin-right: 10px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 1; }
+        }
+
+        .tooltip-3d {
+            position: absolute;
+            background: rgba(26, 26, 26, 0.95);
+            border: 1px solid rgba(0, 255, 255, 0.5);
+            border-radius: 8px;
+            padding: 12px;
+            font-size: 0.8rem;
+            color: #f5f5dc;
+            pointer-events: none;
+            z-index: 2000;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            max-width: 250px;
+        }
+
+        .tooltip-3d.show {
+            opacity: 1;
+        }
+
+        @media (max-width: 1200px) {
+            .architecture-container {
+                grid-template-columns: 280px 1fr 240px;
+            }
+        }
+
+        @media (max-width: 1024px) {
+            .architecture-container {
+                grid-template-columns: 1fr;
+                grid-template-rows: 70px 180px 1fr 160px;
+            }
+
+            .layers-panel,
+            .components-panel {
+                display: flex;
+                gap: 20px;
+                padding: 20px;
+                overflow-x: auto;
+            }
+
+            .layer-section {
+                min-width: 250px;
+                margin-bottom: 0;
+            }
+
+            .component-detail {
+                min-width: 220px;
+                margin-bottom: 0;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .header {
+                padding: 0 15px;
+            }
+
+            .header-title {
+                font-size: 1.4rem;
+            }
+
+            .view-controls {
+                gap: 8px;
+            }
+
+            .view-btn {
+                padding: 6px 12px;
+                font-size: 0.8rem;
+            }
+
+            .navigation-controls {
+                padding: 10px 15px;
+                gap: 10px;
+            }
+
+            .performance-indicator {
+                position: relative;
+                margin: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="architecture-container">
+        <header class="header">
+            <h1 class="header-title">AIA Platform Architecture</h1>
+            <div class="view-controls">
+                <div class="view-btn active" data-view="overview">Overview</div>
+                <div class="view-btn" data-view="layers">Layers</div>
+                <div class="view-btn" data-view="flow">Data Flow</div>
+                <div class="view-btn" data-view="security">Security</div>
+                <div class="view-btn" data-view="performance">Performance</div>
+            </div>
+        </header>
+
+        <aside class="layers-panel">
+            <h3 class="panel-title">Architecture Layers</h3>
+
+            <div class="layer-section">
+                <div class="layer-category">
+                    <div class="layer-toggle active" data-layer="frontend"></div>
+                    Frontend Layer
+                </div>
+                <div class="layer-item active" data-component="ui">
+                    <div class="layer-status"></div>
+                    <div class="layer-name">User Interface</div>
+                    <div class="layer-description">React-based immersive 3D interfaces with Apple Vision Pro integration</div>
+                </div>
+                <div class="layer-item" data-component="mobile">
+                    <div class="layer-status"></div>
+                    <div class="layer-name">Mobile Apps</div>
+                    <div class="layer-description">Native iOS/Android applications for enterprise mobility</div>
+                </div>
+                <div class="layer-item" data-component="webxr">
+                    <div class="layer-status"></div>
+                    <div class="layer-name">WebXR Interface</div>
+                    <div class="layer-description">Browser-based AR/VR experiences using Three.js</div>
+                </div>
+            </div>
+
+            <div class="layer-section">
+                <div class="layer-category">
+                    <div class="layer-toggle active" data-layer="api"></div>
+                    API Gateway
+                </div>
+                <div class="layer-item" data-component="graphql">
+                    <div class="layer-status"></div>
+                    <div class="layer-name">GraphQL API</div>
+                    <div class="layer-description">Unified API layer with real-time subscriptions</div>
+                </div>
+                <div class="layer-item" data-component="rest">
+                    <div class="layer-status"></div>
+                    <div class="layer-name">REST Services</div>
+                    <div class="layer-description">Legacy system integration and third-party APIs</div>
+                </div>
+                <div class="layer-item" data-component="auth">
+                    <div class="layer-status warning"></div>
+                    <div class="layer-name">Authentication</div>
+                    <div class="layer-description">OAuth 2.0, JWT, and enterprise SSO integration</div>
+                </div>
+            </div>
+
+            <div class="layer-section">
+                <div class="layer-category">
+                    <div class="layer-toggle active" data-layer="services"></div>
+                    Core Services
+                </div>
+                <div class="layer-item" data-component="orchestrator">
+                    <div class="layer-status"></div>
+                    <div class="layer-name">Multi-Agent System</div>
+                    <div class="layer-description">Autonomous intelligence orchestration and coordination</div>
+                </div>
+                <div class="layer-item" data-component="ml">
+                    <div class="layer-status"></div>
+                    <div class="layer-name">ML Pipeline</div>
+                    <div class="layer-description">TensorFlow, PyTorch model training and inference</div>
+                </div>
+                <div class="layer-item" data-component="dkg">
+                    <div class="layer-status"></div>
+                    <div class="layer-name">Dynamic Knowledge Graph</div>
+                    <div class="layer-description">Real-time knowledge representation and reasoning</div>
+                </div>
+            </div>
+
+            <div class="layer-section">
+                <div class="layer-category">
+                    <div class="layer-toggle active" data-layer="data"></div>
+                    Data Layer
+                </div>
+                <div class="layer-item" data-component="postgres">
+                    <div class="layer-status"></div>
+                    <div class="layer-name">PostgreSQL</div>
+                    <div class="layer-description">Primary transactional database with high availability</div>
+                </div>
+                <div class="layer-item" data-component="neo4j">
+                    <div class="layer-status"></div>
+                    <div class="layer-name">Neo4j Graph DB</div>
+                    <div class="layer-description">Graph database for relationship modeling</div>
+                </div>
+                <div class="layer-item" data-component="redis">
+                    <div class="layer-status"></div>
+                    <div class="layer-name">Redis Cache</div>
+                    <div class="layer-description">In-memory caching and session storage</div>
+                </div>
+            </div>
+
+            <div class="layer-section">
+                <div class="layer-category">
+                    <div class="layer-toggle active" data-layer="infrastructure"></div>
+                    Infrastructure
+                </div>
+                <div class="layer-item" data-component="kubernetes">
+                    <div class="layer-status"></div>
+                    <div class="layer-name">Kubernetes</div>
+                    <div class="layer-description">Container orchestration on Google Cloud Platform</div>
+                </div>
+                <div class="layer-item" data-component="monitoring">
+                    <div class="layer-status"></div>
+                    <div class="layer-name">Observability</div>
+                    <div class="layer-description">Prometheus, Grafana, and distributed tracing</div>
+                </div>
+                <div class="layer-item" data-component="security">
+                    <div class="layer-status"></div>
+                    <div class="layer-name">Security Layer</div>
+                    <div class="layer-description">End-to-end encryption and threat detection</div>
+                </div>
+            </div>
+        </aside>
+
+        <main class="main-visualization">
+            <div class="loading-screen" id="loadingScreen">
+                <div class="loading-animation"></div>
+                <div class="loading-text">Initializing Architecture</div>
+                <div class="loading-progress">
+                    <div class="progress-bar" id="progressBar"></div>
+                </div>
+                <div class="loading-status" id="loadingStatus">Loading components...</div>
+            </div>
+
+            <div class="architecture-overlay">
+                <div class="performance-indicator">
+                    <div class="perf-title">System Health</div>
+                    <div class="perf-metric">
+                        <span class="perf-label">Uptime</span>
+                        <span class="perf-value">99.97%</span>
+                    </div>
+                    <div class="perf-metric">
+                        <span class="perf-label">Response Time</span>
+                        <span class="perf-value">< 20ms</span>
+                    </div>
+                    <div class="perf-metric">
+                        <span class="perf-label">Throughput</span>
+                        <span class="perf-value">50K req/s</span>
+                    </div>
+                    <div class="perf-metric">
+                        <span class="perf-label">CPU Usage</span>
+                        <span class="perf-value">65%</span>
+                    </div>
+                    <div class="perf-metric">
+                        <span class="perf-label">Memory Usage</span>
+                        <span class="perf-value">78%</span>
+                    </div>
+                    <div class="perf-metric">
+                        <span class="perf-label">Storage</span>
+                        <span class="perf-value">45% Used</span>
+                    </div>
+                </div>
+
+                <div class="navigation-controls">
+                    <div class="nav-control" onclick="zoomToLayer('frontend')">Frontend</div>
+                    <div class="nav-control" onclick="zoomToLayer('services')">Core</div>
+                    <div class="nav-control" onclick="zoomToLayer('data')">Data</div>
+                    <div class="nav-control" onclick="resetCamera()">Reset</div>
+                    <div class="nav-control" onclick="toggleAnimation()">Animate</div>
+                    <div class="nav-control" onclick="exportArchitecture()">Export</div>
+                </div>
+            </div>
+
+            <div class="data-flow-visualization" id="dataFlowPanel">
+                <div class="flow-title">Data Flow Analysis</div>
+                <div class="flow-item">
+                    <div class="flow-icon"></div>
+                    User Request → API Gateway
+                </div>
+                <div class="flow-item">
+                    <div class="flow-icon"></div>
+                    Authentication → JWT Validation
+                </div>
+                <div class="flow-item">
+                    <div class="flow-icon"></div>
+                    Business Logic → Core Services
+                </div>
+                <div class="flow-item">
+                    <div class="flow-icon"></div>
+                    Data Processing → ML Pipeline
+                </div>
+                <div class="flow-item">
+                    <div class="flow-icon"></div>
+                    Knowledge Graph → Response
+                </div>
+            </div>
+
+            <canvas id="architectureCanvas"></canvas>
+        </main>
+
+        <aside class="components-panel">
+            <h3 class="panel-title">Component Details</h3>
+
+            <div class="component-detail">
+                <div class="component-title">User Interface Layer</div>
+                <div class="component-metrics">
+                    <div class="metric-row">
+                        <span class="metric-label">Framework</span>
+                        <span class="metric-value">React 18 + Three.js</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">Performance</span>
+                        <span class="metric-value">60 FPS</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">Bundle Size</span>
+                        <span class="metric-value">2.3 MB (gzipped)</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">Load Time</span>
+                        <span class="metric-value">< 3 seconds</span>
+                    </div>
+                </div>
+                <div class="component-connections">
+                    <div class="connection-title">Connections:</div>
+                    <div class="connection-item">→ GraphQL API (WebSocket)</div>
+                    <div class="connection-item">→ Authentication Service</div>
+                    <div class="connection-item">→ Real-time Notifications</div>
+                    <div class="connection-item">→ Apple Vision Pro SDK</div>
+                </div>
+            </div>
+
+            <div class="component-detail">
+                <div class="component-title">Multi-Agent Orchestrator</div>
+                <div class="component-metrics">
+                    <div class="metric-row">
+                        <span class="metric-label">Active Agents</span>
+                        <span class="metric-value">12</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">Coordination Efficiency</span>
+                        <span class="metric-value">94.2%</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">Task Queue</span>
+                        <span class="metric-value">847 pending</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">Success Rate</span>
+                        <span class="metric-value">99.1%</span>
+                    </div>
+                </div>
+                <div class="component-connections">
+                    <div class="connection-title">Connections:</div>
+                    <div class="connection-item">→ ML Pipeline Service</div>
+                    <div class="connection-item">→ Knowledge Graph Engine</div>
+                    <div class="connection-item">→ Business Logic Layer</div>
+                    <div class="connection-item">→ External AI Services</div>
+                </div>
+            </div>
+
+            <div class="component-detail">
+                <div class="component-title">Knowledge Graph Engine</div>
+                <div class="component-metrics">
+                    <div class="metric-row">
+                        <span class="metric-label">Knowledge Atoms</span>
+                        <span class="metric-value">2,472</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">Relationships</span>
+                        <span class="metric-value">15,384</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">Query Performance</span>
+                        <span class="metric-value">< 50ms</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">Update Frequency</span>
+                        <span class="metric-value">Real-time</span>
+                    </div>
+                </div>
+                <div class="component-connections">
+                    <div class="connection-title">Connections:</div>
+                    <div class="connection-item">→ Neo4j Graph Database</div>
+                    <div class="connection-item">→ Vector Embeddings</div>
+                    <div class="connection-item">→ Semantic Search Engine</div>
+                    <div class="connection-item">→ Real-time Analytics</div>
+                </div>
+            </div>
+
+            <div class="component-detail">
+                <div class="component-title">Infrastructure Layer</div>
+                <div class="component-metrics">
+                    <div class="metric-row">
+                        <span class="metric-label">Kubernetes Nodes</span>
+                        <span class="metric-value">24</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">Running Pods</span>
+                        <span class="metric-value">156</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">Auto-scaling</span>
+                        <span class="metric-value">Enabled</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">Multi-region</span>
+                        <span class="metric-value">3 Zones</span>
+                    </div>
+                </div>
+                <div class="component-connections">
+                    <div class="connection-title">Connections:</div>
+                    <div class="connection-item">→ Google Cloud Platform</div>
+                    <div class="connection-item">→ Load Balancers</div>
+                    <div class="connection-item">→ Monitoring Stack</div>
+                    <div class="connection-item">→ Security Policies</div>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <div class="tooltip-3d" id="tooltip3d"></div>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+        import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+
+        class ArchitectureVisualization {
+            constructor() {
+                this.currentView = 'overview';
+                this.selectedComponent = 'ui';
+                this.isAnimating = true;
+                this.visibleLayers = new Set(['frontend', 'api', 'services', 'data', 'infrastructure']);
+
+                // Architecture components data
+                this.components = {
+                    // Frontend Layer
+                    ui: {
+                        name: 'User Interface',
+                        position: { x: 0, y: 8, z: 6 },
+                        color: 0x00ffff,
+                        layer: 'frontend',
+                        connections: ['graphql', 'auth', 'webxr']
+                    },
+                    mobile: {
+                        name: 'Mobile Apps',
+                        position: { x: -4, y: 8, z: 4 },
+                        color: 0x00aaff,
+                        layer: 'frontend',
+                        connections: ['rest', 'auth']
+                    },
+                    webxr: {
+                        name: 'WebXR Interface',
+                        position: { x: 4, y: 8, z: 4 },
+                        color: 0x0088ff,
+                        layer: 'frontend',
+                        connections: ['ui', 'orchestrator']
+                    },
+
+                    // API Layer
+                    graphql: {
+                        name: 'GraphQL API',
+                        position: { x: -2, y: 5, z: 2 },
+                        color: 0xffff00,
+                        layer: 'api',
+                        connections: ['ui', 'orchestrator', 'auth']
+                    },
+                    rest: {
+                        name: 'REST Services',
+                        position: { x: 2, y: 5, z: 2 },
+                        color: 0xffaa00,
+                        layer: 'api',
+                        connections: ['mobile', 'ml']
+                    },
+                    auth: {
+                        name: 'Authentication',
+                        position: { x: 0, y: 5, z: 0 },
+                        color: 0xff8800,
+                        layer: 'api',
+                        connections: ['ui', 'mobile', 'graphql']
+                    },
+
+                    // Core Services
+                    orchestrator: {
+                        name: 'Multi-Agent System',
+                        position: { x: 0, y: 2, z: 0 },
+                        color: 0x00ff00,
+                        layer: 'services',
+                        connections: ['graphql', 'ml', 'dkg', 'webxr']
+                    },
+                    ml: {
+                        name: 'ML Pipeline',
+                        position: { x: -4, y: 2, z: -2 },
+                        color: 0x00ff88,
+                        layer: 'services',
+                        connections: ['orchestrator', 'rest', 'postgres']
+                    },
+                    dkg: {
+                        name: 'Knowledge Graph',
+                        position: { x: 4, y: 2, z: -2 },
+                        color: 0x88ff00,
+                        layer: 'services',
+                        connections: ['orchestrator', 'neo4j', 'redis']
+                    },
+
+                    // Data Layer
+                    postgres: {
+                        name: 'PostgreSQL',
+                        position: { x: -2, y: -1, z: -4 },
+                        color: 0xff0088,
+                        layer: 'data',
+                        connections: ['ml', 'kubernetes']
+                    },
+                    neo4j: {
+                        name: 'Neo4j Graph',
+                        position: { x: 2, y: -1, z: -4 },
+                        color: 0xff4488,
+                        layer: 'data',
+                        connections: ['dkg', 'kubernetes']
+                    },
+                    redis: {
+                        name: 'Redis Cache',
+                        position: { x: 0, y: -1, z: -6 },
+                        color: 0xff8844,
+                        layer: 'data',
+                        connections: ['dkg', 'kubernetes']
+                    },
+
+                    // Infrastructure
+                    kubernetes: {
+                        name: 'Kubernetes',
+                        position: { x: 0, y: -4, z: -2 },
+                        color: 0x8800ff,
+                        layer: 'infrastructure',
+                        connections: ['postgres', 'neo4j', 'redis', 'monitoring']
+                    },
+                    monitoring: {
+                        name: 'Observability',
+                        position: { x: -4, y: -4, z: 0 },
+                        color: 0xaa00ff,
+                        layer: 'infrastructure',
+                        connections: ['kubernetes', 'security']
+                    },
+                    security: {
+                        name: 'Security Layer',
+                        position: { x: 4, y: -4, z: 0 },
+                        color: 0xcc44ff,
+                        layer: 'infrastructure',
+                        connections: ['monitoring']
+                    }
+                };
+
+                this.init();
+                this.setupEventListeners();
+                this.startLoadingSequence();
+            }
+
+            init() {
+                const canvas = document.getElementById('architectureCanvas');
+                const container = canvas.parentElement;
+
+                // Scene setup
+                this.scene = new THREE.Scene();
+                this.camera = new THREE.PerspectiveCamera(75, container.clientWidth / container.clientHeight, 0.1, 1000);
+                this.renderer = new THREE.WebGLRenderer({
+                    canvas: canvas,
+                    antialias: true,
+                    alpha: true,
+                    powerPreference: "high-performance"
+                });
+
+                this.renderer.setSize(container.clientWidth, container.clientHeight);
+                this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+                this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+                this.renderer.toneMappingExposure = 1.0;
+                this.renderer.shadowMap.enabled = true;
+                this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+                // Post-processing
+                this.composer = new EffectComposer(this.renderer);
+                this.composer.addPass(new RenderPass(this.scene, this.camera));
+                this.composer.addPass(new UnrealBloomPass(
+                    new THREE.Vector2(window.innerWidth, window.innerHeight),
+                    0.4, 0.1, 0.9
+                ));
+
+                // Controls
+                this.controls = new OrbitControls(this.camera, this.renderer.domElement);
+                this.controls.enableDamping = true;
+                this.controls.dampingFactor = 0.05;
+                this.controls.minDistance = 8;
+                this.controls.maxDistance = 50;
+
+                // Lighting
+                this.setupLighting();
+
+                // Camera position
+                this.camera.position.set(12, 8, 15);
+                this.camera.lookAt(0, 2, 0);
+
+                // Storage for scene objects
+                this.componentObjects = {};
+                this.connectionLines = [];
+                this.dataFlows = [];
+                this.layerGroups = {};
+
+                // Interaction
+                this.raycaster = new THREE.Raycaster();
+                this.mouse = new THREE.Vector2();
+            }
+
+            setupLighting() {
+                // Ambient light
+                const ambientLight = new THREE.AmbientLight(0xffffff, 0.3);
+                this.scene.add(ambientLight);
+
+                // Main directional light
+                const mainLight = new THREE.DirectionalLight(0x00ffff, 1.2);
+                mainLight.position.set(20, 20, 10);
+                mainLight.castShadow = true;
+                mainLight.shadow.mapSize.width = 2048;
+                mainLight.shadow.mapSize.height = 2048;
+                this.scene.add(mainLight);
+
+                // Accent lights for depth
+                const accentLight1 = new THREE.PointLight(0xffff00, 0.8, 30);
+                accentLight1.position.set(-15, 10, -8);
+                this.scene.add(accentLight1);
+
+                const accentLight2 = new THREE.PointLight(0x00ff00, 0.6, 25);
+                accentLight2.position.set(15, -5, 8);
+                this.scene.add(accentLight2);
+
+                // Dynamic layer lighting
+                this.layerLights = {
+                    frontend: new THREE.PointLight(0x00ffff, 0.5, 20),
+                    api: new THREE.PointLight(0xffff00, 0.5, 15),
+                    services: new THREE.PointLight(0x00ff00, 0.5, 15),
+                    data: new THREE.PointLight(0xff0088, 0.5, 15),
+                    infrastructure: new THREE.PointLight(0x8800ff, 0.5, 20)
+                };
+
+                Object.values(this.layerLights).forEach(light => this.scene.add(light));
+            }
+
+            setupEventListeners() {
+                // View controls
+                document.querySelectorAll('[data-view]').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        document.querySelectorAll('[data-view]').forEach(b => b.classList.remove('active'));
+                        e.currentTarget.classList.add('active');
+                        this.currentView = e.currentTarget.dataset.view;
+                        this.switchView(this.currentView);
+                    });
+                });
+
+                // Layer toggles
+                document.querySelectorAll('.layer-toggle').forEach(toggle => {
+                    toggle.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const layer = e.currentTarget.dataset.layer;
+                        this.toggleLayer(layer);
+                        e.currentTarget.classList.toggle('active');
+                    });
+                });
+
+                // Component selection
+                document.querySelectorAll('[data-component]').forEach(item => {
+                    item.addEventListener('click', (e) => {
+                        document.querySelectorAll('[data-component]').forEach(i => i.classList.remove('active'));
+                        e.currentTarget.classList.add('active');
+                        this.selectedComponent = e.currentTarget.dataset.component;
+                        this.highlightComponent(this.selectedComponent);
+                    });
+                });
+
+                // Mouse interaction
+                this.renderer.domElement.addEventListener('mousemove', (e) => this.onMouseMove(e));
+                this.renderer.domElement.addEventListener('click', (e) => this.onClick(e));
+
+                // Window resize
+                window.addEventListener('resize', () => this.handleResize());
+
+                // Keyboard shortcuts
+                document.addEventListener('keydown', (e) => {
+                    switch(e.key.toLowerCase()) {
+                        case '1': this.switchView('overview'); break;
+                        case '2': this.switchView('layers'); break;
+                        case '3': this.switchView('flow'); break;
+                        case '4': this.switchView('security'); break;
+                        case '5': this.switchView('performance'); break;
+                        case ' ': this.toggleAnimation(); break;
+                        case 'r': this.resetCamera(); break;
+                    }
+                });
+            }
+
+            startLoadingSequence() {
+                const stages = [
+                    { text: 'Initializing components...', duration: 800 },
+                    { text: 'Building architecture graph...', duration: 1000 },
+                    { text: 'Establishing connections...', duration: 700 },
+                    { text: 'Optimizing performance...', duration: 600 },
+                    { text: 'Loading complete!', duration: 400 }
+                ];
+
+                let currentStage = 0;
+                const progressBar = document.getElementById('progressBar');
+                const statusText = document.getElementById('loadingStatus');
+
+                const updateStage = () => {
+                    if (currentStage < stages.length) {
+                        const stage = stages[currentStage];
+                        statusText.textContent = stage.text;
+                        progressBar.style.width = ((currentStage + 1) / stages.length * 100) + '%';
+
+                        setTimeout(() => {
+                            currentStage++;
+                            updateStage();
+                        }, stage.duration);
+                    } else {
+                        // Loading complete - initialize visualization
+                        setTimeout(() => {
+                            this.createVisualization();
+                            this.startAnimation();
+                            document.getElementById('loadingScreen').style.opacity = '0';
+                            setTimeout(() => {
+                                document.getElementById('loadingScreen').style.display = 'none';
+                            }, 500);
+                        }, 500);
+                    }
+                };
+
+                updateStage();
+            }
+
+            createVisualization() {
+                this.clearScene();
+                this.createArchitectureLayers();
+                this.createComponents();
+                this.createConnections();
+                this.createDataFlows();
+                this.positionLayerLights();
+            }
+
+            createArchitectureLayers() {
+                const layers = {
+                    frontend: { y: 8, color: 0x004455, opacity: 0.1 },
+                    api: { y: 5, color: 0x445500, opacity: 0.1 },
+                    services: { y: 2, color: 0x004400, opacity: 0.15 },
+                    data: { y: -1, color: 0x440044, opacity: 0.1 },
+                    infrastructure: { y: -4, color: 0x440088, opacity: 0.1 }
+                };
+
+                Object.entries(layers).forEach(([layerName, config]) => {
+                    const geometry = new THREE.BoxGeometry(12, 1, 10);
+                    const material = new THREE.MeshStandardMaterial({
+                        color: config.color,
+                        transparent: true,
+                        opacity: config.opacity,
+                        side: THREE.DoubleSide
+                    });
+
+                    const layer = new THREE.Mesh(geometry, material);
+                    layer.position.set(0, config.y, 0);
+                    layer.name = layerName + '_layer';
+
+                    this.scene.add(layer);
+                    this.layerGroups[layerName] = layer;
+                });
+            }
+
+            createComponents() {
+                Object.entries(this.components).forEach(([key, component]) => {
+                    // Main component node
+                    const geometry = new THREE.BoxGeometry(1.2, 1.2, 1.2);
+                    const material = new THREE.MeshStandardMaterial({
+                        color: component.color,
+                        metalness: 0.7,
+                        roughness: 0.3,
+                        emissive: new THREE.Color(component.color).multiplyScalar(0.1),
+                        transparent: true,
+                        opacity: 0.9
+                    });
+
+                    const mesh = new THREE.Mesh(geometry, material);
+                    mesh.position.set(component.position.x, component.position.y, component.position.z);
+                    mesh.castShadow = true;
+                    mesh.receiveShadow = true;
+                    mesh.name = key;
+                    mesh.userData = component;
+
+                    this.scene.add(mesh);
+                    this.componentObjects[key] = mesh;
+
+                    // Add component label
+                    this.createComponentLabel(mesh, component.name);
+
+                    // Add status indicator
+                    this.createStatusIndicator(mesh, 'healthy');
+
+                    // Add activity rings for core services
+                    if (component.layer === 'services') {
+                        this.createActivityRings(mesh);
+                    }
+                });
+            }
+
+            createComponentLabel(component, text) {
+                // Simplified label using geometry - real implementation would use proper text rendering
+                const labelGeometry = new THREE.PlaneGeometry(2, 0.3);
+                const labelMaterial = new THREE.MeshBasicMaterial({
+                    color: 0xffffff,
+                    transparent: true,
+                    opacity: 0.8,
+                    side: THREE.DoubleSide
+                });
+
+                const label = new THREE.Mesh(labelGeometry, labelMaterial);
+                label.position.set(
+                    component.position.x,
+                    component.position.y + 1.5,
+                    component.position.z
+                );
+                label.lookAt(this.camera.position);
+                label.name = component.name + '_label';
+
+                this.scene.add(label);
+            }
+
+            createStatusIndicator(component, status) {
+                const statusColors = {
+                    healthy: 0x00ff88,
+                    warning: 0xffff00,
+                    error: 0xff4444,
+                    offline: 0x666666
+                };
+
+                const geometry = new THREE.SphereGeometry(0.1, 8, 8);
+                const material = new THREE.MeshBasicMaterial({
+                    color: statusColors[status] || statusColors.healthy,
+                    transparent: true,
+                    opacity: 0.9
+                });
+
+                const indicator = new THREE.Mesh(geometry, material);
+                indicator.position.set(
+                    component.position.x + 0.8,
+                    component.position.y + 0.8,
+                    component.position.z
+                );
+                indicator.name = component.name + '_status';
+
+                this.scene.add(indicator);
+
+                // Add pulsing animation
+                indicator.userData.pulsePhase = Math.random() * Math.PI * 2;
+            }
+
+            createActivityRings(component) {
+                const ringCount = 3;
+                const rings = [];
+
+                for (let i = 0; i < ringCount; i++) {
+                    const geometry = new THREE.RingGeometry(1.5 + i * 0.3, 1.7 + i * 0.3, 16);
+                    const material = new THREE.MeshBasicMaterial({
+                        color: component.userData.color,
+                        transparent: true,
+                        opacity: 0.3 - i * 0.1,
+                        side: THREE.DoubleSide
+                    });
+
+                    const ring = new THREE.Mesh(geometry, material);
+                    ring.position.copy(component.position);
+                    ring.lookAt(this.camera.position);
+                    ring.userData.rotationSpeed = 0.01 + i * 0.005;
+                    ring.name = component.name + '_ring_' + i;
+
+                    this.scene.add(ring);
+                    rings.push(ring);
+                }
+
+                component.userData.activityRings = rings;
+            }
+
+            createConnections() {
+                this.connectionLines = [];
+
+                Object.entries(this.components).forEach(([key, component]) => {
+                    component.connections.forEach(connectionKey => {
+                        if (this.components[connectionKey] && this.componentObjects[key] && this.componentObjects[connectionKey]) {
+                            this.createConnection(key, connectionKey);
+                        }
+                    });
+                });
+            }
+
+            createConnection(fromKey, toKey) {
+                const fromComponent = this.componentObjects[fromKey];
+                const toComponent = this.componentObjects[toKey];
+
+                // Create curved connection
+                const midpoint = new THREE.Vector3()
+                    .addVectors(fromComponent.position, toComponent.position)
+                    .multiplyScalar(0.5);
+
+                // Add curve based on distance and layer difference
+                const distance = fromComponent.position.distanceTo(toComponent.position);
+                const layerDiff = Math.abs(fromComponent.position.y - toComponent.position.y);
+                const curveHeight = Math.max(0.5, layerDiff * 0.3 + distance * 0.1);
+                midpoint.y += curveHeight;
+
+                const curve = new THREE.QuadraticBezierCurve3(
+                    fromComponent.position,
+                    midpoint,
+                    toComponent.position
+                );
+
+                const points = curve.getPoints(50);
+                const geometry = new THREE.BufferGeometry().setFromPoints(points);
+
+                const material = new THREE.LineBasicMaterial({
+                    color: 0x00aaff,
+                    transparent: true,
+                    opacity: 0.5,
+                    linewidth: 2
+                });
+
+                const line = new THREE.Line(geometry, material);
+                line.userData = {
+                    from: fromKey,
+                    to: toKey,
+                    curve: curve
+                };
+
+                this.scene.add(line);
+                this.connectionLines.push(line);
+            }
+
+            createDataFlows() {
+                // Create animated particles flowing along connections
+                this.connectionLines.forEach((line, index) => {
+                    const particleCount = 3;
+                    const particles = [];
+
+                    for (let i = 0; i < particleCount; i++) {
+                        const geometry = new THREE.SphereGeometry(0.05, 8, 8);
+                        const material = new THREE.MeshBasicMaterial({
+                            color: 0x00ffff,
+                            transparent: true,
+                            opacity: 0.8
+                        });
+
+                        const particle = new THREE.Mesh(geometry, material);
+                        particle.userData = {
+                            curve: line.userData.curve,
+                            speed: 0.008 + Math.random() * 0.004,
+                            offset: i / particleCount,
+                            time: 0
+                        };
+
+                        this.scene.add(particle);
+                        particles.push(particle);
+                    }
+
+                    this.dataFlows.push(...particles);
+                });
+            }
+
+            positionLayerLights() {
+                const layerPositions = {
+                    frontend: { x: 0, y: 9, z: 0 },
+                    api: { x: 0, y: 6, z: 0 },
+                    services: { x: 0, y: 3, z: 0 },
+                    data: { x: 0, y: 0, z: 0 },
+                    infrastructure: { x: 0, y: -3, z: 0 }
+                };
+
+                Object.entries(this.layerLights).forEach(([layer, light]) => {
+                    if (layerPositions[layer]) {
+                        light.position.copy(layerPositions[layer]);
+                    }
+                });
+            }
+
+            switchView(view) {
+                this.currentView = view;
+
+                switch(view) {
+                    case 'overview':
+                        this.showOverview();
+                        break;
+                    case 'layers':
+                        this.showLayers();
+                        break;
+                    case 'flow':
+                        this.showDataFlow();
+                        break;
+                    case 'security':
+                        this.showSecurity();
+                        break;
+                    case 'performance':
+                        this.showPerformance();
+                        break;
+                }
+            }
+
+            showOverview() {
+                // Show all layers and components
+                this.visibleLayers = new Set(['frontend', 'api', 'services', 'data', 'infrastructure']);
+                this.updateLayerVisibility();
+
+                // Reset camera to overview position
+                this.animateCameraTo({ x: 12, y: 8, z: 15 }, { x: 0, y: 2, z: 0 });
+
+                // Hide data flow panel
+                document.getElementById('dataFlowPanel').style.display = 'none';
+            }
+
+            showLayers() {
+                // Spread out layers for better visibility
+                const layerOffsets = {
+                    frontend: { x: 0, y: 12, z: 8 },
+                    api: { x: 0, y: 8, z: 4 },
+                    services: { x: 0, y: 4, z: 0 },
+                    data: { x: 0, y: 0, z: -4 },
+                    infrastructure: { x: 0, y: -4, z: -8 }
+                };
+
+                this.animateLayersToPositions(layerOffsets);
+            }
+
+            showDataFlow() {
+                // Show data flow visualization panel
+                document.getElementById('dataFlowPanel').style.display = 'block';
+
+                // Highlight data flow connections
+                this.highlightDataFlows();
+
+                // Position camera to better see flows
+                this.animateCameraTo({ x: 8, y: 12, z: 20 }, { x: 0, y: 2, z: 0 });
+            }
+
+            showSecurity() {
+                // Highlight security-related components
+                const securityComponents = ['auth', 'security'];
+                this.highlightComponents(securityComponents);
+
+                // Show security overlay visualization
+                this.createSecurityOverlay();
+            }
+
+            showPerformance() {
+                // Show performance metrics for each component
+                this.updatePerformanceIndicators();
+
+                // Highlight performance-critical components
+                const performanceComponents = ['orchestrator', 'dkg', 'kubernetes'];
+                this.highlightComponents(performanceComponents);
+            }
+
+            toggleLayer(layerName) {
+                if (this.visibleLayers.has(layerName)) {
+                    this.visibleLayers.delete(layerName);
+                } else {
+                    this.visibleLayers.add(layerName);
+                }
+                this.updateLayerVisibility();
+            }
+
+            updateLayerVisibility() {
+                // Show/hide components based on visible layers
+                Object.entries(this.components).forEach(([key, component]) => {
+                    const obj = this.componentObjects[key];
+                    if (obj) {
+                        obj.visible = this.visibleLayers.has(component.layer);
+                    }
+                });
+
+                // Update layer groups
+                Object.entries(this.layerGroups).forEach(([layer, group]) => {
+                    group.visible = this.visibleLayers.has(layer);
+                });
+
+                // Update connections
+                this.connectionLines.forEach(line => {
+                    const fromLayer = this.components[line.userData.from]?.layer;
+                    const toLayer = this.components[line.userData.to]?.layer;
+                    line.visible = this.visibleLayers.has(fromLayer) && this.visibleLayers.has(toLayer);
+                });
+            }
+
+            highlightComponent(componentKey) {
+                // Reset all components
+                Object.values(this.componentObjects).forEach(obj => {
+                    obj.material.emissive.setScalar(0.1);
+                    obj.scale.setScalar(1);
+                });
+
+                // Highlight selected component
+                const selectedObj = this.componentObjects[componentKey];
+                if (selectedObj) {
+                    selectedObj.material.emissive.setScalar(0.3);
+                    selectedObj.scale.setScalar(1.2);
+
+                    // Highlight connected components
+                    const component = this.components[componentKey];
+                    component.connections.forEach(connKey => {
+                        const connObj = this.componentObjects[connKey];
+                        if (connObj) {
+                            connObj.material.emissive.setScalar(0.2);
+                            connObj.scale.setScalar(1.1);
+                        }
+                    });
+                }
+            }
+
+            highlightComponents(componentKeys) {
+                // Reset all components
+                Object.values(this.componentObjects).forEach(obj => {
+                    obj.material.emissive.setScalar(0.1);
+                    obj.scale.setScalar(1);
+                });
+
+                // Highlight specified components
+                componentKeys.forEach(key => {
+                    const obj = this.componentObjects[key];
+                    if (obj) {
+                        obj.material.emissive.setScalar(0.3);
+                        obj.scale.setScalar(1.15);
+                    }
+                });
+            }
+
+            highlightDataFlows() {
+                // Make data flow particles more visible
+                this.dataFlows.forEach(particle => {
+                    particle.material.opacity = 1;
+                    particle.material.color.setHex(0xffff00);
+                });
+
+                // Highlight connection lines
+                this.connectionLines.forEach(line => {
+                    line.material.opacity = 0.8;
+                    line.material.color.setHex(0x00ffff);
+                });
+            }
+
+            createSecurityOverlay() {
+                // Create security visualization overlay
+                const securityComponents = ['auth', 'security'];
+                securityComponents.forEach(key => {
+                    const obj = this.componentObjects[key];
+                    if (obj) {
+                        // Add security shield effect
+                        const shieldGeometry = new THREE.SphereGeometry(2, 16, 16);
+                        const shieldMaterial = new THREE.MeshBasicMaterial({
+                            color: 0xff0088,
+                            transparent: true,
+                            opacity: 0.2,
+                            wireframe: true
+                        });
+                        const shield = new THREE.Mesh(shieldGeometry, shieldMaterial);
+                        shield.position.copy(obj.position);
+                        this.scene.add(shield);
+
+                        // Store for cleanup
+                        if (!this.securityOverlays) this.securityOverlays = [];
+                        this.securityOverlays.push(shield);
+                    }
+                });
+            }
+
+            updatePerformanceIndicators() {
+                // Update component status based on performance
+                const performanceData = {
+                    ui: { cpu: 15, memory: 32, status: 'healthy' },
+                    orchestrator: { cpu: 65, memory: 78, status: 'healthy' },
+                    ml: { cpu: 85, memory: 92, status: 'warning' },
+                    postgres: { cpu: 45, memory: 68, status: 'healthy' },
+                    kubernetes: { cpu: 35, memory: 45, status: 'healthy' }
+                };
+
+                Object.entries(performanceData).forEach(([key, data]) => {
+                    const statusIndicator = this.scene.getObjectByName(key + '_status');
+                    if (statusIndicator) {
+                        const statusColors = {
+                            healthy: 0x00ff88,
+                            warning: 0xffff00,
+                            error: 0xff4444
+                        };
+                        statusIndicator.material.color.setHex(statusColors[data.status]);
+                    }
+                });
+            }
+
+            animateCameraTo(position, target) {
+                const startPosition = this.camera.position.clone();
+                const startTarget = this.controls.target.clone();
+                const targetPosition = new THREE.Vector3(position.x, position.y, position.z);
+                const targetLookAt = new THREE.Vector3(target.x, target.y, target.z);
+                const duration = 2000;
+                const startTime = Date.now();
+
+                const animate = () => {
+                    const elapsed = Date.now() - startTime;
+                    const progress = Math.min(elapsed / duration, 1);
+                    const easeProgress = this.easeInOutCubic(progress);
+
+                    this.camera.position.lerpVectors(startPosition, targetPosition, easeProgress);
+                    this.controls.target.lerpVectors(startTarget, targetLookAt, easeProgress);
+                    this.controls.update();
+
+                    if (progress < 1) {
+                        requestAnimationFrame(animate);
+                    }
+                };
+
+                animate();
+            }
+
+            animateLayersToPositions(layerOffsets) {
+                Object.entries(layerOffsets).forEach(([layer, offset]) => {
+                    Object.entries(this.components).forEach(([key, component]) => {
+                        if (component.layer === layer) {
+                            const obj = this.componentObjects[key];
+                            if (obj) {
+                                const targetPos = new THREE.Vector3(
+                                    component.position.x + offset.x,
+                                    component.position.y + (offset.y - component.position.y),
+                                    component.position.z + offset.z
+                                );
+                                this.animateObjectTo(obj, targetPos);
+                            }
+                        }
+                    });
+                });
+            }
+
+            animateObjectTo(object, targetPosition) {
+                const startPosition = object.position.clone();
+                const duration = 1500;
+                const startTime = Date.now();
+
+                const animate = () => {
+                    const elapsed = Date.now() - startTime;
+                    const progress = Math.min(elapsed / duration, 1);
+                    const easeProgress = this.easeInOutCubic(progress);
+
+                    object.position.lerpVectors(startPosition, targetPosition, easeProgress);
+
+                    if (progress < 1) {
+                        requestAnimationFrame(animate);
+                    }
+                };
+
+                animate();
+            }
+
+            onMouseMove(event) {
+                const rect = this.renderer.domElement.getBoundingClientRect();
+                this.mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+                this.mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+                // Raycasting for hover effects
+                this.raycaster.setFromCamera(this.mouse, this.camera);
+                const intersects = this.raycaster.intersectObjects(Object.values(this.componentObjects));
+
+                if (intersects.length > 0) {
+                    const obj = intersects[0].object;
+                    if (obj.userData) {
+                        this.showTooltip(event, obj.userData);
+
+                        // Highlight hovered component
+                        if (obj !== this.hoveredObject) {
+                            if (this.hoveredObject) {
+                                this.hoveredObject.scale.setScalar(1);
+                            }
+                            this.hoveredObject = obj;
+                            obj.scale.setScalar(1.05);
+                        }
+                    }
+                } else {
+                    this.hideTooltip();
+                    if (this.hoveredObject) {
+                        this.hoveredObject.scale.setScalar(1);
+                        this.hoveredObject = null;
+                    }
+                }
+            }
+
+            onClick(event) {
+                this.raycaster.setFromCamera(this.mouse, this.camera);
+                const intersects = this.raycaster.intersectObjects(Object.values(this.componentObjects));
+
+                if (intersects.length > 0) {
+                    const obj = intersects[0].object;
+                    if (obj.name && this.components[obj.name]) {
+                        // Update UI to reflect selection
+                        document.querySelectorAll('[data-component]').forEach(item => {
+                            item.classList.remove('active');
+                        });
+                        const componentElement = document.querySelector(`[data-component="${obj.name}"]`);
+                        if (componentElement) {
+                            componentElement.classList.add('active');
+                        }
+
+                        this.selectedComponent = obj.name;
+                        this.highlightComponent(this.selectedComponent);
+                    }
+                }
+            }
+
+            showTooltip(event, componentData) {
+                const tooltip = document.getElementById('tooltip3d');
+                tooltip.innerHTML = `
+                    <strong>${componentData.name}</strong><br>
+                    Layer: ${componentData.layer}<br>
+                    Connections: ${componentData.connections.length}<br>
+                    Status: Healthy
+                `;
+                tooltip.style.left = event.clientX + 10 + 'px';
+                tooltip.style.top = event.clientY - 10 + 'px';
+                tooltip.classList.add('show');
+            }
+
+            hideTooltip() {
+                document.getElementById('tooltip3d').classList.remove('show');
+            }
+
+            clearScene() {
+                // Remove all architecture objects
+                const objectsToRemove = [];
+                this.scene.traverse((child) => {
+                    if (child.type === 'Mesh' || child.type === 'Line') {
+                        if (!child.isLight) {
+                            objectsToRemove.push(child);
+                        }
+                    }
+                });
+
+                objectsToRemove.forEach(obj => {
+                    this.scene.remove(obj);
+                    if (obj.geometry) obj.geometry.dispose();
+                    if (obj.material) obj.material.dispose();
+                });
+
+                // Clear object references
+                this.componentObjects = {};
+                this.connectionLines = [];
+                this.dataFlows = [];
+                this.layerGroups = {};
+            }
+
+            easeInOutCubic(t) {
+                return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+            }
+
+            animate() {
+                requestAnimationFrame(() => this.animate());
+
+                const time = Date.now() * 0.001;
+
+                if (this.isAnimating) {
+                    // Animate data flow particles
+                    this.dataFlows.forEach(particle => {
+                        if (particle.userData.curve) {
+                            const data = particle.userData;
+                            data.time += data.speed;
+                            const t = (data.time + data.offset) % 1;
+                            const position = data.curve.getPoint(t);
+                            particle.position.copy(position);
+                        }
+                    });
+
+                    // Animate status indicators
+                    this.scene.children.forEach(child => {
+                        if (child.name && child.name.includes('_status') && child.userData.pulsePhase !== undefined) {
+                            const scale = 1 + Math.sin(time * 3 + child.userData.pulsePhase) * 0.2;
+                            child.scale.setScalar(scale);
+                        }
+                    });
+
+                    // Animate activity rings
+                    Object.values(this.componentObjects).forEach(obj => {
+                        if (obj.userData.activityRings) {
+                            obj.userData.activityRings.forEach(ring => {
+                                ring.rotation.z += ring.userData.rotationSpeed;
+                            });
+                        }
+                    });
+
+                    // Animate component breathing
+                    Object.values(this.componentObjects).forEach((obj, index) => {
+                        const breatheScale = 1 + Math.sin(time * 0.5 + index * 0.5) * 0.02;
+                        if (obj !== this.hoveredObject && obj.scale.x < 1.1) {
+                            obj.scale.setScalar(breatheScale);
+                        }
+                    });
+                }
+
+                // Update controls and render
+                this.controls.update();
+                this.composer.render();
+            }
+
+            handleResize() {
+                const container = this.renderer.domElement.parentElement;
+
+                this.camera.aspect = container.clientWidth / container.clientHeight;
+                this.camera.updateProjectionMatrix();
+
+                this.renderer.setSize(container.clientWidth, container.clientHeight);
+                this.composer.setSize(container.clientWidth, container.clientHeight);
+            }
+
+            startAnimation() {
+                this.animate();
+                this.highlightComponent(this.selectedComponent);
+            }
+        }
+
+        // Global functions for navigation controls
+        window.zoomToLayer = function(layer) {
+            const layerPositions = {
+                frontend: { camera: { x: 0, y: 12, z: 12 }, target: { x: 0, y: 8, z: 6 } },
+                services: { camera: { x: 0, y: 8, z: 15 }, target: { x: 0, y: 2, z: 0 } },
+                data: { camera: { x: 0, y: 4, z: 12 }, target: { x: 0, y: -1, z: -4 } }
+            };
+
+            if (layerPositions[layer] && window.archApp) {
+                window.archApp.animateCameraTo(layerPositions[layer].camera, layerPositions[layer].target);
+            }
+        };
+
+        window.resetCamera = function() {
+            if (window.archApp) {
+                window.archApp.animateCameraTo({ x: 12, y: 8, z: 15 }, { x: 0, y: 2, z: 0 });
+            }
+        };
+
+        window.toggleAnimation = function() {
+            if (window.archApp) {
+                window.archApp.isAnimating = !window.archApp.isAnimating;
+            }
+        };
+
+        window.exportArchitecture = function() {
+            if (window.archApp) {
+                const architectureData = {
+                    components: window.archApp.components,
+                    timestamp: new Date().toISOString(),
+                    systemHealth: {
+                        uptime: '99.97%',
+                        responseTime: '< 20ms',
+                        throughput: '50K req/s'
+                    }
+                };
+
+                const blob = new Blob([JSON.stringify(architectureData, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'aia-architecture.json';
+                a.click();
+                URL.revokeObjectURL(url);
+            }
+        };
+
+        // Initialize when DOM is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            window.archApp = new ArchitectureVisualization();
+        });
+    </script>
+</body>
+</html>

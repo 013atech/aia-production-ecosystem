@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AIA Advanced Investment Presentation</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0F0F0F 0%, #1A1A1A 50%, #2D2D2D 100%);
+            color: #F5F5DC;
+            overflow: hidden;
+            font-weight: 300;
+        }
+
+        .slideshow-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        .slide {
+            display: none;
+            padding: 100px 80px;
+            height: 100vh;
+            position: relative;
+            background: linear-gradient(135deg, #0F0F0F 0%, #1A1A1A 50%, #2D2D2D 100%);
+            animation: slideIn 1.2s cubic-bezier(0.23, 1, 0.320, 1);
+        }
+
+        .slide.active {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(60px) scale(0.98);
+                filter: blur(5px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0) scale(1);
+                filter: blur(0);
+            }
+        }
+
+        .slide h1 {
+            font-size: 5rem;
+            font-weight: 200;
+            margin-bottom: 3rem;
+            background: linear-gradient(45deg, #00FFFF, #FFFF00, #FF6B6B);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-align: center;
+            line-height: 1.1;
+            letter-spacing: -0.02em;
+        }
+
+        .slide h2 {
+            font-size: 3.5rem;
+            font-weight: 200;
+            margin-bottom: 3rem;
+            background: linear-gradient(45deg, #00FFFF, #FFFF00);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-align: center;
+            letter-spacing: -0.01em;
+        }
+
+        .slide h3 {
+            font-size: 2.2rem;
+            font-weight: 300;
+            margin-bottom: 2rem;
+            color: #00FFFF;
+            text-align: center;
+        }
+
+        .slide p {
+            font-size: 1.6rem;
+            line-height: 1.8;
+            margin-bottom: 3rem;
+            text-align: center;
+            font-weight: 300;
+            opacity: 0.9;
+        }
+
+        .metrics-showcase {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 4rem;
+            margin: 4rem 0;
+            max-width: 1400px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .metric-card {
+            background: rgba(0, 255, 255, 0.05);
+            border: 1px solid rgba(0, 255, 255, 0.2);
+            border-radius: 20px;
+            padding: 3rem;
+            text-align: center;
+            backdrop-filter: blur(20px);
+            transition: all 0.3s cubic-bezier(0.23, 1, 0.320, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .metric-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(45deg, #00FFFF, #FFFF00);
+        }
+
+        .metric-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 25px 50px rgba(0, 255, 255, 0.3);
+            border-color: rgba(0, 255, 255, 0.5);
+        }
+
+        .metric-value {
+            font-size: 4rem;
+            font-weight: 100;
+            color: #FFFF00;
+            display: block;
+            margin-bottom: 1rem;
+            letter-spacing: -0.02em;
+        }
+
+        .metric-label {
+            font-size: 1.3rem;
+            color: #F5F5DC;
+            opacity: 0.8;
+            font-weight: 300;
+            line-height: 1.5;
+        }
+
+        .chart-container {
+            width: 100%;
+            height: 400px;
+            margin: 3rem auto;
+            position: relative;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            padding: 2rem;
+            border: 1px solid rgba(0, 255, 255, 0.2);
+        }
+
+        .data-visualization-slide {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            align-items: center;
+            height: 100%;
+        }
+
+        .bullet-points {
+            list-style: none;
+            padding: 0;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .bullet-points li {
+            font-size: 1.5rem;
+            margin-bottom: 2rem;
+            padding-left: 3rem;
+            position: relative;
+            font-weight: 300;
+            opacity: 0.9;
+            transition: all 0.3s ease;
+        }
+
+        .bullet-points li::before {
+            content: "→";
+            color: #00FFFF;
+            font-weight: 300;
+            position: absolute;
+            left: 0;
+            font-size: 1.8rem;
+        }
+
+        .bullet-points li:hover {
+            opacity: 1;
+            transform: translateX(10px);
+        }
+
+        .timeline-container {
+            display: flex;
+            justify-content: space-between;
+            margin: 4rem 0;
+            flex-wrap: wrap;
+            max-width: 1200px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .timeline-item {
+            flex: 1;
+            min-width: 250px;
+            text-align: center;
+            padding: 2.5rem;
+            margin: 1rem;
+            background: rgba(255, 255, 0, 0.05);
+            border: 1px solid rgba(255, 255, 0, 0.2);
+            border-radius: 15px;
+            transition: all 0.3s cubic-bezier(0.23, 1, 0.320, 1);
+            position: relative;
+        }
+
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(45deg, #FFFF00, #FF6B6B);
+        }
+
+        .timeline-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(255, 255, 0, 0.2);
+        }
+
+        .timeline-period {
+            font-size: 1.2rem;
+            color: #FFFF00;
+            font-weight: 400;
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .timeline-value {
+            font-size: 2.5rem;
+            color: #F5F5DC;
+            font-weight: 200;
+            margin-bottom: 1rem;
+        }
+
+        .navigation {
+            position: fixed;
+            bottom: 40px;
+            right: 40px;
+            display: flex;
+            gap: 15px;
+            z-index: 1000;
+        }
+
+        .nav-btn {
+            background: rgba(0, 255, 255, 0.1);
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            color: #00FFFF;
+            padding: 15px 25px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s cubic-bezier(0.23, 1, 0.320, 1);
+            backdrop-filter: blur(20px);
+            font-weight: 300;
+        }
+
+        .nav-btn:hover {
+            background: rgba(0, 255, 255, 0.2);
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(0, 255, 255, 0.3);
+        }
+
+        .slide-counter {
+            position: fixed;
+            bottom: 40px;
+            left: 40px;
+            color: #F5F5DC;
+            font-size: 1.2rem;
+            opacity: 0.6;
+            font-weight: 300;
+        }
+
+        .logo {
+            position: absolute;
+            top: 40px;
+            left: 40px;
+            font-size: 2rem;
+            font-weight: 200;
+            background: linear-gradient(45deg, #00FFFF, #FFFF00);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .two-column-sparse {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6rem;
+            align-items: start;
+            margin: 4rem 0;
+        }
+
+        .highlight {
+            background: rgba(255, 255, 0, 0.15);
+            padding: 0.3rem 0.8rem;
+            border-radius: 8px;
+            color: #FFFF00;
+            font-weight: 400;
+        }
+
+        .cta-button {
+            background: linear-gradient(45deg, #00FFFF, #FFFF00);
+            color: #000;
+            padding: 1.5rem 3rem;
+            border: none;
+            border-radius: 30px;
+            font-size: 1.4rem;
+            font-weight: 400;
+            cursor: pointer;
+            margin: 4rem auto;
+            display: block;
+            transition: all 0.3s cubic-bezier(0.23, 1, 0.320, 1);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .cta-button:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 255, 255, 0.4);
+        }
+
+        .minimal-slide {
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 120px 100px;
+        }
+
+        .growth-chart {
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 20px;
+            padding: 3rem;
+            margin: 2rem 0;
+        }
+
+        .atomic-visualization {
+            width: 100%;
+            height: 500px;
+            background: radial-gradient(circle at center, rgba(0, 255, 255, 0.1) 0%, transparent 70%);
+            border-radius: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .atom {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #00FFFF;
+            animation: atomFloat 4s ease-in-out infinite;
+        }
+
+        @keyframes atomFloat {
+            0%, 100% { transform: translateY(0) scale(1); opacity: 0.8; }
+            50% { transform: translateY(-20px) scale(1.2); opacity: 1; }
+        }
+
+        .performance-meter {
+            width: 100%;
+            height: 20px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 1rem 0;
+        }
+
+        .performance-fill {
+            height: 100%;
+            background: linear-gradient(45deg, #00FFFF, #FFFF00);
+            transition: width 2s ease-in-out;
+        }
+    </style>
+</head>
+<body>
+    <div class="slideshow-container">
+        <div class="logo">013a AIA</div>
+
+        <!-- Slide 1: Title -->
+        <div class="slide active minimal-slide">
+            <h1>AIA/013a</h1>
+            <p style="font-size: 2.5rem; margin-bottom: 4rem; font-weight: 200;">The First Truly Autonomous Analytical Partner</p>
+            <p style="font-size: 1.8rem; opacity: 0.7;">Advanced Investment Presentation</p>
+            <button class="cta-button" onclick="nextSlide()">Begin Journey</button>
+        </div>
+
+        <!-- Slide 2: Market Opportunity with Visualization -->
+        <div class="slide">
+            <h2>Market Transformation</h2>
+            <div class="data-visualization-slide">
+                <div>
+                    <h3 style="text-align: left; margin-bottom: 2rem;">Total Addressable Market</h3>
+                    <div class="chart-container">
+                        <canvas id="marketChart"></canvas>
+                    </div>
+                </div>
+                <div>
+                    <div class="metrics-showcase">
+                        <div class="metric-card">
+                            <span class="metric-value">$248B</span>
+                            <span class="metric-label">Total Market Size</span>
+                        </div>
+                        <div class="metric-card">
+                            <span class="metric-value">90%</span>
+                            <span class="metric-label">Competitive Differentiation</span>
+                        </div>
+                    </div>
+                    <ul class="bullet-points">
+                        <li>Enterprise consulting represents the largest opportunity</li>
+                        <li>Financial services demand immediate AI transformation</li>
+                        <li>Regulatory compliance requires automated analysis</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 3: Technical Demonstration -->
+        <div class="slide">
+            <h2>Proven Technical Excellence</h2>
+            <div class="metrics-showcase">
+                <div class="metric-card">
+                    <span class="metric-value">569</span>
+                    <span class="metric-label">Atomic Processing Units<br/>Successfully Coordinated</span>
+                    <div class="performance-meter">
+                        <div class="performance-fill" style="width: 98.4%"></div>
+                    </div>
+                </div>
+                <div class="metric-card">
+                    <span class="metric-value">110K</span>
+                    <span class="metric-label">Operations per Second<br/>Peak Performance</span>
+                    <div class="performance-meter">
+                        <div class="performance-fill" style="width: 100%"></div>
+                    </div>
+                </div>
+                <div class="metric-card">
+                    <span class="metric-value">90.2%</span>
+                    <span class="metric-label">Multi-Agent Coordination<br/>Efficiency Rate</span>
+                    <div class="performance-meter">
+                        <div class="performance-fill" style="width: 90.2%"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="atomic-visualization" id="atomicViz"></div>
+        </div>
+
+        <!-- Slide 4: Revenue Projections with Chart -->
+        <div class="slide">
+            <h2>Revenue Growth Trajectory</h2>
+            <div class="data-visualization-slide">
+                <div class="growth-chart">
+                    <canvas id="revenueChart"></canvas>
+                </div>
+                <div>
+                    <div class="timeline-container" style="flex-direction: column; gap: 2rem;">
+                        <div class="timeline-item">
+                            <div class="timeline-period">Year 1</div>
+                            <div class="timeline-value">$4.2M ARR</div>
+                            <p style="font-size: 1.2rem; opacity: 0.8;">25 Enterprise Customers</p>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="timeline-period">Year 2</div>
+                            <div class="timeline-value">$15.6M ARR</div>
+                            <p style="font-size: 1.2rem; opacity: 0.8;">85 Enterprise Customers</p>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="timeline-period">Year 3</div>
+                            <div class="timeline-value">$45M ARR</div>
+                            <p style="font-size: 1.2rem; opacity: 0.8;">220 Enterprise Customers</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 5: Unit Economics -->
+        <div class="slide minimal-slide">
+            <h2>Exceptional Unit Economics</h2>
+            <div class="metrics-showcase">
+                <div class="metric-card">
+                    <span class="metric-value">12:1</span>
+                    <span class="metric-label">LTV to CAC Ratio</span>
+                </div>
+                <div class="metric-card">
+                    <span class="metric-value">14mo</span>
+                    <span class="metric-label">Payback Period</span>
+                </div>
+                <div class="metric-card">
+                    <span class="metric-value">125%</span>
+                    <span class="metric-label">Net Revenue Retention</span>
+                </div>
+                <div class="metric-card">
+                    <span class="metric-value">85%</span>
+                    <span class="metric-label">Gross Margin</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 6: Target Customers -->
+        <div class="slide minimal-slide">
+            <h2>Enterprise Customer Strategy</h2>
+            <div class="two-column-sparse">
+                <div>
+                    <h3>Management Consulting</h3>
+                    <ul class="bullet-points">
+                        <li>McKinsey Digital</li>
+                        <li>BCG Gamma</li>
+                        <li>Deloitte AI</li>
+                        <li><span class="highlight">EYP (Ernst & Young Parthenon)</span></li>
+                        <li>Accenture Applied Intelligence</li>
+                    </ul>
+                </div>
+                <div>
+                    <h3>Financial Services</h3>
+                    <ul class="bullet-points">
+                        <li>Goldman Sachs</li>
+                        <li>JP Morgan Chase</li>
+                        <li>Morgan Stanley</li>
+                        <li>Blackstone</li>
+                        <li>KKR & Co</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 7: Series A Investment -->
+        <div class="slide minimal-slide">
+            <h2>Series A Investment Opportunity</h2>
+            <div class="metrics-showcase">
+                <div class="metric-card">
+                    <span class="metric-value">$25M</span>
+                    <span class="metric-label">Total Round Size</span>
+                </div>
+                <div class="metric-card">
+                    <span class="metric-value">$150M</span>
+                    <span class="metric-label">Pre-money Valuation</span>
+                </div>
+                <div class="metric-card">
+                    <span class="metric-value">15-25x</span>
+                    <span class="metric-label">Projected Returns</span>
+                </div>
+            </div>
+            <p style="font-size: 1.8rem; margin-top: 3rem;">
+                Strategic partnership for <span class="highlight">category-defining market leadership</span>
+            </p>
+        </div>
+
+        <!-- Slide 8: Competitive Advantage -->
+        <div class="slide minimal-slide">
+            <h2>Sustainable Competitive Moats</h2>
+            <div class="two-column-sparse">
+                <div>
+                    <h3>Technical Moats</h3>
+                    <ul class="bullet-points">
+                        <li>Patent-pending multi-agent orchestration</li>
+                        <li>Atomic processing simulation framework</li>
+                        <li>Real-time coordination algorithms</li>
+                        <li>Post-quantum cryptography</li>
+                    </ul>
+                </div>
+                <div>
+                    <h3>Business Moats</h3>
+                    <ul class="bullet-points">
+                        <li>Network effects from data intelligence</li>
+                        <li>High switching costs and deep integration</li>
+                        <li>First-mover category leadership</li>
+                        <li>Enterprise customer stickiness</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 9: Team & Execution -->
+        <div class="slide">
+            <h2>Scaling Excellence</h2>
+            <div class="timeline-container">
+                <div class="timeline-item">
+                    <div class="timeline-period">Current</div>
+                    <div class="timeline-value">12</div>
+                    <p style="margin-top: 1rem;">Core Founding Team</p>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-period">6 Months</div>
+                    <div class="timeline-value">35</div>
+                    <p style="margin-top: 1rem;">Leadership + Core Team</p>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-period">12 Months</div>
+                    <div class="timeline-value">65</div>
+                    <p style="margin-top: 1rem;">Full Organization</p>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-period">24 Months</div>
+                    <div class="timeline-value">120</div>
+                    <p style="margin-top: 1rem;">Global Scale Team</p>
+                </div>
+            </div>
+            <p style="text-align: center; font-size: 1.6rem; margin-top: 3rem;">
+                World-class talent acquisition strategy with proven enterprise software leaders
+            </p>
+        </div>
+
+        <!-- Slide 10: Exit Strategy -->
+        <div class="slide minimal-slide">
+            <h2>Multiple Exit Pathways</h2>
+            <div class="two-column-sparse">
+                <div>
+                    <h3>IPO Trajectory</h3>
+                    <ul class="bullet-points">
+                        <li>$100M+ ARR milestone (Year 4-5)</li>
+                        <li>Category leadership position</li>
+                        <li>Public market AI premium valuation</li>
+                    </ul>
+                </div>
+                <div>
+                    <h3>Strategic Acquisition</h3>
+                    <ul class="bullet-points">
+                        <li>Microsoft, Google, Amazon acquisition</li>
+                        <li>Enterprise software consolidation</li>
+                        <li>Consulting firm platform integration</li>
+                    </ul>
+                </div>
+            </div>
+            <div style="text-align: center; margin-top: 4rem;">
+                <div class="metric-card" style="display: inline-block; margin: 0;">
+                    <span class="metric-value">$3-8B</span>
+                    <span class="metric-label">Target Exit Valuation Range</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 11: The Opportunity -->
+        <div class="slide minimal-slide">
+            <h1 style="font-size: 4rem;">The Moment</h1>
+            <p style="font-size: 2rem; margin-bottom: 4rem;">
+                AI transformation meets enterprise readiness
+            </p>
+            <div class="metrics-showcase">
+                <div class="metric-card">
+                    <span class="metric-value">82.5%</span>
+                    <span class="metric-label">Market Readiness Score</span>
+                </div>
+                <div class="metric-card">
+                    <span class="metric-value">First</span>
+                    <span class="metric-label">True Autonomous Partner</span>
+                </div>
+                <div class="metric-card">
+                    <span class="metric-value">Proven</span>
+                    <span class="metric-label">At Scale Technology</span>
+                </div>
+            </div>
+            <button class="cta-button">Partner With Us</button>
+        </div>
+
+        <!-- Slide 12: Thank You -->
+        <div class="slide minimal-slide">
+            <h1 style="font-size: 3.5rem;">Thank You</h1>
+            <p style="font-size: 2rem; margin-bottom: 4rem;">Let's Transform Analysis Together</p>
+
+            <div style="margin-top: 4rem;">
+                <p style="font-size: 1.6rem; margin-bottom: 1.5rem; opacity: 0.8;">
+                    <span style="color: #00FFFF;">Email:</span> investors@aia-system.com
+                </p>
+                <p style="font-size: 1.6rem; margin-bottom: 1.5rem; opacity: 0.8;">
+                    <span style="color: #00FFFF;">Demo:</span> app.aia-system.com/investor-demo
+                </p>
+                <p style="font-size: 1.6rem; opacity: 0.8;">
+                    <span style="color: #00FFFF;">Schedule:</span> calendly.com/aia-series-a
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="navigation">
+        <button class="nav-btn" onclick="prevSlide()">← Previous</button>
+        <button class="nav-btn" onclick="nextSlide()">Next →</button>
+    </div>
+
+    <div class="slide-counter">
+        <span id="currentSlide">1</span> / <span id="totalSlides">12</span>
+    </div>
+
+    <script>
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide');
+        const totalSlides = slides.length;
+
+        document.getElementById('totalSlides').textContent = totalSlides;
+
+        function showSlide(n) {
+            slides[currentSlide].classList.remove('active');
+            currentSlide = (n + totalSlides) % totalSlides;
+            slides[currentSlide].classList.add('active');
+            document.getElementById('currentSlide').textContent = currentSlide + 1;
+
+            // Initialize charts when relevant slides are shown
+            if (currentSlide === 1) {
+                setTimeout(initMarketChart, 500);
+            } else if (currentSlide === 3) {
+                setTimeout(initRevenueChart, 500);
+            } else if (currentSlide === 2) {
+                setTimeout(initAtomicVisualization, 500);
+            }
+        }
+
+        function nextSlide() {
+            showSlide(currentSlide + 1);
+        }
+
+        function prevSlide() {
+            showSlide(currentSlide - 1);
+        }
+
+        // Market segmentation chart
+        function initMarketChart() {
+            const ctx = document.getElementById('marketChart');
+            if (!ctx || ctx.chart) return;
+
+            ctx.chart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Enterprise Consulting', 'Financial Services', 'Regulatory Compliance', 'Research Institutions', 'Other'],
+                    datasets: [{
+                        data: [85, 45, 28, 15, 75],
+                        backgroundColor: [
+                            'rgba(0, 255, 255, 0.8)',
+                            'rgba(255, 255, 0, 0.8)',
+                            'rgba(255, 107, 107, 0.8)',
+                            'rgba(52, 168, 83, 0.8)',
+                            'rgba(156, 39, 176, 0.8)'
+                        ],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                color: '#F5F5DC',
+                                font: {
+                                    size: 12,
+                                    weight: 300
+                                },
+                                padding: 20
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Revenue growth chart
+        function initRevenueChart() {
+            const ctx = document.getElementById('revenueChart');
+            if (!ctx || ctx.chart) return;
+
+            ctx.chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['Year 0', 'Year 1', 'Year 2', 'Year 3', 'Year 4', 'Year 5'],
+                    datasets: [{
+                        label: 'ARR ($M)',
+                        data: [0, 4.2, 15.6, 45, 85, 200],
+                        borderColor: 'rgba(0, 255, 255, 1)',
+                        backgroundColor: 'rgba(0, 255, 255, 0.1)',
+                        borderWidth: 3,
+                        tension: 0.4,
+                        pointBackgroundColor: '#FFFF00',
+                        pointBorderColor: '#00FFFF',
+                        pointRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: '#F5F5DC',
+                                font: {
+                                    size: 14,
+                                    weight: 300
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            },
+                            ticks: {
+                                color: '#F5F5DC',
+                                font: {
+                                    size: 12,
+                                    weight: 300
+                                }
+                            }
+                        },
+                        x: {
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            },
+                            ticks: {
+                                color: '#F5F5DC',
+                                font: {
+                                    size: 12,
+                                    weight: 300
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Atomic visualization
+        function initAtomicVisualization() {
+            const container = document.getElementById('atomicViz');
+            if (!container || container.initialized) return;
+
+            container.innerHTML = '';
+            container.initialized = true;
+
+            for (let i = 0; i < 50; i++) {
+                const atom = document.createElement('div');
+                atom.className = 'atom';
+                atom.style.left = Math.random() * 95 + '%';
+                atom.style.top = Math.random() * 95 + '%';
+                atom.style.animationDelay = Math.random() * 4 + 's';
+                container.appendChild(atom);
+            }
+        }
+
+        // Keyboard navigation
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'ArrowRight' || e.key === ' ') {
+                nextSlide();
+            } else if (e.key === 'ArrowLeft') {
+                prevSlide();
+            } else if (e.key === 'Home') {
+                showSlide(0);
+            } else if (e.key === 'End') {
+                showSlide(totalSlides - 1);
+            }
+        });
+
+        // Touch/swipe support
+        let touchStartX = 0;
+        let touchEndX = 0;
+
+        document.addEventListener('touchstart', function(e) {
+            touchStartX = e.changedTouches[0].screenX;
+        });
+
+        document.addEventListener('touchend', function(e) {
+            touchEndX = e.changedTouches[0].screenX;
+            if (touchStartX - touchEndX > 50) {
+                nextSlide();
+            } else if (touchEndX - touchStartX > 50) {
+                prevSlide();
+            }
+        });
+
+        // Initialize first slide
+        setTimeout(() => {
+            showSlide(0);
+        }, 100);
+    </script>
+</body>
+</html>

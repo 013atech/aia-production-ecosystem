@@ -1,0 +1,1141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AIA - Interactive 3D Demo Preview</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #000;
+            color: #F5F5DC;
+            overflow: hidden;
+            cursor: none;
+        }
+
+        .cursor {
+            position: fixed;
+            width: 20px;
+            height: 20px;
+            background: radial-gradient(circle, #00FFFF, transparent);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 10000;
+            mix-blend-mode: difference;
+            transition: transform 0.1s ease;
+        }
+
+        .slideshow-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            background: linear-gradient(135deg, #000000 0%, #0F0F23 50%, #1A1A3A 100%);
+        }
+
+        .slide {
+            display: none;
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            padding: 40px;
+            overflow: hidden;
+        }
+
+        .slide.active {
+            display: block;
+        }
+
+        .slide-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+
+        .content-overlay {
+            position: relative;
+            z-index: 10;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 6rem;
+            font-weight: 100;
+            margin-bottom: 2rem;
+            background: linear-gradient(45deg, #00FFFF, #FFD700, #FF69B4, #00FF7F);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-size: 200% 200%;
+            animation: gradientShift 4s ease-in-out infinite;
+            text-shadow: 0 0 50px rgba(0, 255, 255, 0.5);
+        }
+
+        @keyframes gradientShift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        h2 {
+            font-size: 4rem;
+            font-weight: 200;
+            margin-bottom: 2rem;
+            background: linear-gradient(45deg, #00FFFF, #FFD700);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            opacity: 0;
+            animation: fadeInUp 1s ease-out 0.5s forwards;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .subtitle {
+            font-size: 2rem;
+            font-weight: 200;
+            opacity: 0.8;
+            margin-bottom: 3rem;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.8; }
+            50% { opacity: 1; }
+        }
+
+        .metrics-3d-container {
+            position: relative;
+            width: 100%;
+            height: 60vh;
+            margin: 2rem 0;
+        }
+
+        .floating-metric {
+            position: absolute;
+            background: rgba(0, 255, 255, 0.1);
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            border-radius: 20px;
+            padding: 2rem;
+            backdrop-filter: blur(20px);
+            transform-style: preserve-3d;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .floating-metric:hover {
+            transform: rotateY(10deg) rotateX(5deg) scale(1.1);
+            box-shadow: 0 20px 60px rgba(0, 255, 255, 0.4);
+        }
+
+        .metric-value {
+            font-size: 3rem;
+            font-weight: 100;
+            color: #FFD700;
+            display: block;
+            margin-bottom: 0.5rem;
+            text-shadow: 0 0 20px rgba(255, 215, 0, 0.6);
+        }
+
+        .metric-label {
+            font-size: 1.2rem;
+            color: #F5F5DC;
+            opacity: 0.9;
+        }
+
+        .interactive-chart-container {
+            position: relative;
+            width: 80%;
+            max-width: 800px;
+            height: 400px;
+            margin: 2rem auto;
+            background: rgba(0, 0, 0, 0.6);
+            border-radius: 20px;
+            border: 1px solid rgba(0, 255, 255, 0.2);
+            overflow: hidden;
+        }
+
+        .chart-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .atomic-visualization {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        .atom-particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: #00FFFF;
+            border-radius: 50%;
+            box-shadow: 0 0 10px #00FFFF;
+            animation: atomFloat 3s ease-in-out infinite;
+        }
+
+        @keyframes atomFloat {
+            0%, 100% {
+                transform: translateY(0) scale(1);
+                opacity: 0.6;
+            }
+            50% {
+                transform: translateY(-30px) scale(1.5);
+                opacity: 1;
+            }
+        }
+
+        .neural-network {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        .neuron {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: radial-gradient(circle, #FF69B4, transparent);
+            border-radius: 50%;
+            animation: neuronPulse 2s ease-in-out infinite;
+        }
+
+        @keyframes neuronPulse {
+            0%, 100% {
+                transform: scale(1);
+                opacity: 0.7;
+            }
+            50% {
+                transform: scale(1.8);
+                opacity: 1;
+            }
+        }
+
+        .connection-line {
+            position: absolute;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, #FF69B4, transparent);
+            opacity: 0.4;
+            animation: dataFlow 2s linear infinite;
+        }
+
+        @keyframes dataFlow {
+            0% {
+                transform: scaleX(0);
+                opacity: 0;
+            }
+            50% {
+                opacity: 0.6;
+            }
+            100% {
+                transform: scaleX(1);
+                opacity: 0;
+            }
+        }
+
+        .performance-ring {
+            position: relative;
+            width: 200px;
+            height: 200px;
+            margin: 2rem auto;
+        }
+
+        .ring-progress {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: conic-gradient(#00FFFF 0deg, #FFD700 98.4deg, rgba(255, 255, 255, 0.1) 98.4deg);
+            animation: ringRotate 3s ease-in-out infinite;
+            position: relative;
+        }
+
+        @keyframes ringRotate {
+            0%, 100% { transform: rotate(0deg); }
+            50% { transform: rotate(5deg); }
+        }
+
+        .ring-center {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #000;
+            border-radius: 50%;
+            width: 140px;
+            height: 140px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+
+        .holographic-display {
+            position: absolute;
+            width: 300px;
+            height: 200px;
+            background: linear-gradient(45deg, rgba(0, 255, 255, 0.1), rgba(255, 105, 180, 0.1));
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            transform: perspective(1000px) rotateX(10deg) rotateY(-5deg);
+            transition: all 0.5s ease;
+            cursor: pointer;
+        }
+
+        .holographic-display:hover {
+            transform: perspective(1000px) rotateX(-5deg) rotateY(10deg) scale(1.05);
+            border-color: rgba(0, 255, 255, 0.6);
+        }
+
+        .navigation {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            display: flex;
+            gap: 15px;
+            z-index: 1000;
+        }
+
+        .nav-btn {
+            background: rgba(0, 255, 255, 0.1);
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            color: #00FFFF;
+            padding: 15px 25px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(20px);
+            transform: perspective(1000px);
+        }
+
+        .nav-btn:hover {
+            background: rgba(0, 255, 255, 0.2);
+            transform: perspective(1000px) rotateX(10deg) translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0, 255, 255, 0.4);
+        }
+
+        .slide-indicator {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 10px;
+            z-index: 1000;
+        }
+
+        .indicator-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .indicator-dot.active {
+            background: #00FFFF;
+            box-shadow: 0 0 20px #00FFFF;
+            transform: scale(1.3);
+        }
+
+        .progress-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #00FFFF, #FFD700);
+            z-index: 10000;
+            transition: width 0.3s ease;
+        }
+
+        .logo-3d {
+            position: fixed;
+            top: 40px;
+            left: 40px;
+            font-size: 2.5rem;
+            font-weight: 200;
+            background: linear-gradient(45deg, #00FFFF, #FFD700);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            transform: perspective(1000px) rotateX(10deg);
+            z-index: 1000;
+            text-shadow: 0 0 30px rgba(0, 255, 255, 0.5);
+        }
+
+        .stats-counter {
+            font-family: 'Courier New', monospace;
+            font-size: 2rem;
+            color: #00FF00;
+            text-shadow: 0 0 10px #00FF00;
+        }
+
+        .matrix-rain {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            opacity: 0.1;
+        }
+
+        .matrix-char {
+            position: absolute;
+            color: #00FFFF;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            animation: matrixFall 3s linear infinite;
+        }
+
+        @keyframes matrixFall {
+            0% {
+                transform: translateY(-100vh);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(100vh);
+                opacity: 0;
+            }
+        }
+
+        .loading-sequence {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+        }
+
+        .loading-text {
+            font-size: 1.5rem;
+            margin-bottom: 2rem;
+            opacity: 0.8;
+        }
+
+        .loading-bar {
+            width: 300px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+            overflow: hidden;
+            margin: 0 auto;
+        }
+
+        .loading-progress {
+            height: 100%;
+            background: linear-gradient(90deg, #00FFFF, #FFD700);
+            animation: loadingProgress 3s ease-out forwards;
+        }
+
+        @keyframes loadingProgress {
+            from { width: 0%; }
+            to { width: 100%; }
+        }
+
+        .particle-system {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        .particle {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: #FFD700;
+            border-radius: 50%;
+            animation: particleMove 10s linear infinite;
+        }
+
+        @keyframes particleMove {
+            0% {
+                transform: translateX(0) translateY(100vh);
+                opacity: 0;
+            }
+            10% {
+                opacity: 1;
+            }
+            90% {
+                opacity: 1;
+            }
+            100% {
+                transform: translateX(100px) translateY(-100vh);
+                opacity: 0;
+            }
+        }
+
+        .data-stream {
+            position: absolute;
+            width: 2px;
+            height: 50px;
+            background: linear-gradient(180deg, transparent, #00FFFF, transparent);
+            animation: dataStreamMove 2s linear infinite;
+        }
+
+        @keyframes dataStreamMove {
+            0% {
+                transform: translateY(-100vh) translateX(0);
+                opacity: 0;
+            }
+            10%, 90% {
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(100vh) translateX(50px);
+                opacity: 0;
+            }
+        }
+
+        @media (max-width: 768px) {
+            h1 { font-size: 3rem; }
+            h2 { font-size: 2.5rem; }
+            .subtitle { font-size: 1.5rem; }
+            .floating-metric { padding: 1rem; }
+            .metric-value { font-size: 2rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="cursor" id="customCursor"></div>
+    <div class="progress-bar" id="progressBar"></div>
+    <div class="logo-3d">013a AIA</div>
+
+    <div class="slideshow-container">
+        <!-- Slide 1: Loading/Initialization -->
+        <div class="slide active" id="slide1">
+            <div class="slide-bg">
+                <div class="matrix-rain" id="matrixRain"></div>
+                <div class="particle-system" id="particleSystem1"></div>
+            </div>
+            <div class="loading-sequence">
+                <div class="loading-text">Initializing AIA Multi-Agent System...</div>
+                <div class="loading-bar">
+                    <div class="loading-progress"></div>
+                </div>
+                <div style="margin-top: 2rem;">
+                    <div class="stats-counter" id="atomCounter">000</div>
+                    <div style="font-size: 1rem; margin-top: 0.5rem;">Atomic Processing Units Online</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 2: Title with 3D Effects -->
+        <div class="slide" id="slide2">
+            <div class="slide-bg">
+                <div class="atomic-visualization" id="atomicViz"></div>
+            </div>
+            <div class="content-overlay">
+                <h1>AIA/013a</h1>
+                <p class="subtitle">The First Truly Autonomous Analytical Partner</p>
+                <div class="performance-ring">
+                    <div class="ring-progress">
+                        <div class="ring-center">
+                            <div class="metric-value">98.4%</div>
+                            <div style="font-size: 1rem; opacity: 0.8;">Success Rate</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 3: Multi-Agent Orchestration -->
+        <div class="slide" id="slide3">
+            <div class="slide-bg">
+                <div class="neural-network" id="neuralNetwork"></div>
+            </div>
+            <div class="content-overlay">
+                <h2>Multi-Agent Orchestration</h2>
+                <div class="metrics-3d-container">
+                    <div class="floating-metric" style="top: 20%; left: 10%;" data-tilt>
+                        <span class="metric-value">569</span>
+                        <span class="metric-label">Atomic Processing Units</span>
+                    </div>
+                    <div class="floating-metric" style="top: 60%; left: 70%;" data-tilt>
+                        <span class="metric-value">110K</span>
+                        <span class="metric-label">Operations/Second</span>
+                    </div>
+                    <div class="floating-metric" style="top: 40%; left: 40%;" data-tilt>
+                        <span class="metric-value">90.2%</span>
+                        <span class="metric-label">Coordination Efficiency</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 4: Market Visualization -->
+        <div class="slide" id="slide4">
+            <div class="slide-bg">
+                <canvas id="marketParticles" class="slide-bg"></canvas>
+            </div>
+            <div class="content-overlay">
+                <h2>Market Transformation</h2>
+                <div class="interactive-chart-container">
+                    <canvas id="marketChart" class="chart-canvas"></canvas>
+                </div>
+                <div style="margin-top: 2rem;">
+                    <div class="holographic-display" style="margin: 2rem auto;">
+                        <div style="padding: 2rem; text-align: center;">
+                            <div class="metric-value" style="font-size: 2.5rem;">$248B</div>
+                            <div>Total Addressable Market</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 5: Revenue Projection -->
+        <div class="slide" id="slide5">
+            <div class="slide-bg">
+                <div class="particle-system" id="particleSystem2"></div>
+            </div>
+            <div class="content-overlay">
+                <h2>Revenue Growth Trajectory</h2>
+                <div class="interactive-chart-container">
+                    <canvas id="revenueChart" class="chart-canvas"></canvas>
+                </div>
+                <div style="display: flex; justify-content: center; gap: 2rem; margin-top: 2rem;">
+                    <div class="holographic-display">
+                        <div style="padding: 1.5rem; text-align: center;">
+                            <div class="metric-value">$4.2M</div>
+                            <div>Year 1 ARR</div>
+                        </div>
+                    </div>
+                    <div class="holographic-display">
+                        <div style="padding: 1.5rem; text-align: center;">
+                            <div class="metric-value">$45M</div>
+                            <div>Year 3 ARR</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 6: 3D Data Visualization -->
+        <div class="slide" id="slide6">
+            <div class="slide-bg">
+                <canvas id="threejsCanvas" class="slide-bg"></canvas>
+            </div>
+            <div class="content-overlay">
+                <h2 style="margin-bottom: 4rem;">Live System Visualization</h2>
+                <div style="position: absolute; bottom: 10%; left: 50%; transform: translateX(-50%); text-align: center;">
+                    <div class="stats-counter" id="liveMetrics">
+                        <div>Agents Active: <span id="agentCount">9</span></div>
+                        <div>Tasks Processed: <span id="taskCount">0</span></div>
+                        <div>Success Rate: <span id="successRate">98.4%</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 7: Investment Opportunity -->
+        <div class="slide" id="slide7">
+            <div class="slide-bg">
+                <div class="atomic-visualization" id="finalViz"></div>
+            </div>
+            <div class="content-overlay">
+                <h2>Investment Opportunity</h2>
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 3rem; max-width: 800px; margin: 3rem auto;">
+                    <div class="holographic-display">
+                        <div style="padding: 2rem; text-align: center;">
+                            <div class="metric-value">$25M</div>
+                            <div>Series A Target</div>
+                        </div>
+                    </div>
+                    <div class="holographic-display">
+                        <div style="padding: 2rem; text-align: center;">
+                            <div class="metric-value">15-25x</div>
+                            <div>Projected Returns</div>
+                        </div>
+                    </div>
+                    <div class="holographic-display">
+                        <div style="padding: 2rem; text-align: center;">
+                            <div class="metric-value">$150M</div>
+                            <div>Pre-money Valuation</div>
+                        </div>
+                    </div>
+                    <div class="holographic-display">
+                        <div style="padding: 2rem; text-align: center;">
+                            <div class="metric-value">First</div>
+                            <div>Autonomous Partner</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="navigation">
+        <button class="nav-btn" onclick="prevSlide()">← Previous</button>
+        <button class="nav-btn" onclick="nextSlide()">Next →</button>
+    </div>
+
+    <div class="slide-indicator" id="slideIndicator">
+        <div class="indicator-dot active" onclick="goToSlide(0)"></div>
+        <div class="indicator-dot" onclick="goToSlide(1)"></div>
+        <div class="indicator-dot" onclick="goToSlide(2)"></div>
+        <div class="indicator-dot" onclick="goToSlide(3)"></div>
+        <div class="indicator-dot" onclick="goToSlide(4)"></div>
+        <div class="indicator-dot" onclick="goToSlide(5)"></div>
+        <div class="indicator-dot" onclick="goToSlide(6)"></div>
+    </div>
+
+    <script>
+        let currentSlide = 0;
+        const totalSlides = 7;
+        let isAutoPlaying = true;
+        let autoPlayTimer;
+
+        // Custom cursor
+        document.addEventListener('mousemove', (e) => {
+            const cursor = document.getElementById('customCursor');
+            cursor.style.left = e.clientX + 'px';
+            cursor.style.top = e.clientY + 'px';
+        });
+
+        // Matrix rain effect
+        function createMatrixRain() {
+            const container = document.getElementById('matrixRain');
+            const chars = '01アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン';
+
+            for (let i = 0; i < 50; i++) {
+                const char = document.createElement('div');
+                char.className = 'matrix-char';
+                char.textContent = chars[Math.floor(Math.random() * chars.length)];
+                char.style.left = Math.random() * 100 + '%';
+                char.style.animationDelay = Math.random() * 3 + 's';
+                char.style.animationDuration = (3 + Math.random() * 3) + 's';
+                container.appendChild(char);
+            }
+        }
+
+        // Particle system
+        function createParticleSystem(containerId, count = 30) {
+            const container = document.getElementById(containerId);
+            for (let i = 0; i < count; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.animationDelay = Math.random() * 10 + 's';
+                particle.style.animationDuration = (8 + Math.random() * 4) + 's';
+                container.appendChild(particle);
+            }
+        }
+
+        // Atomic visualization
+        function createAtomicVisualization(containerId) {
+            const container = document.getElementById(containerId);
+            for (let i = 0; i < 100; i++) {
+                const atom = document.createElement('div');
+                atom.className = 'atom-particle';
+                atom.style.left = Math.random() * 100 + '%';
+                atom.style.top = Math.random() * 100 + '%';
+                atom.style.animationDelay = Math.random() * 3 + 's';
+                atom.style.animationDuration = (2 + Math.random() * 2) + 's';
+                container.appendChild(atom);
+            }
+        }
+
+        // Neural network visualization
+        function createNeuralNetwork() {
+            const container = document.getElementById('neuralNetwork');
+
+            // Create neurons
+            const positions = [
+                {x: 10, y: 20}, {x: 10, y: 50}, {x: 10, y: 80},
+                {x: 30, y: 15}, {x: 30, y: 35}, {x: 30, y: 65}, {x: 30, y: 85},
+                {x: 50, y: 25}, {x: 50, y: 45}, {x: 50, y: 75},
+                {x: 70, y: 20}, {x: 70, y: 60},
+                {x: 90, y: 40}
+            ];
+
+            positions.forEach((pos, i) => {
+                const neuron = document.createElement('div');
+                neuron.className = 'neuron';
+                neuron.style.left = pos.x + '%';
+                neuron.style.top = pos.y + '%';
+                neuron.style.animationDelay = (i * 0.2) + 's';
+                container.appendChild(neuron);
+            });
+
+            // Create connections
+            for (let i = 0; i < positions.length - 1; i++) {
+                for (let j = i + 1; j < positions.length; j++) {
+                    if (Math.random() > 0.7) {
+                        const line = document.createElement('div');
+                        line.className = 'connection-line';
+
+                        const dx = positions[j].x - positions[i].x;
+                        const dy = positions[j].y - positions[i].y;
+                        const length = Math.sqrt(dx * dx + dy * dy);
+                        const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+
+                        line.style.width = length + '%';
+                        line.style.left = positions[i].x + '%';
+                        line.style.top = positions[i].y + '%';
+                        line.style.transform = `rotate(${angle}deg)`;
+                        line.style.transformOrigin = '0 50%';
+                        line.style.animationDelay = Math.random() * 2 + 's';
+
+                        container.appendChild(line);
+                    }
+                }
+            }
+        }
+
+        // Three.js 3D Scene
+        function initThreeJS() {
+            const canvas = document.getElementById('threejsCanvas');
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            const renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true });
+
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setClearColor(0x000000, 0);
+
+            // Create particle system
+            const particleGeometry = new THREE.BufferGeometry();
+            const particleCount = 1000;
+            const positions = new Float32Array(particleCount * 3);
+            const colors = new Float32Array(particleCount * 3);
+
+            for (let i = 0; i < particleCount * 3; i += 3) {
+                positions[i] = (Math.random() - 0.5) * 20;
+                positions[i + 1] = (Math.random() - 0.5) * 20;
+                positions[i + 2] = (Math.random() - 0.5) * 20;
+
+                colors[i] = Math.random();
+                colors[i + 1] = Math.random();
+                colors[i + 2] = 1;
+            }
+
+            particleGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            particleGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+            const particleMaterial = new THREE.PointsMaterial({
+                size: 0.05,
+                vertexColors: true,
+                transparent: true,
+                opacity: 0.8
+            });
+
+            const particles = new THREE.Points(particleGeometry, particleMaterial);
+            scene.add(particles);
+
+            // Create interconnected nodes
+            const nodeGeometry = new THREE.SphereGeometry(0.1, 16, 16);
+            const nodeMaterial = new THREE.MeshBasicMaterial({ color: 0x00ffff, transparent: true, opacity: 0.8 });
+            const nodes = [];
+
+            for (let i = 0; i < 20; i++) {
+                const node = new THREE.Mesh(nodeGeometry, nodeMaterial);
+                node.position.set(
+                    (Math.random() - 0.5) * 10,
+                    (Math.random() - 0.5) * 10,
+                    (Math.random() - 0.5) * 10
+                );
+                scene.add(node);
+                nodes.push(node);
+            }
+
+            camera.position.z = 15;
+
+            function animate() {
+                requestAnimationFrame(animate);
+
+                particles.rotation.x += 0.001;
+                particles.rotation.y += 0.002;
+
+                nodes.forEach((node, i) => {
+                    node.rotation.x += 0.01;
+                    node.rotation.y += 0.01;
+                    node.position.y += Math.sin(Date.now() * 0.001 + i) * 0.002;
+                });
+
+                const positions = particles.geometry.attributes.position.array;
+                for (let i = 0; i < positions.length; i += 3) {
+                    positions[i + 1] += Math.sin(Date.now() * 0.001 + i) * 0.001;
+                }
+                particles.geometry.attributes.position.needsUpdate = true;
+
+                renderer.render(scene, camera);
+            }
+
+            animate();
+        }
+
+        // Market chart
+        function initMarketChart() {
+            const ctx = document.getElementById('marketChart');
+            if (!ctx) return;
+
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Enterprise Consulting', 'Financial Services', 'Regulatory Compliance', 'Research Institutions'],
+                    datasets: [{
+                        data: [85, 45, 28, 15],
+                        backgroundColor: [
+                            'rgba(0, 255, 255, 0.8)',
+                            'rgba(255, 215, 0, 0.8)',
+                            'rgba(255, 105, 180, 0.8)',
+                            'rgba(0, 255, 127, 0.8)'
+                        ],
+                        borderWidth: 2,
+                        borderColor: 'rgba(255, 255, 255, 0.1)'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                color: '#F5F5DC',
+                                font: { size: 14 },
+                                padding: 20
+                            }
+                        }
+                    },
+                    animation: {
+                        animateRotate: true,
+                        duration: 2000
+                    }
+                }
+            });
+        }
+
+        // Revenue chart
+        function initRevenueChart() {
+            const ctx = document.getElementById('revenueChart');
+            if (!ctx) return;
+
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['Year 0', 'Year 1', 'Year 2', 'Year 3', 'Year 4', 'Year 5'],
+                    datasets: [{
+                        label: 'ARR ($M)',
+                        data: [0, 4.2, 15.6, 45, 85, 200],
+                        borderColor: 'rgba(0, 255, 255, 1)',
+                        backgroundColor: 'rgba(0, 255, 255, 0.1)',
+                        borderWidth: 3,
+                        tension: 0.4,
+                        pointBackgroundColor: '#FFD700',
+                        pointBorderColor: '#00FFFF',
+                        pointRadius: 6,
+                        pointHoverRadius: 8,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: '#F5F5DC',
+                                font: { size: 16 }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                            ticks: { color: '#F5F5DC', font: { size: 14 } }
+                        },
+                        x: {
+                            grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                            ticks: { color: '#F5F5DC', font: { size: 14 } }
+                        }
+                    },
+                    animation: {
+                        duration: 2000,
+                        easing: 'easeOutQuart'
+                    }
+                }
+            });
+        }
+
+        // Slide management
+        function showSlide(n) {
+            const slides = document.querySelectorAll('.slide');
+            const indicators = document.querySelectorAll('.indicator-dot');
+
+            slides[currentSlide].classList.remove('active');
+            indicators[currentSlide].classList.remove('active');
+
+            currentSlide = (n + totalSlides) % totalSlides;
+
+            slides[currentSlide].classList.add('active');
+            indicators[currentSlide].classList.add('active');
+
+            // Update progress bar
+            const progress = ((currentSlide + 1) / totalSlides) * 100;
+            document.getElementById('progressBar').style.width = progress + '%';
+
+            // Initialize slide-specific content
+            setTimeout(() => {
+                if (currentSlide === 3) initMarketChart();
+                if (currentSlide === 4) initRevenueChart();
+                if (currentSlide === 5) initThreeJS();
+            }, 500);
+
+            // Reset auto play
+            if (isAutoPlaying) {
+                clearTimeout(autoPlayTimer);
+                autoPlayTimer = setTimeout(() => {
+                    if (currentSlide < totalSlides - 1) {
+                        nextSlide();
+                    }
+                }, 8000);
+            }
+        }
+
+        function nextSlide() {
+            showSlide(currentSlide + 1);
+        }
+
+        function prevSlide() {
+            showSlide(currentSlide - 1);
+        }
+
+        function goToSlide(n) {
+            isAutoPlaying = false;
+            clearTimeout(autoPlayTimer);
+            showSlide(n);
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            createMatrixRain();
+            createParticleSystem('particleSystem1');
+            createParticleSystem('particleSystem2');
+            createAtomicVisualization('atomicViz');
+            createAtomicVisualization('finalViz');
+            createNeuralNetwork();
+
+            // Atom counter animation on first slide
+            let count = 0;
+            const counter = document.getElementById('atomCounter');
+            const atomInterval = setInterval(() => {
+                count += Math.floor(Math.random() * 10) + 1;
+                counter.textContent = count.toString().padStart(3, '0');
+                if (count >= 569) {
+                    counter.textContent = '569';
+                    clearInterval(atomInterval);
+
+                    // Auto advance after loading
+                    setTimeout(() => {
+                        if (currentSlide === 0) nextSlide();
+                    }, 1000);
+                }
+            }, 50);
+
+            // Live metrics animation
+            const taskCounter = document.getElementById('taskCount');
+            const agentCounter = document.getElementById('agentCount');
+            let taskCount = 0;
+            let agentCount = 9;
+
+            setInterval(() => {
+                if (taskCounter) {
+                    taskCount += Math.floor(Math.random() * 5) + 1;
+                    taskCounter.textContent = taskCount.toString();
+                }
+                if (agentCounter) {
+                    agentCount = 9 + Math.floor(Math.random() * 3);
+                    agentCounter.textContent = agentCount.toString();
+                }
+            }, 1000);
+
+            // Start auto play
+            autoPlayTimer = setTimeout(() => {
+                if (currentSlide === 0) nextSlide();
+            }, 4000);
+        });
+
+        // Keyboard controls
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight' || e.key === ' ') {
+                isAutoPlaying = false;
+                clearTimeout(autoPlayTimer);
+                nextSlide();
+            } else if (e.key === 'ArrowLeft') {
+                isAutoPlaying = false;
+                clearTimeout(autoPlayTimer);
+                prevSlide();
+            } else if (e.key === 'Escape') {
+                isAutoPlaying = !isAutoPlaying;
+                if (isAutoPlaying) {
+                    autoPlayTimer = setTimeout(nextSlide, 3000);
+                }
+            }
+        });
+
+        // Touch/swipe support
+        let touchStartX = 0;
+        document.addEventListener('touchstart', (e) => {
+            touchStartX = e.changedTouches[0].screenX;
+        });
+
+        document.addEventListener('touchend', (e) => {
+            const touchEndX = e.changedTouches[0].screenX;
+            const diff = touchStartX - touchEndX;
+
+            if (Math.abs(diff) > 50) {
+                isAutoPlaying = false;
+                clearTimeout(autoPlayTimer);
+
+                if (diff > 0) {
+                    nextSlide();
+                } else {
+                    prevSlide();
+                }
+            }
+        });
+
+        // Prevent context menu
+        document.addEventListener('contextmenu', (e) => e.preventDefault());
+    </script>
+</body>
+</html>

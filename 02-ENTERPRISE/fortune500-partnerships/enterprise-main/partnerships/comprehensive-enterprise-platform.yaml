@@ -1,0 +1,706 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: aia-comprehensive-platform
+  labels:
+    app: aia-platform
+    tier: production
+---
+# Unified Ingress Configuration for All 45 Domains
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: aia-unified-comprehensive-ingress
+  namespace: aia-comprehensive-platform
+  annotations:
+    kubernetes.io/ingress.class: gce
+    kubernetes.io/ingress.global-static-ip-name: aia-global-ip
+    networking.gke.io/managed-certificates: aia-comprehensive-ssl-cert
+    kubernetes.io/ingress.allow-http: "true"
+    ingress.gcp.kubernetes.io/frontend-config: aia-frontend-config
+    cloud.google.com/neg: '{"ingress": true}'
+    cloud.google.com/backend-config: '{"default": "aia-backend-config"}'
+spec:
+  rules:
+    # Core Platform Domains
+    - host: 013a.tech
+      http:
+        paths:
+        - path: /*
+          pathType: ImplementationSpecific
+          backend:
+            service:
+              name: aia-frontend-service
+              port:
+                number: 80
+    - host: www.013a.tech
+      http:
+        paths:
+        - path: /*
+          pathType: ImplementationSpecific
+          backend:
+            service:
+              name: aia-frontend-service
+              port:
+                number: 80
+    - host: api.013a.tech
+      http:
+        paths:
+        - path: /*
+          pathType: ImplementationSpecific
+          backend:
+            service:
+              name: aia-backend-service
+              port:
+                number: 8000
+    # Customer Acquisition
+    - host: get.013a.tech
+      http:
+        paths:
+        - path: /*
+          pathType: ImplementationSpecific
+          backend:
+            service:
+              name: aia-acquisition-service
+              port:
+                number: 80
+    - host: demo.013a.tech
+      http:
+        paths:
+        - path: /*
+          pathType: ImplementationSpecific
+          backend:
+            service:
+              name: aia-demo-service
+              port:
+                number: 80
+    - host: trial.013a.tech
+      http:
+        paths:
+        - path: /*
+          pathType: ImplementationSpecific
+          backend:
+            service:
+              name: aia-trial-service
+              port:
+                number: 80
+    # Enterprise Platform
+    - host: enterprise.013a.tech
+      http:
+        paths:
+        - path: /*
+          pathType: ImplementationSpecific
+          backend:
+            service:
+              name: aia-enterprise-service
+              port:
+                number: 80
+    - host: fortune500.013a.tech
+      http:
+        paths:
+        - path: /*
+          pathType: ImplementationSpecific
+          backend:
+            service:
+              name: aia-fortune500-service
+              port:
+                number: 80
+    - host: ey.013a.tech
+      http:
+        paths:
+        - path: /*
+          pathType: ImplementationSpecific
+          backend:
+            service:
+              name: aia-ey-integration-service
+              port:
+                number: 80
+    # Industry Verticals
+    - host: finance.013a.tech
+      http:
+        paths:
+        - path: /*
+          pathType: ImplementationSpecific
+          backend:
+            service:
+              name: aia-finance-service
+              port:
+                number: 80
+    - host: healthcare.013a.tech
+      http:
+        paths:
+        - path: /*
+          pathType: ImplementationSpecific
+          backend:
+            service:
+              name: aia-healthcare-service
+              port:
+                number: 80
+    - host: retail.013a.tech
+      http:
+        paths:
+        - path: /*
+          pathType: ImplementationSpecific
+          backend:
+            service:
+              name: aia-retail-service
+              port:
+                number: 80
+    - host: manufacturing.013a.tech
+      http:
+        paths:
+        - path: /*
+          pathType: ImplementationSpecific
+          backend:
+            service:
+              name: aia-manufacturing-service
+              port:
+                number: 80
+    # Immersive 3D Platform
+    - host: immersive.013a.tech
+      http:
+        paths:
+        - path: /*
+          pathType: ImplementationSpecific
+          backend:
+            service:
+              name: aia-immersive-service
+              port:
+                number: 80
+    - host: 3d.013a.tech
+      http:
+        paths:
+        - path: /*
+          pathType: ImplementationSpecific
+          backend:
+            service:
+              name: aia-3d-service
+              port:
+                number: 80
+    - host: webxr.013a.tech
+      http:
+        paths:
+        - path: /*
+          pathType: ImplementationSpecific
+          backend:
+            service:
+              name: aia-webxr-service
+              port:
+                number: 80
+    # Payments & Billing
+    - host: payments.013a.tech
+      http:
+        paths:
+        - path: /*
+          pathType: ImplementationSpecific
+          backend:
+            service:
+              name: aia-payments-service
+              port:
+                number: 80
+    - host: billing.013a.tech
+      http:
+        paths:
+        - path: /*
+          pathType: ImplementationSpecific
+          backend:
+            service:
+              name: aia-billing-service
+              port:
+                number: 80
+    - host: pricing.013a.tech
+      http:
+        paths:
+        - path: /*
+          pathType: ImplementationSpecific
+          backend:
+            service:
+              name: aia-pricing-service
+              port:
+                number: 80
+    # Analytics & Monitoring
+    - host: analytics.013a.tech
+      http:
+        paths:
+        - path: /*
+          pathType: ImplementationSpecific
+          backend:
+            service:
+              name: aia-analytics-service
+              port:
+                number: 80
+    - host: monitoring.013a.tech
+      http:
+        paths:
+        - path: /*
+          pathType: ImplementationSpecific
+          backend:
+            service:
+              name: aia-monitoring-service
+              port:
+                number: 80
+    - host: insights.013a.tech
+      http:
+        paths:
+        - path: /*
+          pathType: ImplementationSpecific
+          backend:
+            service:
+              name: aia-insights-service
+              port:
+                number: 80
+    # Developer & Partner Ecosystem
+    - host: developers.013a.tech
+      http:
+        paths:
+        - path: /*
+          pathType: ImplementationSpecific
+          backend:
+            service:
+              name: aia-developers-service
+              port:
+                number: 80
+    - host: partners.013a.tech
+      http:
+        paths:
+        - path: /*
+          pathType: ImplementationSpecific
+          backend:
+            service:
+              name: aia-partners-service
+              port:
+                number: 80
+    - host: marketplace.013a.tech
+      http:
+        paths:
+        - path: /*
+          pathType: ImplementationSpecific
+          backend:
+            service:
+              name: aia-marketplace-service
+              port:
+                number: 80
+    # Content & Resources
+    - host: blog.013a.tech
+      http:
+        paths:
+        - path: /*
+          pathType: ImplementationSpecific
+          backend:
+            service:
+              name: aia-blog-service
+              port:
+                number: 80
+    - host: resources.013a.tech
+      http:
+        paths:
+        - path: /*
+          pathType: ImplementationSpecific
+          backend:
+            service:
+              name: aia-resources-service
+              port:
+                number: 80
+    - host: docs.013a.tech
+      http:
+        paths:
+        - path: /*
+          pathType: ImplementationSpecific
+          backend:
+            service:
+              name: aia-docs-service
+              port:
+                number: 80
+    # Support & Operations
+    - host: support.013a.tech
+      http:
+        paths:
+        - path: /*
+          pathType: ImplementationSpecific
+          backend:
+            service:
+              name: aia-support-service
+              port:
+                number: 80
+    - host: status.013a.tech
+      http:
+        paths:
+        - path: /*
+          pathType: ImplementationSpecific
+          backend:
+            service:
+              name: aia-status-service
+              port:
+                number: 80
+    - host: help.013a.tech
+      http:
+        paths:
+        - path: /*
+          pathType: ImplementationSpecific
+          backend:
+            service:
+              name: aia-help-service
+              port:
+                number: 80
+    # Global Regions
+    - host: global.013a.tech
+      http:
+        paths:
+        - path: /*
+          pathType: ImplementationSpecific
+          backend:
+            service:
+              name: aia-global-service
+              port:
+                number: 80
+    - host: us.013a.tech
+      http:
+        paths:
+        - path: /*
+          pathType: ImplementationSpecific
+          backend:
+            service:
+              name: aia-us-service
+              port:
+                number: 80
+    - host: eu.013a.tech
+      http:
+        paths:
+        - path: /*
+          pathType: ImplementationSpecific
+          backend:
+            service:
+              name: aia-eu-service
+              port:
+                number: 80
+    - host: asia.013a.tech
+      http:
+        paths:
+        - path: /*
+          pathType: ImplementationSpecific
+          backend:
+            service:
+              name: aia-asia-service
+              port:
+                number: 80
+    # Mobile & API
+    - host: mobile.013a.tech
+      http:
+        paths:
+        - path: /*
+          pathType: ImplementationSpecific
+          backend:
+            service:
+              name: aia-mobile-service
+              port:
+                number: 80
+    - host: app.013a.tech
+      http:
+        paths:
+        - path: /*
+          pathType: ImplementationSpecific
+          backend:
+            service:
+              name: aia-app-service
+              port:
+                number: 80
+    - host: cdn.013a.tech
+      http:
+        paths:
+        - path: /*
+          pathType: ImplementationSpecific
+          backend:
+            service:
+              name: aia-cdn-service
+              port:
+                number: 80
+    # Security & Compliance
+    - host: security.013a.tech
+      http:
+        paths:
+        - path: /*
+          pathType: ImplementationSpecific
+          backend:
+            service:
+              name: aia-security-service
+              port:
+                number: 80
+    - host: compliance.013a.tech
+      http:
+        paths:
+        - path: /*
+          pathType: ImplementationSpecific
+          backend:
+            service:
+              name: aia-compliance-service
+              port:
+                number: 80
+    # AI/ML Platform
+    - host: ai.013a.tech
+      http:
+        paths:
+        - path: /*
+          pathType: ImplementationSpecific
+          backend:
+            service:
+              name: aia-ai-service
+              port:
+                number: 80
+    - host: ml.013a.tech
+      http:
+        paths:
+        - path: /*
+          pathType: ImplementationSpecific
+          backend:
+            service:
+              name: aia-ml-service
+              port:
+                number: 80
+    - host: neural.013a.tech
+      http:
+        paths:
+        - path: /*
+          pathType: ImplementationSpecific
+          backend:
+            service:
+              name: aia-neural-service
+              port:
+                number: 80
+    # Specialized Services
+    - host: quantum.013a.tech
+      http:
+        paths:
+        - path: /*
+          pathType: ImplementationSpecific
+          backend:
+            service:
+              name: aia-quantum-service
+              port:
+                number: 80
+    - host: edge.013a.tech
+      http:
+        paths:
+        - path: /*
+          pathType: ImplementationSpecific
+          backend:
+            service:
+              name: aia-edge-service
+              port:
+                number: 80
+    - host: iot.013a.tech
+      http:
+        paths:
+        - path: /*
+          pathType: ImplementationSpecific
+          backend:
+            service:
+              name: aia-iot-service
+              port:
+                number: 80
+---
+# SSL Certificate for all domains
+apiVersion: networking.gke.io/v1
+kind: ManagedCertificate
+metadata:
+  name: aia-comprehensive-ssl-cert
+  namespace: aia-comprehensive-platform
+spec:
+  domains:
+    - 013a.tech
+    - www.013a.tech
+    - api.013a.tech
+    - get.013a.tech
+    - demo.013a.tech
+    - trial.013a.tech
+    - enterprise.013a.tech
+    - fortune500.013a.tech
+    - ey.013a.tech
+    - finance.013a.tech
+    - healthcare.013a.tech
+    - retail.013a.tech
+    - manufacturing.013a.tech
+    - immersive.013a.tech
+    - 3d.013a.tech
+    - webxr.013a.tech
+    - payments.013a.tech
+    - billing.013a.tech
+    - pricing.013a.tech
+    - analytics.013a.tech
+    - monitoring.013a.tech
+    - insights.013a.tech
+    - developers.013a.tech
+    - partners.013a.tech
+    - marketplace.013a.tech
+    - blog.013a.tech
+    - resources.013a.tech
+    - docs.013a.tech
+    - support.013a.tech
+    - status.013a.tech
+    - help.013a.tech
+    - global.013a.tech
+    - us.013a.tech
+    - eu.013a.tech
+    - asia.013a.tech
+    - mobile.013a.tech
+    - app.013a.tech
+    - cdn.013a.tech
+    - security.013a.tech
+    - compliance.013a.tech
+    - ai.013a.tech
+    - ml.013a.tech
+    - neural.013a.tech
+    - quantum.013a.tech
+    - edge.013a.tech
+    - iot.013a.tech
+---
+# Backend Configuration
+apiVersion: cloud.google.com/v1
+kind: BackendConfig
+metadata:
+  name: aia-backend-config
+  namespace: aia-comprehensive-platform
+spec:
+  healthCheck:
+    checkIntervalSec: 10
+    healthyThreshold: 1
+    unhealthyThreshold: 3
+    timeoutSec: 10
+    type: HTTP
+    requestPath: /health
+    port: 8000
+  connectionDraining:
+    drainingTimeoutSec: 60
+  timeoutSec: 300
+  logging:
+    enable: true
+    sampleRate: 1.0
+---
+# Frontend Configuration
+apiVersion: networking.gke.io/v1beta1
+kind: FrontendConfig
+metadata:
+  name: aia-frontend-config
+  namespace: aia-comprehensive-platform
+spec:
+  sslPolicy: aia-ssl-policy
+  redirectToHttps:
+    enabled: true
+    responseCodeName: MOVED_PERMANENTLY_DEFAULT
+---
+# Core Backend Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-backend-service
+  namespace: aia-comprehensive-platform
+  annotations:
+    cloud.google.com/neg: '{"ingress": true}'
+    cloud.google.com/backend-config: '{"default": "aia-backend-config"}'
+spec:
+  selector:
+    app: aia-backend
+  ports:
+  - name: http
+    port: 8000
+    targetPort: 8000
+    protocol: TCP
+  type: ClusterIP
+---
+# Backend Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-backend-deployment
+  namespace: aia-comprehensive-platform
+spec:
+  replicas: 5
+  selector:
+    matchLabels:
+      app: aia-backend
+  template:
+    metadata:
+      labels:
+        app: aia-backend
+    spec:
+      serviceAccountName: aia-workload-identity
+      containers:
+      - name: aia-backend
+        image: gcr.io/aia-system-prod-1759055445/aia-backend:latest
+        ports:
+        - containerPort: 8000
+        env:
+        - name: ENVIRONMENT
+          value: "production"
+        - name: GCP_PROJECT_ID
+          value: "aia-system-prod-1759055445"
+        - name: REDIS_URL
+          value: "redis://aia-redis-service:6379"
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 5
+          periodSeconds: 5
+---
+# Frontend Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-frontend-service
+  namespace: aia-comprehensive-platform
+spec:
+  selector:
+    app: aia-frontend
+  ports:
+  - name: http
+    port: 80
+    targetPort: 80
+    protocol: TCP
+  type: ClusterIP
+---
+# Frontend Deployment with Enhanced Three.js
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-frontend-deployment
+  namespace: aia-comprehensive-platform
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: aia-frontend
+  template:
+    metadata:
+      labels:
+        app: aia-frontend
+    spec:
+      containers:
+      - name: aia-frontend
+        image: gcr.io/aia-system-prod-1759055445/aia-frontend:latest
+        ports:
+        - containerPort: 80
+        env:
+        - name: REACT_APP_API_URL
+          value: "https://api.013a.tech"
+        - name: REACT_APP_ENVIRONMENT
+          value: "production"
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
