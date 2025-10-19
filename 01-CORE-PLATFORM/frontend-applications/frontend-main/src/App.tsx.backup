@@ -1,0 +1,95 @@
+import React from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { ThemeProvider as MuiThemeProvider, CssBaseline } from '@mui/material';
+
+// Global Providers
+import { ThemeProvider } from './contexts/ThemeContext';
+import { AuthProvider } from './contexts/AuthContext';
+import { MCPProvider } from './contexts/MCPContext';
+
+// Components  
+import NavigationHeader from './components/layout/NavigationHeader';
+// TEMPORARILY DISABLED: import SentientCanvas from './components/3d/SentientCanvas';
+// TEMPORARILY DISABLED: import CanvasErrorBoundary from './components/3d/CanvasErrorBoundary';
+import CommandOverlay from './components/CommandOverlay';
+import LoadingScreen from './components/LoadingScreen';
+
+// Pages
+import LandingPage from './pages/LandingPage';
+import SignupFlow from './pages/SignupFlow';
+import LoginPage from './pages/LoginPage';
+import MainRequestPage from './pages/MainRequestPage';
+import EditorView from './pages/EditorView';
+import FinalPresentationView from './pages/FinalPresentationView';
+
+// Theme
+import { glassmorphicTheme } from './theme/glassmorphicTheme';
+
+// Global Styles
+import './styles/global.css';
+import './styles/animations.css';
+import './styles/glassmorphic.css';
+
+function App() {
+  return (
+    <MuiThemeProvider theme={glassmorphicTheme}>
+      <CssBaseline />
+      <ThemeProvider>
+        <AuthProvider>
+          <MCPProvider>
+            <BrowserRouter>
+                <div className="app immersive-app" data-testid="app-loaded" style={{ position: 'relative', minHeight: '100vh', overflow: 'hidden' }}>
+                  {/* 3D Background Canvas - PROGRESSIVE LOADING FOR BETTER INITIALIZATION */}
+                  {/* TEMPORARILY DISABLED: <CanvasErrorBoundary particleCount={5000}> */}
+                  {/* TEMPORARILY DISABLED: <SentientCanvas */}
+                  {/* particleCount={5000} */}
+                  {/* performanceMode="medium" */}
+                  {/* enableAdvancedOptimizations={false} */}
+                  {/* enableMobileOptimization={true} */}
+                  {/* enableAssetStreaming={false} */}
+                  {/* enableBenchmarking={false} */}
+                  {/* showPerformanceDashboard={false} */}
+                  {/* performanceTargets={{ */}
+                  {/* desktopFPS: 60, */}
+                  {/* mobileFPS: 30, */}
+                  {/* maxMemoryMB: 256 */}
+                  {/* }} */}
+                  {/* /> */}
+                  {/* TEMPORARILY DISABLED: </CanvasErrorBoundary> */}
+
+                  {/* Main Content - Overlay with glassmorphic effects */}
+                  <div className="main-content-overlay" style={{ position: 'relative', zIndex: 1, minHeight: '100vh' }}>
+                    <NavigationHeader 
+                      onGetStarted={() => window.location.href = '/signup'}
+                      onSignIn={() => window.location.href = '/login'}
+                      onSignUp={() => window.location.href = '/signup'}
+                    />
+                    <Routes>
+                      {/* Public Routes */}
+                      <Route path="/" element={<LandingPage />} />
+                      <Route path="/signup" element={<SignupFlow />} />
+                      <Route path="/login" element={<LoginPage />} />
+
+                      {/* Protected Routes */}
+                      <Route path="/request" element={<MainRequestPage />} />
+                      <Route path="/editor" element={<EditorView />} />
+                      <Route path="/presentation" element={<FinalPresentationView />} />
+
+                      {/* Default redirect */}
+                      <Route path="*" element={<Navigate to="/" replace />} />
+                    </Routes>
+                  </div>
+
+                  {/* Global Components */}
+                  <CommandOverlay isOpen={false} onClose={() => {}} />
+                  <LoadingScreen />
+                </div>
+              </BrowserRouter>
+          </MCPProvider>
+        </AuthProvider>
+      </ThemeProvider>
+    </MuiThemeProvider>
+  );
+}
+
+export default App;
