@@ -1,0 +1,128 @@
+apiVersion: networking.gke.io/v1
+kind: ManagedCertificate
+metadata:
+  name: aia-comprehensive-ssl-cert
+  namespace: aia-unified-production
+spec:
+  domains:
+    - "013a.tech"
+    - "www.013a.tech"
+    - "api.013a.tech"
+    - "founder.013a.tech"
+    - "ey.013a.tech"
+    - "jpmorgan.013a.tech"
+    - "gcp.013a.tech"
+    - "apple.013a.tech"
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: aia-comprehensive-production-ingress
+  namespace: aia-unified-production
+  annotations:
+    kubernetes.io/ingress.global-static-ip-name: "aia-production-ip"
+    ingress.gcp.kubernetes.io/managed-certificates: "aia-comprehensive-ssl-cert"
+    kubernetes.io/ingress.allow-http: "true"
+    cloud.google.com/armor-config: |
+      {
+        "default-rule": {
+          "evaluate-preconfigured-expr": [
+            "owasp-crs-v030001-id942110-sqli",
+            "owasp-crs-v030001-id942120-sqli",
+            "owasp-crs-v030001-id941100-xss"
+          ]
+        }
+      }
+spec:
+  rules:
+  # Main domain - 013a.tech
+  - host: "013a.tech"
+    http:
+      paths:
+      - path: "/api/*"
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-unified-backend-service
+            port:
+              number: 8000
+      - path: "/*"
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-unified-frontend-service
+            port:
+              number: 80
+  # WWW subdomain
+  - host: "www.013a.tech"
+    http:
+      paths:
+      - path: "/*"
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-unified-frontend-service
+            port:
+              number: 80
+  # API subdomain
+  - host: "api.013a.tech"
+    http:
+      paths:
+      - path: "/*"
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-unified-backend-service
+            port:
+              number: 8000
+  # Enterprise partner subdomains
+  - host: "founder.013a.tech"
+    http:
+      paths:
+      - path: "/*"
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-unified-frontend-service
+            port:
+              number: 80
+  - host: "ey.013a.tech"
+    http:
+      paths:
+      - path: "/*"
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-unified-frontend-service
+            port:
+              number: 80
+  - host: "jpmorgan.013a.tech"
+    http:
+      paths:
+      - path: "/*"
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-unified-frontend-service
+            port:
+              number: 80
+  - host: "gcp.013a.tech"
+    http:
+      paths:
+      - path: "/*"
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-unified-frontend-service
+            port:
+              number: 80
+  - host: "apple.013a.tech"
+    http:
+      paths:
+      - path: "/*"
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-unified-frontend-service
+            port:
+              number: 80

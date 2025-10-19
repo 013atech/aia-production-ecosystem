@@ -1,0 +1,701 @@
+# AIA PRODUCTION-READY DEPLOYMENT CONFIGURATION
+# =============================================
+# Created by: Production Readiness Assessment Team
+# Date: October 3, 2025
+# Version: v1.0-production-ready
+# Status: SECURE - NO EXPOSED SECRETS
+
+# This configuration addresses all critical production blockers identified
+# in the comprehensive assessment and implements enterprise-grade security
+
+---
+# ==============================================
+# NAMESPACE: AIA Production Environment
+# ==============================================
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: aia-production-secure
+  labels:
+    app.kubernetes.io/name: aia-system
+    app.kubernetes.io/version: v3.0-production
+    environment: production
+    security-level: enterprise
+    crypto-agent: verified
+
+---
+# ==============================================
+# SERVICE ACCOUNT WITH WORKLOAD IDENTITY
+# ==============================================
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: aia-production-service-account
+  namespace: aia-production-secure
+  annotations:
+    iam.gke.io/gcp-service-account: aia-prod@aia-system-prod-1759055445.iam.gserviceaccount.com
+
+---
+# ==============================================
+# SECRET MANAGEMENT - GCP SECRET MANAGER
+# ==============================================
+# NOTE: This uses External Secrets Operator to fetch from GCP Secret Manager
+# Secrets are NOT stored in Git repository
+apiVersion: external-secrets.io/v1beta1
+kind: SecretStore
+metadata:
+  name: aia-gcp-secret-store
+  namespace: aia-production-secure
+spec:
+  provider:
+    gcpsm:
+      projectId: aia-system-prod-1759055445
+      auth:
+        workloadIdentity:
+          clusterLocation: us-central1
+          clusterName: aia-production-cluster
+          serviceAccountRef:
+            name: aia-production-service-account
+
+---
+apiVersion: external-secrets.io/v1beta1
+kind: ExternalSecret
+metadata:
+  name: aia-production-secrets
+  namespace: aia-production-secure
+spec:
+  refreshInterval: 1h
+  secretStoreRef:
+    name: aia-gcp-secret-store
+    kind: SecretStore
+  target:
+    name: aia-production-secrets
+    creationPolicy: Owner
+  data:
+  - secretKey: jwt-secret
+    remoteRef:
+      key: aia-jwt-secret-prod
+  - secretKey: postgres-password
+    remoteRef:
+      key: aia-postgres-password-prod
+  - secretKey: redis-password
+    remoteRef:
+      key: aia-redis-password-prod
+  - secretKey: anthropic-api-key
+    remoteRef:
+      key: anthropic-api-key-prod
+  - secretKey: vertex-ai-key
+    remoteRef:
+      key: vertex-ai-key-prod
+
+---
+# ==============================================
+# POSTGRESQL DATABASE - PRODUCTION READY
+# ==============================================
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: aia-postgres-production
+  namespace: aia-production-secure
+spec:
+  serviceName: aia-postgres-service
+  replicas: 1
+  selector:
+    matchLabels:
+      app: aia-postgres-production
+  template:
+    metadata:
+      labels:
+        app: aia-postgres-production
+    spec:
+      serviceAccountName: aia-production-service-account
+      containers:
+      - name: postgres
+        image: postgres:16-alpine
+        ports:
+        - containerPort: 5432
+        env:
+        - name: POSTGRES_DB
+          value: aia_production
+        - name: POSTGRES_USER
+          value: aia_user
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: aia-production-secrets
+              key: postgres-password
+        - name: PGDATA
+          value: /var/lib/postgresql/data/pgdata
+        volumeMounts:
+        - name: postgres-storage
+          mountPath: /var/lib/postgresql/data
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        livenessProbe:
+          exec:
+            command:
+            - pg_isready
+            - -U
+            - aia_user
+            - -d
+            - aia_production
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          exec:
+            command:
+            - pg_isready
+            - -U
+            - aia_user
+            - -d
+            - aia_production
+          initialDelaySeconds: 5
+          periodSeconds: 5
+  volumeClaimTemplates:
+  - metadata:
+      name: postgres-storage
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      resources:
+        requests:
+          storage: 50Gi
+      storageClassName: ssd-retain
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-postgres-service
+  namespace: aia-production-secure
+spec:
+  selector:
+    app: aia-postgres-production
+  ports:
+  - port: 5432
+    targetPort: 5432
+  clusterIP: None
+
+---
+# ==============================================
+# REDIS - PRODUCTION CONFIGURATION
+# ==============================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-redis-production
+  namespace: aia-production-secure
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: aia-redis-production
+  template:
+    metadata:
+      labels:
+        app: aia-redis-production
+    spec:
+      serviceAccountName: aia-production-service-account
+      containers:
+      - name: redis
+        image: redis:7-alpine
+        ports:
+        - containerPort: 6379
+        command: ["redis-server"]
+        args:
+        - --requirepass
+        - $(REDIS_PASSWORD)
+        - --maxmemory
+        - 512mb
+        - --maxmemory-policy
+        - allkeys-lru
+        env:
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: aia-production-secrets
+              key: redis-password
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        livenessProbe:
+          exec:
+            command:
+            - redis-cli
+            - ping
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          exec:
+            command:
+            - redis-cli
+            - ping
+          initialDelaySeconds: 5
+          periodSeconds: 5
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-redis-service
+  namespace: aia-production-secure
+spec:
+  selector:
+    app: aia-redis-production
+  ports:
+  - port: 6379
+    targetPort: 6379
+
+---
+# ==============================================
+# AIA BACKEND API - PRODUCTION DEPLOYMENT
+# ==============================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-backend-production
+  namespace: aia-production-secure
+  labels:
+    app: aia-backend
+    version: production
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: aia-backend
+      version: production
+  template:
+    metadata:
+      labels:
+        app: aia-backend
+        version: production
+    spec:
+      serviceAccountName: aia-production-service-account
+      containers:
+      - name: aia-backend
+        image: us-central1-docker.pkg.dev/aia-system-prod-1759055445/aia-production/aia-backend:latest
+        ports:
+        - containerPort: 8000
+        env:
+        - name: ENVIRONMENT
+          value: "production"
+        - name: LOG_LEVEL
+          value: "info"
+        - name: DATABASE_URL
+          value: "postgresql://aia_user:$(POSTGRES_PASSWORD)@aia-postgres-service:5432/aia_production"
+        - name: REDIS_URL
+          value: "redis://:$(REDIS_PASSWORD)@aia-redis-service:6379/0"
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: aia-production-secrets
+              key: jwt-secret
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: aia-production-secrets
+              key: postgres-password
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: aia-production-secrets
+              key: redis-password
+        - name: ANTHROPIC_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: aia-production-secrets
+              key: anthropic-api-key
+        - name: VERTEX_AI_ENABLED
+          value: "true"
+        - name: AIA_CIRCUIT_BREAKER_FAILURE_THRESHOLD
+          value: "5"
+        - name: AIA_CIRCUIT_BREAKER_RECOVERY_TIMEOUT
+          value: "60"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+        startupProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          failureThreshold: 30
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-backend-service
+  namespace: aia-production-secure
+  labels:
+    app: aia-backend
+spec:
+  selector:
+    app: aia-backend
+    version: production
+  ports:
+  - name: http
+    port: 8000
+    targetPort: 8000
+    protocol: TCP
+  type: ClusterIP
+
+---
+# ==============================================
+# AIA FRONTEND - PRODUCTION DEPLOYMENT
+# ==============================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-frontend-production
+  namespace: aia-production-secure
+  labels:
+    app: aia-frontend
+    version: production
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: aia-frontend
+      version: production
+  template:
+    metadata:
+      labels:
+        app: aia-frontend
+        version: production
+    spec:
+      serviceAccountName: aia-production-service-account
+      containers:
+      - name: aia-frontend
+        image: us-central1-docker.pkg.dev/aia-system-prod-1759055445/aia-production/aia-frontend:latest
+        ports:
+        - containerPort: 80
+        env:
+        - name: NODE_ENV
+          value: "production"
+        - name: REACT_APP_API_URL
+          value: "https://013a.tech/api"
+        - name: REACT_APP_ENABLE_3D
+          value: "true"
+        - name: REACT_APP_WEBXR_ENABLED
+          value: "true"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 30
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 10
+          periodSeconds: 10
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-frontend-service
+  namespace: aia-production-secure
+  labels:
+    app: aia-frontend
+spec:
+  selector:
+    app: aia-frontend
+    version: production
+  ports:
+  - name: http
+    port: 80
+    targetPort: 80
+    protocol: TCP
+  type: ClusterIP
+
+---
+# ==============================================
+# HORIZONTAL POD AUTOSCALER
+# ==============================================
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: aia-backend-hpa
+  namespace: aia-production-secure
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: aia-backend-production
+  minReplicas: 3
+  maxReplicas: 20
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: aia-frontend-hpa
+  namespace: aia-production-secure
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: aia-frontend-production
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+
+---
+# ==============================================
+# INGRESS WITH SSL CERTIFICATES
+# ==============================================
+apiVersion: networking.gke.io/v1
+kind: ManagedCertificate
+metadata:
+  name: aia-production-ssl-cert
+  namespace: aia-production-secure
+spec:
+  domains:
+  - 013a.tech
+  - www.013a.tech
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: aia-production-ingress
+  namespace: aia-production-secure
+  annotations:
+    kubernetes.io/ingress.global-static-ip-name: aia-production-static-ip
+    networking.gke.io/managed-certificates: aia-production-ssl-cert
+    kubernetes.io/ingress.class: "gce"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "300"
+    nginx.ingress.kubernetes.io/cors-allow-origin: "https://013a.tech,https://www.013a.tech"
+    nginx.ingress.kubernetes.io/cors-allow-methods: "GET, POST, PUT, DELETE, OPTIONS, PATCH"
+    nginx.ingress.kubernetes.io/cors-allow-headers: "*"
+spec:
+  rules:
+  - host: 013a.tech
+    http:
+      paths:
+      - path: /api/*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-backend-service
+            port:
+              number: 8000
+      - path: /*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-frontend-service
+            port:
+              number: 80
+  - host: www.013a.tech
+    http:
+      paths:
+      - path: /api/*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-backend-service
+            port:
+              number: 8000
+      - path: /*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-frontend-service
+            port:
+              number: 80
+
+---
+# ==============================================
+# MONITORING AND OBSERVABILITY
+# ==============================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+  namespace: aia-production-secure
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 15s
+      evaluation_interval: 15s
+
+    rule_files:
+    - "/etc/prometheus/rules/*.yml"
+
+    alerting:
+      alertmanagers:
+      - static_configs:
+        - targets:
+          - alertmanager:9093
+
+    scrape_configs:
+    - job_name: 'aia-backend'
+      static_configs:
+      - targets: ['aia-backend-service:8000']
+      metrics_path: /metrics
+      scrape_interval: 30s
+
+    - job_name: 'aia-postgres'
+      static_configs:
+      - targets: ['aia-postgres-service:5432']
+      metrics_path: /metrics
+      scrape_interval: 30s
+
+    - job_name: 'kubernetes-pods'
+      kubernetes_sd_configs:
+      - role: pod
+        namespaces:
+          names:
+          - aia-production-secure
+      relabel_configs:
+      - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+        action: keep
+        regex: true
+
+---
+# ==============================================
+# NETWORK POLICIES - ENHANCED SECURITY
+# ==============================================
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: aia-production-network-policy
+  namespace: aia-production-secure
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: aia-production-secure
+    - namespaceSelector:
+        matchLabels:
+          name: kube-system
+  egress:
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: aia-production-secure
+    - namespaceSelector:
+        matchLabels:
+          name: kube-system
+  - to: []
+    ports:
+    - protocol: TCP
+      port: 443
+    - protocol: TCP
+      port: 53
+    - protocol: UDP
+      port: 53
+
+---
+# ==============================================
+# RESOURCE QUOTAS
+# ==============================================
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: aia-production-quota
+  namespace: aia-production-secure
+spec:
+  hard:
+    requests.cpu: "10"
+    requests.memory: "128Mi"
+    limits.cpu: "20"
+    limits.memory: "128Mi"
+    persistentvolumeclaims: "10"
+    pods: "50"
+    services: "20"
+
+---
+# ==============================================
+# POD DISRUPTION BUDGETS
+# ==============================================
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: aia-backend-pdb
+  namespace: aia-production-secure
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: aia-backend
+      version: production
+
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: aia-frontend-pdb
+  namespace: aia-production-secure
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: aia-frontend
+      version: production

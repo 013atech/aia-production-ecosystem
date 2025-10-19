@@ -1,0 +1,549 @@
+# AIA DISASTER RECOVERY AND BACKUP CONFIGURATION
+# ===============================================
+# Created by: Production Readiness Assessment Team
+# Date: October 3, 2025
+# Version: v1.0-disaster-recovery
+# Purpose: Ensure 99.9% uptime and rapid recovery capabilities
+
+---
+# ==============================================
+# BACKUP STORAGE CONFIGURATION
+# ==============================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backup-config
+  namespace: aia-production-secure
+data:
+  backup_retention_days: "30"
+  backup_schedule: "0 2 * * *"  # Daily at 2 AM
+  backup_bucket: "aia-production-backups"
+  disaster_recovery_region: "us-east1"
+
+---
+# ==============================================
+# DATABASE BACKUP CRONJOB
+# ==============================================
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: postgres-backup
+  namespace: aia-production-secure
+spec:
+  schedule: "0 2 * * *"  # Daily at 2 AM
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          serviceAccountName: aia-production-service-account
+          containers:
+          - name: postgres-backup
+            image: postgres:16-alpine
+            command:
+            - /bin/bash
+            - -c
+            - |
+              set -e
+              BACKUP_DATE=$(date +%Y%m%d_%H%M%S)
+              BACKUP_FILE="aia_production_${BACKUP_DATE}.sql"
+
+              echo "Starting backup at $(date)"
+              pg_dump -h aia-postgres-service -U aia_user -d aia_production > /tmp/${BACKUP_FILE}
+
+              echo "Compressing backup..."
+              gzip /tmp/${BACKUP_FILE}
+
+              echo "Uploading to GCS..."
+              gsutil cp /tmp/${BACKUP_FILE}.gz gs://aia-production-backups/postgres/${BACKUP_FILE}.gz
+
+              echo "Backup completed successfully at $(date)"
+
+              # Cleanup backups older than 30 days
+              gsutil -m rm gs://aia-production-backups/postgres/aia_production_$(date -d '30 days ago' +%Y%m%d)*.gz || true
+            env:
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: aia-production-secrets
+                  key: postgres-password
+            - name: GOOGLE_APPLICATION_CREDENTIALS
+              value: /var/secrets/google/key.json
+            volumeMounts:
+            - name: gcp-key
+              mountPath: /var/secrets/google
+              readOnly: true
+          volumes:
+          - name: gcp-key
+            secret:
+              secretName: aia-gcp-service-account-key
+          restartPolicy: OnFailure
+
+---
+# ==============================================
+# REDIS BACKUP CRONJOB
+# ==============================================
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: redis-backup
+  namespace: aia-production-secure
+spec:
+  schedule: "30 2 * * *"  # Daily at 2:30 AM
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          serviceAccountName: aia-production-service-account
+          containers:
+          - name: redis-backup
+            image: redis:7-alpine
+            command:
+            - /bin/bash
+            - -c
+            - |
+              set -e
+              BACKUP_DATE=$(date +%Y%m%d_%H%M%S)
+              BACKUP_FILE="aia_redis_${BACKUP_DATE}.rdb"
+
+              echo "Starting Redis backup at $(date)"
+              redis-cli -h aia-redis-service -a $REDIS_PASSWORD --rdb /tmp/${BACKUP_FILE}
+
+              echo "Compressing backup..."
+              gzip /tmp/${BACKUP_FILE}
+
+              echo "Uploading to GCS..."
+              gsutil cp /tmp/${BACKUP_FILE}.gz gs://aia-production-backups/redis/${BACKUP_FILE}.gz
+
+              echo "Redis backup completed successfully at $(date)"
+
+              # Cleanup backups older than 30 days
+              gsutil -m rm gs://aia-production-backups/redis/aia_redis_$(date -d '30 days ago' +%Y%m%d)*.gz || true
+            env:
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: aia-production-secrets
+                  key: redis-password
+          restartPolicy: OnFailure
+
+---
+# ==============================================
+# MULTI-REGION FAILOVER CONFIGURATION
+# ==============================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: failover-config
+  namespace: aia-production-secure
+data:
+  primary_region: "us-central1"
+  failover_region: "us-east1"
+  failover_threshold_seconds: "300"  # 5 minutes
+  automatic_failover: "true"
+
+---
+# ==============================================
+# HEALTH CHECK AND MONITORING DEPLOYMENT
+# ==============================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-health-monitor
+  namespace: aia-production-secure
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: aia-health-monitor
+  template:
+    metadata:
+      labels:
+        app: aia-health-monitor
+    spec:
+      serviceAccountName: aia-production-service-account
+      containers:
+      - name: health-monitor
+        image: us-central1-docker.pkg.dev/aia-system-prod-1759055445/aia-production/health-monitor:latest
+        ports:
+        - containerPort: 9090
+        env:
+        - name: CHECK_INTERVAL
+          value: "30"
+        - name: ALERT_WEBHOOK_URL
+          valueFrom:
+            secretKeyRef:
+              name: aia-production-secrets
+              key: alert-webhook-url
+        command: ["python"]
+        args: ["-c", "
+import time
+import requests
+import json
+import os
+from datetime import datetime
+
+def health_check():
+    services = {
+        'backend': 'http://aia-backend-service:8000/health',
+        'postgres': 'http://aia-postgres-service:5432',
+        'redis': 'http://aia-redis-service:6379'
+    }
+
+    results = {}
+    overall_healthy = True
+
+    for service, url in services.items():
+        try:
+            if service == 'backend':
+                response = requests.get(url, timeout=10)
+                results[service] = {
+                    'status': 'healthy' if response.status_code == 200 else 'unhealthy',
+                    'response_time': response.elapsed.total_seconds(),
+                    'status_code': response.status_code
+                }
+            else:
+                # Simple connectivity check for database services
+                import socket
+                host, port = url.replace('http://', '').split(':')
+                sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                sock.settimeout(5)
+                result = sock.connect_ex((host, int(port)))
+                sock.close()
+                results[service] = {
+                    'status': 'healthy' if result == 0 else 'unhealthy',
+                    'connectivity': result == 0
+                }
+
+            if results[service]['status'] != 'healthy':
+                overall_healthy = False
+
+        except Exception as e:
+            results[service] = {
+                'status': 'unhealthy',
+                'error': str(e)
+            }
+            overall_healthy = False
+
+    return {
+        'overall_status': 'healthy' if overall_healthy else 'unhealthy',
+        'timestamp': datetime.utcnow().isoformat(),
+        'services': results
+    }
+
+def send_alert(health_status):
+    if health_status['overall_status'] != 'healthy':
+        webhook_url = os.getenv('ALERT_WEBHOOK_URL')
+        if webhook_url:
+            alert_data = {
+                'text': f'🚨 AIA System Health Alert - System Unhealthy at {health_status[\"timestamp\"]}',
+                'details': health_status
+            }
+            try:
+                requests.post(webhook_url, json=alert_data, timeout=10)
+            except Exception as e:
+                print(f'Failed to send alert: {e}')
+
+def main():
+    print('🏥 AIA Health Monitor starting...')
+    check_interval = int(os.getenv('CHECK_INTERVAL', '30'))
+
+    while True:
+        try:
+            health_status = health_check()
+            print(f'{datetime.utcnow().isoformat()} - Overall Status: {health_status[\"overall_status\"]}')
+
+            # Send alerts if unhealthy
+            send_alert(health_status)
+
+            # Sleep for check interval
+            time.sleep(check_interval)
+
+        except Exception as e:
+            print(f'Health check error: {e}')
+            time.sleep(check_interval)
+
+if __name__ == '__main__':
+    main()
+        "]
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+
+---
+# ==============================================
+# ALERTING RULES FOR PROMETHEUS
+# ==============================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-alert-rules
+  namespace: aia-production-secure
+data:
+  alerts.yml: |
+    groups:
+    - name: aia.rules
+      rules:
+      - alert: AIAServiceDown
+        expr: up{job=~"aia-.*"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "AIA service {{ $labels.instance }} is down"
+          description: "AIA service {{ $labels.instance }} has been down for more than 1 minute."
+
+      - alert: AIAHighErrorRate
+        expr: rate(http_requests_total{status=~"5.."}[5m]) > 0.01
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High error rate detected"
+          description: "Error rate is {{ $value }} errors per second for the last 5 minutes."
+
+      - alert: AIAHighResponseTime
+        expr: http_request_duration_seconds{quantile="0.95"} > 1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High response time detected"
+          description: "95th percentile response time is {{ $value }}s for the last 5 minutes."
+
+      - alert: AIADatabaseConnectionFailure
+        expr: pg_up == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "PostgreSQL database is down"
+          description: "PostgreSQL database has been unreachable for more than 2 minutes."
+
+      - alert: AIARedisConnectionFailure
+        expr: redis_up == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Redis is down"
+          description: "Redis has been unreachable for more than 2 minutes."
+
+      - alert: AIAHighMemoryUsage
+        expr: (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) * 100 < 10
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage detected"
+          description: "Memory usage is above 90% for more than 5 minutes."
+
+      - alert: AIAHighCPUUsage
+        expr: 100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU usage detected"
+          description: "CPU usage is above 80% for more than 5 minutes."
+
+      - alert: AIADiskSpaceLow
+        expr: (node_filesystem_avail_bytes / node_filesystem_size_bytes) * 100 < 10
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Disk space is running low"
+          description: "Disk space is below 10% for more than 5 minutes."
+
+---
+# ==============================================
+# DISASTER RECOVERY SCRIPTS
+# ==============================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: disaster-recovery-scripts
+  namespace: aia-production-secure
+data:
+  restore_postgres.sh: |
+    #!/bin/bash
+    set -e
+
+    BACKUP_FILE=$1
+    if [ -z "$BACKUP_FILE" ]; then
+      echo "Usage: $0 <backup_file>"
+      exit 1
+    fi
+
+    echo "Downloading backup from GCS..."
+    gsutil cp gs://aia-production-backups/postgres/${BACKUP_FILE} /tmp/
+
+    echo "Decompressing backup..."
+    gunzip /tmp/${BACKUP_FILE}
+
+    BACKUP_SQL=${BACKUP_FILE%.gz}
+
+    echo "Restoring database..."
+    psql -h aia-postgres-service -U aia_user -d aia_production < /tmp/${BACKUP_SQL}
+
+    echo "Database restore completed successfully"
+    rm /tmp/${BACKUP_SQL}
+
+  restore_redis.sh: |
+    #!/bin/bash
+    set -e
+
+    BACKUP_FILE=$1
+    if [ -z "$BACKUP_FILE" ]; then
+      echo "Usage: $0 <backup_file>"
+      exit 1
+    fi
+
+    echo "Downloading Redis backup from GCS..."
+    gsutil cp gs://aia-production-backups/redis/${BACKUP_FILE} /tmp/
+
+    echo "Decompressing backup..."
+    gunzip /tmp/${BACKUP_FILE}
+
+    BACKUP_RDB=${BACKUP_FILE%.gz}
+
+    echo "Stopping Redis service temporarily..."
+    kubectl scale deployment aia-redis-production --replicas=0 -n aia-production-secure
+
+    echo "Copying backup to Redis data directory..."
+    kubectl cp /tmp/${BACKUP_RDB} aia-redis-production-0:/data/dump.rdb -n aia-production-secure
+
+    echo "Restarting Redis service..."
+    kubectl scale deployment aia-redis-production --replicas=1 -n aia-production-secure
+
+    echo "Redis restore completed successfully"
+    rm /tmp/${BACKUP_RDB}
+
+  failover_to_secondary.sh: |
+    #!/bin/bash
+    set -e
+
+    echo "Initiating failover to secondary region..."
+
+    # Update DNS to point to secondary region
+    gcloud dns record-sets transaction start --zone=aia-production-zone
+    gcloud dns record-sets transaction remove --zone=aia-production-zone --name=013a.tech. --type=A --ttl=300 --rdata=$(kubectl get ingress aia-production-ingress -o jsonpath='{.status.loadBalancer.ingress[0].ip}' -n aia-production-secure)
+    gcloud dns record-sets transaction add --zone=aia-production-zone --name=013a.tech. --type=A --ttl=300 --rdata=${SECONDARY_REGION_IP}
+    gcloud dns record-sets transaction execute --zone=aia-production-zone
+
+    echo "DNS updated to point to secondary region"
+    echo "Failover completed. Monitor system health."
+
+  rollback_from_secondary.sh: |
+    #!/bin/bash
+    set -e
+
+    echo "Initiating rollback from secondary region..."
+
+    # Update DNS back to primary region
+    gcloud dns record-sets transaction start --zone=aia-production-zone
+    gcloud dns record-sets transaction remove --zone=aia-production-zone --name=013a.tech. --type=A --ttl=300 --rdata=${SECONDARY_REGION_IP}
+    gcloud dns record-sets transaction add --zone=aia-production-zone --name=013a.tech. --type=A --ttl=300 --rdata=$(kubectl get ingress aia-production-ingress -o jsonpath='{.status.loadBalancer.ingress[0].ip}' -n aia-production-secure)
+    gcloud dns record-sets transaction execute --zone=aia-production-zone
+
+    echo "DNS updated back to primary region"
+    echo "Rollback completed. Monitor system health."
+
+---
+# ==============================================
+# CHAOS ENGINEERING FOR RESILIENCE TESTING
+# ==============================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: chaos-engineering-tests
+  namespace: aia-production-secure
+data:
+  chaos_test_pod_failure.sh: |
+    #!/bin/bash
+    # Test system resilience by randomly terminating pods
+
+    echo "Starting chaos engineering test: Random pod failure"
+
+    PODS=$(kubectl get pods -n aia-production-secure -o jsonpath='{.items[*].metadata.name}')
+    POD_ARRAY=($PODS)
+    RANDOM_POD=${POD_ARRAY[$RANDOM % ${#POD_ARRAY[@]}]}
+
+    echo "Terminating pod: $RANDOM_POD"
+    kubectl delete pod $RANDOM_POD -n aia-production-secure
+
+    echo "Waiting for pod replacement..."
+    sleep 30
+
+    echo "Checking system health after pod termination..."
+    kubectl get pods -n aia-production-secure
+
+  chaos_test_network_partition.sh: |
+    #!/bin/bash
+    # Test network partition scenarios
+
+    echo "Starting chaos engineering test: Network partition"
+
+    # Apply restrictive network policy temporarily
+    kubectl apply -f - <<EOF
+    apiVersion: networking.k8s.io/v1
+    kind: NetworkPolicy
+    metadata:
+      name: chaos-network-partition
+      namespace: aia-production-secure
+    spec:
+      podSelector:
+        matchLabels:
+          app: aia-backend
+      policyTypes:
+      - Ingress
+      - Egress
+      ingress: []
+      egress: []
+    EOF
+
+    echo "Network partition applied. Waiting 60 seconds..."
+    sleep 60
+
+    echo "Removing network partition..."
+    kubectl delete networkpolicy chaos-network-partition -n aia-production-secure
+
+    echo "Network partition test completed"
+
+---
+# ==============================================
+# SERVICE LEVEL OBJECTIVES (SLO) CONFIGURATION
+# ==============================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: slo-config
+  namespace: aia-production-secure
+data:
+  slo_definitions.json: |
+    {
+      "availability_slo": {
+        "target": 99.9,
+        "measurement_window": "30d",
+        "error_budget": 43.2
+      },
+      "latency_slo": {
+        "target_p95": 200,
+        "target_p99": 500,
+        "measurement_window": "30d",
+        "unit": "milliseconds"
+      },
+      "error_rate_slo": {
+        "target": 0.1,
+        "measurement_window": "30d",
+        "unit": "percentage"
+      },
+      "throughput_slo": {
+        "target_min": 1000,
+        "unit": "requests_per_minute"
+      }
+    }

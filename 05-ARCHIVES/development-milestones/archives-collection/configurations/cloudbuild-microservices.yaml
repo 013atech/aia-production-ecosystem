@@ -1,0 +1,40 @@
+steps:
+# Build Payment Processor
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['build', '-t', 'gcr.io/aia-system-prod-1759055445/aia-payment-processor', '-f', 'Dockerfile.payment-processor', '.']
+  timeout: '1200s'
+
+# Build Security Service
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['build', '-t', 'gcr.io/aia-system-prod-1759055445/aia-security-service', '-f', 'aia/security/Dockerfile', '.']
+  timeout: '1200s'
+
+# Build Subscription Manager
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['build', '-t', 'gcr.io/aia-system-prod-1759055445/aia-subscription-manager', '-f', 'aia/subscription/Dockerfile', '.']
+  timeout: '1200s'
+
+# Build Performance Monitor
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['build', '-t', 'gcr.io/aia-system-prod-1759055445/aia-performance-monitor', '-f', 'Dockerfile.performance-monitor', '.']
+  timeout: '1200s'
+
+# Build Enterprise Partners (alternative)
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['build', '-t', 'gcr.io/aia-system-prod-1759055445/aia-enterprise-partners-v2', '-f', 'Dockerfile.enterprise-partners', '.']
+  timeout: '1200s'
+
+images:
+- 'gcr.io/aia-system-prod-1759055445/aia-payment-processor'
+- 'gcr.io/aia-system-prod-1759055445/aia-security-service'
+- 'gcr.io/aia-system-prod-1759055445/aia-subscription-manager'
+- 'gcr.io/aia-system-prod-1759055445/aia-performance-monitor'
+- 'gcr.io/aia-system-prod-1759055445/aia-enterprise-partners-v2'
+
+options:
+  machineType: 'E2_HIGHCPU_8'
+  diskSizeGb: 100
+  substitutionOption: 'ALLOW_LOOSE'
+  logging: CLOUD_LOGGING_ONLY
+
+timeout: '3600s'

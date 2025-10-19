@@ -1,0 +1,135 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: aia-backend-traffic-split
+  namespace: aia-production
+  annotations:
+    kubernetes.io/ingress.class: "gce"
+    nginx.ingress.kubernetes.io/canary: "true"
+    nginx.ingress.kubernetes.io/canary-weight: "10"
+    nginx.ingress.kubernetes.io/canary-header: "X-Canary"
+    nginx.ingress.kubernetes.io/canary-header-value: "optimized"
+spec:
+  rules:
+  - host: api.013a.tech
+    http:
+      paths:
+      # 90% Traffic to Legacy Backend (Stable)
+      - path: /api/v1/*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-backend-service
+            port:
+              number: 8000
+
+      # 10% Traffic to Optimized Backend (Canary)
+      - path: /api/v2/*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-backend-optimized-service
+            port:
+              number: 8000
+
+  - host: analytics.013a.tech
+    http:
+      paths:
+      # Analytics traffic routing
+      - path: /*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-backend-optimized-service
+            port:
+              number: 8000
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-backend-canary-service
+  namespace: aia-production
+  labels:
+    app: aia-backend-canary
+    version: optimized
+spec:
+  selector:
+    app: aia-backend-optimized
+  ports:
+  - name: http
+    port: 8000
+    targetPort: 8000
+    protocol: TCP
+  type: ClusterIP
+
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: aia-backend-traffic-split
+  namespace: aia-production
+spec:
+  hosts:
+  - api.013a.tech
+  - analytics.013a.tech
+  http:
+  - match:
+    - headers:
+        X-Canary:
+          exact: "optimized"
+    route:
+    - destination:
+        host: aia-backend-optimized-service
+        port:
+          number: 8000
+      weight: 100
+  - route:
+    - destination:
+        host: aia-backend-service
+        port:
+          number: 8000
+      weight: 90
+    - destination:
+        host: aia-backend-optimized-service
+        port:
+          number: 8000
+      weight: 10
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: performance-monitoring-config
+  namespace: aia-production
+data:
+  monitoring.yaml: |
+    performance_baselines:
+      legacy_backend:
+        response_time_p95: "150ms"
+        cpu_usage: "281m"
+        memory_usage: "42Mi"
+        throughput: "baseline"
+      optimized_backend:
+        response_time_p95: "50ms"
+        cpu_usage: "3m"
+        memory_usage: "40Mi"
+        throughput: "2x_target"
+
+    migration_thresholds:
+      error_rate_max: "0.01%"
+      response_time_improvement: "50%"
+      resource_reduction: "30%"
+      availability_sla: "99.9%"
+
+    canary_rules:
+      initial_traffic: 10
+      increment_schedule:
+        week_1: 10
+        week_2: 25
+        week_3: 50
+        week_4: 90
+      rollback_conditions:
+        error_rate_spike: ">0.1%"
+        response_time_degradation: ">10%"
+        availability_drop: "<99%"

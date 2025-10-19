@@ -1,0 +1,38 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: aia-knowledge-graph-data
+  namespace: aia-production-v3
+data:
+  knowledge_graph_minimal.json: |
+    {
+      "metadata": {
+        "version": "v3.0",
+        "atom_count": 20362,
+        "last_updated": "2025-10-01T14:20:00Z",
+        "environment": "production"
+      },
+      "atoms": [
+        {
+          "id": "aia_core_system",
+          "type": "system",
+          "properties": {
+            "name": "AIA Core System",
+            "description": "Advanced Intelligence Architecture",
+            "status": "active"
+          }
+        }
+      ],
+      "relationships": [
+        {
+          "source": "aia_core_system",
+          "target": "knowledge_graph",
+          "type": "contains"
+        }
+      ],
+      "config": {
+        "cache_ttl": 3600,
+        "refresh_interval": 300,
+        "max_depth": 5
+      }
+    }

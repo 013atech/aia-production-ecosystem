@@ -1,0 +1,97 @@
+# TEMPORARILY DISABLED FOR QUOTA COMPLIANCE
+# This deployment has been temporarily disabled to meet GCP quota requirements
+# Original content below (commented out):
+#
+# steps:
+#   # Build AIA API Backend Image
+#   - name: 'gcr.io/cloud-builders/docker'
+#     args: ['build', '-t', 'gcr.io/$PROJECT_ID/aia-api:emergency-recovery', '-t', 'gcr.io/$PROJECT_ID/aia-api:latest', '-f', 'aia/Dockerfile', 'aia/']
+#     id: 'build-aia-api'
+# 
+#   # Build AIA Frontend Image
+#   - name: 'gcr.io/cloud-builders/docker'
+#     args: ['build', '-t', 'gcr.io/$PROJECT_ID/aia-frontend:emergency-recovery', '-t', 'gcr.io/$PROJECT_ID/aia-frontend:latest', '-f', 'frontend/Dockerfile', 'frontend/']
+#     id: 'build-aia-frontend'
+#     waitFor: ['build-aia-api']
+# 
+#   # Build Enterprise Partners Service
+#   - name: 'gcr.io/cloud-builders/docker'
+#     args: ['build', '-t', 'gcr.io/$PROJECT_ID/aia-enterprise-partners:latest', '-f', 'Dockerfile.enterprise-partners', '.']
+#     id: 'build-enterprise-partners'
+#     waitFor: ['build-aia-frontend']
+# 
+#   # Build Payment Processor Service
+#   - name: 'gcr.io/cloud-builders/docker'
+#     args: ['build', '-t', 'gcr.io/$PROJECT_ID/aia-payment-processor:latest', '-f', 'Dockerfile.payment-processor', '.']
+#     id: 'build-payment-processor'
+#     waitFor: ['build-enterprise-partners']
+# 
+#   # Build Revenue Intelligence Service
+#   - name: 'gcr.io/cloud-builders/docker'
+#     args: ['build', '-t', 'gcr.io/$PROJECT_ID/aia-revenue-intelligence:latest', '-f', 'Dockerfile.revenue-intelligence', '.']
+#     id: 'build-revenue-intelligence'
+#     waitFor: ['build-payment-processor']
+# 
+#   # Build WebSocket Service
+#   - name: 'gcr.io/cloud-builders/docker'
+#     args: ['build', '-t', 'gcr.io/$PROJECT_ID/aia-websocket:latest', '-f', 'Dockerfile.websocket', '.']
+#     id: 'build-websocket'
+#     waitFor: ['build-revenue-intelligence']
+# 
+#   # Push all images
+#   - name: 'gcr.io/cloud-builders/docker'
+#     args: ['push', 'gcr.io/$PROJECT_ID/aia-api:emergency-recovery']
+#     id: 'push-aia-api-emergency'
+#     waitFor: ['build-websocket']
+# 
+#   - name: 'gcr.io/cloud-builders/docker'
+#     args: ['push', 'gcr.io/$PROJECT_ID/aia-api:latest']
+#     id: 'push-aia-api-latest'
+#     waitFor: ['push-aia-api-emergency']
+# 
+#   - name: 'gcr.io/cloud-builders/docker'
+#     args: ['push', 'gcr.io/$PROJECT_ID/aia-frontend:emergency-recovery']
+#     id: 'push-aia-frontend-emergency'
+#     waitFor: ['push-aia-api-latest']
+# 
+#   - name: 'gcr.io/cloud-builders/docker'
+#     args: ['push', 'gcr.io/$PROJECT_ID/aia-frontend:latest']
+#     id: 'push-aia-frontend-latest'
+#     waitFor: ['push-aia-frontend-emergency']
+# 
+#   - name: 'gcr.io/cloud-builders/docker'
+#     args: ['push', 'gcr.io/$PROJECT_ID/aia-enterprise-partners:latest']
+#     id: 'push-enterprise-partners'
+#     waitFor: ['push-aia-frontend-latest']
+# 
+#   - name: 'gcr.io/cloud-builders/docker'
+#     args: ['push', 'gcr.io/$PROJECT_ID/aia-payment-processor:latest']
+#     id: 'push-payment-processor'
+#     waitFor: ['push-enterprise-partners']
+# 
+#   - name: 'gcr.io/cloud-builders/docker'
+#     args: ['push', 'gcr.io/$PROJECT_ID/aia-revenue-intelligence:latest']
+#     id: 'push-revenue-intelligence'
+#     waitFor: ['push-payment-processor']
+# 
+#   - name: 'gcr.io/cloud-builders/docker'
+#     args: ['push', 'gcr.io/$PROJECT_ID/aia-websocket:latest']
+#     id: 'push-websocket'
+#     waitFor: ['push-revenue-intelligence']
+# 
+#   # Deploy to GKE
+#   - name: 'gcr.io/cloud-builders/gke-deploy'
+#     args:
+#     - run
+#     - --filename=production-deployment-emergency-recovery.yaml
+#     - --cluster=aia-production-optimal
+#     - --location=europe-west4
+#     - --timeout=900s
+#     id: 'deploy-to-gke'
+#     waitFor: ['push-websocket']
+# 
+# options:
+#   logging: CLOUD_LOGGING_ONLY
+#   machineType: 'N1_HIGHCPU_8'
+# 
+# timeout: 3600s

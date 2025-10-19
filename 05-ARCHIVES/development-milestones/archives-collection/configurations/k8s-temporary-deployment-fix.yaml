@@ -1,0 +1,102 @@
+# Temporary deployment fix using base images until our containers are built
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-frontend
+  namespace: aia-production
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: aia-frontend
+  template:
+    metadata:
+      labels:
+        app: aia-frontend
+        tier: frontend
+    spec:
+      containers:
+      - name: frontend
+        image: nginx:1.25-alpine
+        ports:
+        - containerPort: 80
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 10
+          periodSeconds: 5
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 30
+          periodSeconds: 10
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-backend
+  namespace: aia-production
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: aia-backend
+  template:
+    metadata:
+      labels:
+        app: aia-backend
+        tier: backend
+    spec:
+      containers:
+      - name: backend
+        image: python:3.12-slim
+        ports:
+        - containerPort: 8000
+        command: ["/bin/bash", "-c"]
+        args:
+        - |
+          pip install fastapi uvicorn[standard] &&
+          echo 'from fastapi import FastAPI; app = FastAPI(); @app.get("/health"); def health(): return {"status": "ok", "service": "aia-backend"}; @app.get("/"); def root(): return {"message": "AIA Backend Service", "status": "running"}' > /app/main.py &&
+          uvicorn main:app --host 0.0.0.0 --port 8000
+        env:
+        - name: DATABASE_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: aia-config
+              key: DATABASE_HOST
+        - name: REDIS_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: aia-config
+              key: REDIS_HOST
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 5
+          timeoutSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 60
+          periodSeconds: 10
+          timeoutSeconds: 10

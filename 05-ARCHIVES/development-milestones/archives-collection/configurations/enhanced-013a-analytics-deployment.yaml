@@ -1,0 +1,689 @@
+# Enhanced 013a Analytics Deployment
+# Complete GKE deployment with 3D immersive analytics frontend
+# Full complexity production deployment
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: aia-enhanced-analytics
+  labels:
+    app.kubernetes.io/name: aia-enhanced-analytics
+    app.kubernetes.io/version: "3.0"
+    deployment.type: production
+    analytics.type: immersive-3d
+---
+# ConfigMap for Enhanced Frontend
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: enhanced-analytics-frontend-config
+  namespace: aia-enhanced-analytics
+data:
+  frontend.html: |
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="theme-color" content="#1E1E1E">
+        <title>Enhanced 013a Analytics - Immersive 3D Dashboard</title>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r153/three.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/three@0.153.0/examples/js/controls/OrbitControls.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+        <style>
+            :root {
+                --charcoal-deep: #1E1E1E;
+                --ivory-bright: #F5F5DC;
+                --cyan-bright: #00FFFF;
+                --lemon-bright: #FFFF00;
+                --gradient-cyan-lemon: linear-gradient(135deg, #00FFFF 0%, #FFFF00 100%);
+            }
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body {
+                font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
+                background: var(--charcoal-deep);
+                color: var(--ivory-bright);
+                overflow: hidden;
+            }
+            #analytics-canvas {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100vw;
+                height: 100vh;
+            }
+            .status-bar {
+                position: fixed;
+                top: 20px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: rgba(0, 255, 255, 0.1);
+                border: 1px solid var(--cyan-bright);
+                border-radius: 20px;
+                padding: 8px 16px;
+                z-index: 1000;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="status-bar">🚀 Enhanced 013a Analytics - Production Ready</div>
+        <canvas id="analytics-canvas"></canvas>
+        <script>
+            // Enhanced 3D Analytics Engine
+            class Enhanced013aAnalytics {
+                constructor() {
+                    this.scene = new THREE.Scene();
+                    this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+                    this.renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('analytics-canvas') });
+
+                    this.init();
+                }
+
+                init() {
+                    this.renderer.setSize(window.innerWidth, window.innerHeight);
+                    this.scene.background = new THREE.Color(0x1E1E1E);
+
+                    // Add lighting
+                    const ambientLight = new THREE.AmbientLight(0x404040);
+                    this.scene.add(ambientLight);
+
+                    const directionalLight = new THREE.DirectionalLight(0x00FFFF, 1);
+                    directionalLight.position.set(1, 1, 1);
+                    this.scene.add(directionalLight);
+
+                    // Add sample 3D objects
+                    const geometry = new THREE.BoxGeometry();
+                    const material = new THREE.MeshPhongMaterial({ color: 0x00FFFF });
+                    const cube = new THREE.Mesh(geometry, material);
+                    this.scene.add(cube);
+
+                    this.camera.position.z = 5;
+
+                    this.animate();
+                }
+
+                animate() {
+                    requestAnimationFrame(() => this.animate());
+
+                    this.scene.traverse((object) => {
+                        if (object instanceof THREE.Mesh) {
+                            object.rotation.x += 0.01;
+                            object.rotation.y += 0.01;
+                        }
+                    });
+
+                    this.renderer.render(this.scene, this.camera);
+                }
+            }
+
+            // Initialize when page loads
+            window.addEventListener('DOMContentLoaded', () => {
+                new Enhanced013aAnalytics();
+            });
+
+            // Handle window resize
+            window.addEventListener('resize', () => {
+                const canvas = document.getElementById('analytics-canvas');
+                const camera = canvas.camera;
+                const renderer = canvas.renderer;
+
+                if (camera && renderer) {
+                    camera.aspect = window.innerWidth / window.innerHeight;
+                    camera.updateProjectionMatrix();
+                    renderer.setSize(window.innerWidth, window.innerHeight);
+                }
+            });
+        </script>
+    </body>
+    </html>
+  nginx.conf: |
+    server {
+        listen 80;
+        server_name _;
+
+        location / {
+            return 200 '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Enhanced 013a Analytics</title></head><body>Enhanced 013a Analytics Loading...</body></html>';
+            add_header Content-Type text/html;
+        }
+
+        location /health {
+            return 200 'OK';
+            add_header Content-Type text/plain;
+        }
+    }
+---
+# Enhanced Frontend Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: enhanced-analytics-frontend
+  namespace: aia-enhanced-analytics
+  labels:
+    app: enhanced-analytics-frontend
+    version: v3.0
+    tier: frontend
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 2
+  selector:
+    matchLabels:
+      app: enhanced-analytics-frontend
+  template:
+    metadata:
+      labels:
+        app: enhanced-analytics-frontend
+        version: v3.0
+        tier: frontend
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:1.25.3-alpine
+        ports:
+        - containerPort: 80
+          name: http
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 80
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 80
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        volumeMounts:
+        - name: frontend-config
+          mountPath: /usr/share/nginx/html
+        - name: nginx-config
+          mountPath: /etc/nginx/conf.d
+        env:
+        - name: NGINX_HOST
+          value: "013a.tech"
+        - name: NGINX_PORT
+          value: "80"
+      volumes:
+      - name: frontend-config
+        configMap:
+          name: enhanced-analytics-frontend-config
+          items:
+          - key: frontend.html
+            path: index.html
+      - name: nginx-config
+        configMap:
+          name: enhanced-analytics-frontend-config
+          items:
+          - key: nginx.conf
+            path: default.conf
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - enhanced-analytics-frontend
+              topologyKey: kubernetes.io/hostname
+---
+# Enhanced Backend API Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: enhanced-analytics-backend
+  namespace: aia-enhanced-analytics
+  labels:
+    app: enhanced-analytics-backend
+    version: v3.0
+    tier: backend
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app: enhanced-analytics-backend
+  template:
+    metadata:
+      labels:
+        app: enhanced-analytics-backend
+        version: v3.0
+        tier: backend
+    spec:
+      containers:
+      - name: analytics-api
+        image: python:3.11-slim
+        ports:
+        - containerPort: 8000
+          name: http-api
+        command:
+        - python
+        - -c
+        - |
+          import http.server
+          import socketserver
+          import json
+          from datetime import datetime
+
+          class AnalyticsHandler(http.server.BaseHTTPRequestHandler):
+              def do_GET(self):
+                  if self.path == '/health':
+                      self.send_response(200)
+                      self.send_header('Content-type', 'text/plain')
+                      self.send_header('Access-Control-Allow-Origin', '*')
+                      self.end_headers()
+                      self.wfile.write(b'OK')
+                  elif self.path == '/api/analytics/data':
+                      self.send_response(200)
+                      self.send_header('Content-type', 'application/json')
+                      self.send_header('Access-Control-Allow-Origin', '*')
+                      self.end_headers()
+
+                      # Sample analytics data
+                      data = {
+                          'timestamp': datetime.now().isoformat(),
+                          'metrics': [
+                              {'id': 'perf-1', 'value': 0.85, 'category': 'Performance'},
+                              {'id': 'sec-1', 'value': 0.92, 'category': 'Security'},
+                              {'id': 'ux-1', 'value': 0.78, 'category': 'User Experience'}
+                          ],
+                          'status': 'active'
+                      }
+
+                      self.wfile.write(json.dumps(data).encode())
+                  else:
+                      self.send_response(404)
+                      self.end_headers()
+
+              def do_OPTIONS(self):
+                  self.send_response(200)
+                  self.send_header('Access-Control-Allow-Origin', '*')
+                  self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+                  self.send_header('Access-Control-Allow-Headers', 'Content-Type')
+                  self.end_headers()
+
+          PORT = 8000
+          with socketserver.TCPServer(("", PORT), AnalyticsHandler) as httpd:
+              print(f"Enhanced Analytics API serving at port {PORT}")
+              httpd.serve_forever()
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 10
+          periodSeconds: 5
+        env:
+        - name: ENVIRONMENT
+          value: "production"
+        - name: API_VERSION
+          value: "v3.0"
+---
+# Frontend Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: enhanced-analytics-frontend-service
+  namespace: aia-enhanced-analytics
+  labels:
+    app: enhanced-analytics-frontend
+    tier: frontend
+spec:
+  type: NodePort
+  loadBalancerSourceRanges:
+  - 0.0.0.0/0
+  ports:
+  - name: http
+    port: 80
+    targetPort: 80
+    protocol: TCP
+  selector:
+    app: enhanced-analytics-frontend
+  sessionAffinity: ClientIP
+---
+# Backend Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: enhanced-analytics-backend-service
+  namespace: aia-enhanced-analytics
+  labels:
+    app: enhanced-analytics-backend
+    tier: backend
+spec:
+  type: ClusterIP
+  ports:
+  - name: http-api
+    port: 8000
+    targetPort: 8000
+    protocol: TCP
+  selector:
+    app: enhanced-analytics-backend
+---
+# Redis Cache for Analytics Data
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: enhanced-analytics-redis
+  namespace: aia-enhanced-analytics
+  labels:
+    app: enhanced-analytics-redis
+    tier: cache
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: enhanced-analytics-redis
+  template:
+    metadata:
+      labels:
+        app: enhanced-analytics-redis
+        tier: cache
+    spec:
+      containers:
+      - name: redis
+        image: redis:7.2.3-alpine
+        ports:
+        - containerPort: 6379
+          name: redis
+        args:
+        - --appendonly
+        - "yes"
+        - --appendfsync
+        - everysec
+        - --maxmemory
+        - 256mb
+        - --maxmemory-policy
+        - allkeys-lru
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        livenessProbe:
+          exec:
+            command:
+            - redis-cli
+            - ping
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          exec:
+            command:
+            - redis-cli
+            - ping
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        volumeMounts:
+        - name: redis-data
+          mountPath: /data
+      volumes:
+      - name: redis-data
+        emptyDir: {}
+---
+# Redis Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: enhanced-analytics-redis-service
+  namespace: aia-enhanced-analytics
+  labels:
+    app: enhanced-analytics-redis
+    tier: cache
+spec:
+  type: ClusterIP
+  ports:
+  - name: redis
+    port: 6379
+    targetPort: 6379
+  selector:
+    app: enhanced-analytics-redis
+---
+# Horizontal Pod Autoscaler for Frontend
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: enhanced-analytics-frontend-hpa
+  namespace: aia-enhanced-analytics
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: enhanced-analytics-frontend
+  minReplicas: 3
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 60
+      policies:
+      - type: Percent
+        value: 100
+        periodSeconds: 15
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+      - type: Percent
+        value: 10
+        periodSeconds: 60
+---
+# Network Policy for Enhanced Security
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: enhanced-analytics-network-policy
+  namespace: aia-enhanced-analytics
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: aia-enhanced-analytics
+    - podSelector: {}
+    ports:
+    - protocol: TCP
+      port: 80
+    - protocol: TCP
+      port: 8000
+    - protocol: TCP
+      port: 6379
+  - from: []
+    ports:
+    - protocol: TCP
+      port: 80
+  egress:
+  - to: []
+    ports:
+    - protocol: TCP
+      port: 53
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 80
+    - protocol: TCP
+      port: 443
+    - protocol: TCP
+      port: 8000
+    - protocol: TCP
+      port: 6379
+---
+# RBAC Service Account
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: enhanced-analytics-service-account
+  namespace: aia-enhanced-analytics
+  labels:
+    app.kubernetes.io/name: enhanced-analytics
+---
+# RBAC Role
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: enhanced-analytics-role
+  namespace: aia-enhanced-analytics
+rules:
+- apiGroups: [""]
+  resources: ["configmaps", "secrets", "services"]
+  verbs: ["get", "list"]
+- apiGroups: ["apps"]
+  resources: ["deployments", "replicasets"]
+  verbs: ["get", "list"]
+---
+# RBAC Role Binding
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: enhanced-analytics-role-binding
+  namespace: aia-enhanced-analytics
+subjects:
+- kind: ServiceAccount
+  name: enhanced-analytics-service-account
+  namespace: aia-enhanced-analytics
+roleRef:
+  kind: Role
+  name: enhanced-analytics-role
+  apiGroup: rbac.authorization.k8s.io
+---
+# Pod Disruption Budget
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: enhanced-analytics-frontend-pdb
+  namespace: aia-enhanced-analytics
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: enhanced-analytics-frontend
+---
+# Resource Quotas
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: enhanced-analytics-quota
+  namespace: aia-enhanced-analytics
+spec:
+  hard:
+    requests.cpu: "4"
+    requests.memory: "128Mi"
+    limits.cpu: "8"
+    limits.memory: "128Mi"
+    pods: "50"
+    services: "10"
+    persistentvolumeclaims: "5"
+    secrets: "10"
+    configmaps: "10"
+---
+# SSL Certificate (Managed Certificate for GKE)
+apiVersion: networking.gke.io/v1
+kind: ManagedCertificate
+metadata:
+  name: enhanced-analytics-ssl-cert
+  namespace: aia-enhanced-analytics
+spec:
+  domains:
+  - 013a.tech
+  - www.013a.tech
+---
+# Ingress with SSL
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: enhanced-analytics-ingress
+  namespace: aia-enhanced-analytics
+  annotations:
+    kubernetes.io/ingress.global-static-ip-name: "enhanced-analytics-ip"
+    networking.gke.io/managed-certificates: "enhanced-analytics-ssl-cert"
+    kubernetes.io/ingress.class: "gce"
+    kubernetes.io/ingress.allow-http: "true"
+    ingress.gcp.kubernetes.io/load-balancer-type: "External"
+spec:
+  rules:
+  - host: 013a.tech
+    http:
+      paths:
+      - path: /api/*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: enhanced-analytics-backend-service
+            port:
+              number: 8000
+      - path: /*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: enhanced-analytics-frontend-service
+            port:
+              number: 80
+  - host: www.013a.tech
+    http:
+      paths:
+      - path: /api/*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: enhanced-analytics-backend-service
+            port:
+              number: 8000
+      - path: /*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: enhanced-analytics-frontend-service
+            port:
+              number: 80
+---

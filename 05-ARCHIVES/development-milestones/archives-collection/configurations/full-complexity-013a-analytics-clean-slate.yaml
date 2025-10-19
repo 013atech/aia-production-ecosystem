@@ -1,0 +1,1021 @@
+# 🚀 FULL COMPLEXITY 013A ANALYTICS CLEAN SLATE DEPLOYMENT
+# GCP Deployment Orchestrator - Zero Simplification Approach
+# Date: October 3, 2025
+# Objective: Complete AIA deployment with all functionality intact
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: aia-013a-production
+  labels:
+    environment: production
+    deployment: full-complexity
+    security: enterprise-grade
+    version: clean-slate-v1
+---
+# 🧠 COMPREHENSIVE KNOWLEDGE GRAPH CONFIGMAP (9MB Knowledge Base)
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: aia-complete-knowledge-graph
+  namespace: aia-013a-production
+  labels:
+    component: knowledge-graph
+    complexity: full
+data:
+  knowledge_version: "v2.0"
+  total_atoms: "2472"
+  processing_stats: |
+    {
+      "files_processed": 2472,
+      "bytes_processed": 253123410,
+      "atoms_generated": 2472,
+      "knowledge_size_mb": "241.4",
+      "processing_time_optimized": true,
+      "dkg_encryption": "enabled",
+      "coordination_efficiency": 0.514,
+      "knowledge_clustering": 0.613,
+      "relationship_strength": 0.491,
+      "economic_health": 0.699,
+      "evolution_momentum": 2.353
+    }
+  knowledge_config: |
+    {
+      "real_time_processing": true,
+      "atomic_dkg_integration": true,
+      "quantum_security": true,
+      "enterprise_partnerships": {
+        "ey_global": "8.5M_partnership",
+        "jpmorgan": "12M_financial_ai",
+        "google_cloud": "3.5M_marketplace",
+        "apple_vision_pro": "1M_spatial_analytics"
+      }
+    }
+---
+# 🔐 ENTERPRISE SECURITY SECRETS
+apiVersion: v1
+kind: Secret
+metadata:
+  name: aia-enterprise-secrets
+  namespace: aia-013a-production
+type: Opaque
+stringData:
+  # Database Credentials
+  POSTGRES_URL: "postgresql://aia_user:quantum_secure_2025@aia-postgres:5432/aia_013a_production"
+  REDIS_URL: "redis://aia-redis:6379/0"
+
+  # Enterprise API Keys
+  EY_PARTNER_API_KEY: "ey_global_partnership_key_placeholder"
+  JPMORGAN_API_KEY: "jpmorgan_financial_ai_key_placeholder"
+  GOOGLE_CLOUD_API_KEY: "gcp_marketplace_api_key_placeholder"
+  APPLE_VISION_PRO_KEY: "apple_spatial_analytics_key_placeholder"
+
+  # Payment Processing
+  STRIPE_SECRET_KEY: "[STRIPE_KEY_PLACEHOLDER]"
+  STRIPE_PUBLISHABLE_KEY: "pk_live_placeholder_replace_with_production"
+
+  # Security Keys
+  JWT_SECRET: "quantum_enhanced_jwt_secret_2025_ultra_secure"
+  ENCRYPTION_KEY: "aes_256_quantum_resistant_encryption_key_2025"
+
+  # AI & ML Services
+  OPENAI_API_KEY: "placeholder_openai_key"
+  HF_TOKEN: "placeholder_huggingface_token"
+  XAI_API_KEY: "placeholder_xai_grok_key"
+---
+# 🗄️ POSTGRESQL PRODUCTION DATABASE
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-postgres-production
+  namespace: aia-013a-production
+  labels:
+    app: aia-postgres
+    tier: database
+    complexity: full
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: aia-postgres
+  template:
+    metadata:
+      labels:
+        app: aia-postgres
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:15-alpine
+        ports:
+        - containerPort: 5432
+        env:
+        - name: POSTGRES_DB
+          value: "aia_013a_production"
+        - name: POSTGRES_USER
+          value: "aia_user"
+        - name: POSTGRES_PASSWORD
+          value: "quantum_secure_2025"
+        - name: PGDATA
+          value: "/var/lib/postgresql/data/pgdata"
+        volumeMounts:
+        - name: postgres-storage
+          mountPath: /var/lib/postgresql/data
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+      volumes:
+      - name: postgres-storage
+        persistentVolumeClaim:
+          claimName: postgres-pvc
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-pvc
+  namespace: aia-013a-production
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 20Gi
+  storageClassName: standard-rwo
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-postgres
+  namespace: aia-013a-production
+spec:
+  selector:
+    app: aia-postgres
+  ports:
+  - port: 5432
+    targetPort: 5432
+  type: ClusterIP
+---
+# 🔄 REDIS CACHE & SESSION STORE
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-redis-production
+  namespace: aia-013a-production
+  labels:
+    app: aia-redis
+    tier: cache
+    complexity: full
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: aia-redis
+  template:
+    metadata:
+      labels:
+        app: aia-redis
+    spec:
+      containers:
+      - name: redis
+        image: redis:7-alpine
+        ports:
+        - containerPort: 6379
+        command:
+        - redis-server
+        - --appendonly
+        - "yes"
+        - --requirepass
+        - "redis_quantum_secure_2025"
+        volumeMounts:
+        - name: redis-storage
+          mountPath: /data
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+      volumes:
+      - name: redis-storage
+        persistentVolumeClaim:
+          claimName: redis-pvc
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: redis-pvc
+  namespace: aia-013a-production
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: standard-rwo
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-redis
+  namespace: aia-013a-production
+spec:
+  selector:
+    app: aia-redis
+  ports:
+  - port: 6379
+    targetPort: 6379
+  type: ClusterIP
+---
+# 🚀 COMPREHENSIVE BACKEND API SERVER
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-backend-comprehensive
+  namespace: aia-013a-production
+  labels:
+    app: aia-backend
+    tier: api
+    complexity: full
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: aia-backend
+  template:
+    metadata:
+      labels:
+        app: aia-backend
+    spec:
+      initContainers:
+      - name: wait-for-postgres
+        image: busybox:1.35
+        command: ['sh', '-c', 'until nc -z aia-postgres 5432; do echo waiting for postgres; sleep 2; done;']
+      - name: wait-for-redis
+        image: busybox:1.35
+        command: ['sh', '-c', 'until nc -z aia-redis 6379; do echo waiting for redis; sleep 2; done;']
+      containers:
+      - name: aia-backend
+        image: gcr.io/aia-system-prod-1759055445/aia-backend-comprehensive:latest
+        ports:
+        - containerPort: 8000
+          name: api
+        - containerPort: 8080
+          name: websocket
+        env:
+        - name: ENVIRONMENT
+          value: "production"
+        - name: POSTGRES_URL
+          valueFrom:
+            secretKeyRef:
+              name: aia-enterprise-secrets
+              key: POSTGRES_URL
+        - name: REDIS_URL
+          valueFrom:
+            secretKeyRef:
+              name: aia-enterprise-secrets
+              key: REDIS_URL
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: aia-enterprise-secrets
+              key: JWT_SECRET
+        - name: ENCRYPTION_KEY
+          valueFrom:
+            secretKeyRef:
+              name: aia-enterprise-secrets
+              key: ENCRYPTION_KEY
+        - name: STRIPE_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: aia-enterprise-secrets
+              key: STRIPE_SECRET_KEY
+        - name: OPENAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: aia-enterprise-secrets
+              key: OPENAI_API_KEY
+        - name: KNOWLEDGE_GRAPH_VERSION
+          valueFrom:
+            configMapKeyRef:
+              name: aia-complete-knowledge-graph
+              key: knowledge_version
+        volumeMounts:
+        - name: knowledge-graph-data
+          mountPath: /app/knowledge_graph
+          readOnly: true
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 60
+          periodSeconds: 30
+      volumes:
+      - name: knowledge-graph-data
+        configMap:
+          name: aia-complete-knowledge-graph
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-backend-service
+  namespace: aia-013a-production
+  labels:
+    app: aia-backend
+spec:
+  selector:
+    app: aia-backend
+  ports:
+  - port: 80
+    targetPort: 8000
+    name: http
+  - port: 8080
+    targetPort: 8080
+    name: websocket
+  type: ClusterIP
+---
+# 🎨 ADVANCED 3D FRONTEND WITH WEBXR
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-frontend-3d-advanced
+  namespace: aia-013a-production
+  labels:
+    app: aia-frontend
+    tier: presentation
+    complexity: full
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: aia-frontend
+  template:
+    metadata:
+      labels:
+        app: aia-frontend
+    spec:
+      containers:
+      - name: aia-frontend
+        image: gcr.io/aia-system-prod-1759055445/aia-frontend-3d-advanced:latest
+        ports:
+        - containerPort: 80
+        env:
+        - name: NODE_ENV
+          value: "production"
+        - name: API_BASE_URL
+          value: "http://aia-backend-service:80"
+        - name: WEBSOCKET_URL
+          value: "ws://aia-backend-service:8080"
+        - name: ENABLE_3D_ANALYTICS
+          value: "true"
+        - name: ENABLE_WEBXR
+          value: "true"
+        - name: PERFORMANCE_MONITORING
+          value: "true"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 10
+          periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-frontend-service
+  namespace: aia-013a-production
+  labels:
+    app: aia-frontend
+spec:
+  selector:
+    app: aia-frontend
+  ports:
+  - port: 80
+    targetPort: 80
+  type: ClusterIP
+---
+# 🤖 ML/AI PROCESSING ENGINE
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-ml-engine-advanced
+  namespace: aia-013a-production
+  labels:
+    app: aia-ml-engine
+    tier: ml
+    complexity: full
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: aia-ml-engine
+  template:
+    metadata:
+      labels:
+        app: aia-ml-engine
+    spec:
+      containers:
+      - name: aia-ml-engine
+        image: gcr.io/aia-system-prod-1759055445/aia-ml-engine-advanced:latest
+        ports:
+        - containerPort: 8001
+        env:
+        - name: ENVIRONMENT
+          value: "production"
+        - name: POSTGRES_URL
+          valueFrom:
+            secretKeyRef:
+              name: aia-enterprise-secrets
+              key: POSTGRES_URL
+        - name: REDIS_URL
+          valueFrom:
+            secretKeyRef:
+              name: aia-enterprise-secrets
+              key: REDIS_URL
+        - name: OPENAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: aia-enterprise-secrets
+              key: OPENAI_API_KEY
+        - name: HF_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: aia-enterprise-secrets
+              key: HF_TOKEN
+        - name: XAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: aia-enterprise-secrets
+              key: XAI_API_KEY
+        - name: ENABLE_GPU_ACCELERATION
+          value: "true"
+        - name: MODEL_OPTIMIZATION
+          value: "production"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        volumeMounts:
+        - name: model-storage
+          mountPath: /app/models
+      volumes:
+      - name: model-storage
+        persistentVolumeClaim:
+          claimName: ml-models-pvc
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ml-models-pvc
+  namespace: aia-013a-production
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 50Gi
+  storageClassName: standard-rwo
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-ml-engine-service
+  namespace: aia-013a-production
+spec:
+  selector:
+    app: aia-ml-engine
+  ports:
+  - port: 8001
+    targetPort: 8001
+  type: ClusterIP
+---
+# 💳 ENTERPRISE PAYMENT PROCESSOR
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-payment-processor
+  namespace: aia-013a-production
+  labels:
+    app: aia-payment
+    tier: payment
+    complexity: full
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: aia-payment
+  template:
+    metadata:
+      labels:
+        app: aia-payment
+    spec:
+      containers:
+      - name: aia-payment
+        image: gcr.io/aia-system-prod-1759055445/aia-payment-processor:latest
+        ports:
+        - containerPort: 8004
+        env:
+        - name: ENVIRONMENT
+          value: "production"
+        - name: STRIPE_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: aia-enterprise-secrets
+              key: STRIPE_SECRET_KEY
+        - name: STRIPE_PUBLISHABLE_KEY
+          valueFrom:
+            secretKeyRef:
+              name: aia-enterprise-secrets
+              key: STRIPE_PUBLISHABLE_KEY
+        - name: POSTGRES_URL
+          valueFrom:
+            secretKeyRef:
+              name: aia-enterprise-secrets
+              key: POSTGRES_URL
+        - name: ENCRYPTION_KEY
+          valueFrom:
+            secretKeyRef:
+              name: aia-enterprise-secrets
+              key: ENCRYPTION_KEY
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-payment-service
+  namespace: aia-013a-production
+spec:
+  selector:
+    app: aia-payment
+  ports:
+  - port: 8004
+    targetPort: 8004
+  type: ClusterIP
+---
+# 🏢 ENTERPRISE PARTNERSHIPS API
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-enterprise-partners
+  namespace: aia-013a-production
+  labels:
+    app: aia-enterprise
+    tier: partnerships
+    complexity: full
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: aia-enterprise
+  template:
+    metadata:
+      labels:
+        app: aia-enterprise
+    spec:
+      containers:
+      - name: aia-enterprise
+        image: gcr.io/aia-system-prod-1759055445/aia-enterprise-partners:latest
+        ports:
+        - containerPort: 8005
+        env:
+        - name: ENVIRONMENT
+          value: "production"
+        - name: EY_PARTNER_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: aia-enterprise-secrets
+              key: EY_PARTNER_API_KEY
+        - name: JPMORGAN_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: aia-enterprise-secrets
+              key: JPMORGAN_API_KEY
+        - name: GOOGLE_CLOUD_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: aia-enterprise-secrets
+              key: GOOGLE_CLOUD_API_KEY
+        - name: APPLE_VISION_PRO_KEY
+          valueFrom:
+            secretKeyRef:
+              name: aia-enterprise-secrets
+              key: APPLE_VISION_PRO_KEY
+        - name: POSTGRES_URL
+          valueFrom:
+            secretKeyRef:
+              name: aia-enterprise-secrets
+              key: POSTGRES_URL
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-enterprise-service
+  namespace: aia-013a-production
+spec:
+  selector:
+    app: aia-enterprise
+  ports:
+  - port: 8005
+    targetPort: 8005
+  type: ClusterIP
+---
+# 📊 BUSINESS INTELLIGENCE & ANALYTICS
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-business-intelligence
+  namespace: aia-013a-production
+  labels:
+    app: aia-bi
+    tier: analytics
+    complexity: full
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: aia-bi
+  template:
+    metadata:
+      labels:
+        app: aia-bi
+    spec:
+      containers:
+      - name: aia-bi
+        image: gcr.io/aia-system-prod-1759055445/aia-business-intelligence:latest
+        ports:
+        - containerPort: 8002
+        env:
+        - name: ENVIRONMENT
+          value: "production"
+        - name: POSTGRES_URL
+          valueFrom:
+            secretKeyRef:
+              name: aia-enterprise-secrets
+              key: POSTGRES_URL
+        - name: REDIS_URL
+          valueFrom:
+            secretKeyRef:
+              name: aia-enterprise-secrets
+              key: REDIS_URL
+        - name: ENABLE_REAL_TIME_ANALYTICS
+          value: "true"
+        - name: ENABLE_PREDICTIVE_MODELING
+          value: "true"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-bi-service
+  namespace: aia-013a-production
+spec:
+  selector:
+    app: aia-bi
+  ports:
+  - port: 8002
+    targetPort: 8002
+  type: ClusterIP
+---
+# 💰 REVENUE INTELLIGENCE SYSTEM
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-revenue-intelligence
+  namespace: aia-013a-production
+  labels:
+    app: aia-revenue
+    tier: intelligence
+    complexity: full
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: aia-revenue
+  template:
+    metadata:
+      labels:
+        app: aia-revenue
+    spec:
+      containers:
+      - name: aia-revenue
+        image: gcr.io/aia-system-prod-1759055445/aia-revenue-intelligence:latest
+        ports:
+        - containerPort: 8003
+        env:
+        - name: ENVIRONMENT
+          value: "production"
+        - name: POSTGRES_URL
+          valueFrom:
+            secretKeyRef:
+              name: aia-enterprise-secrets
+              key: POSTGRES_URL
+        - name: STRIPE_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: aia-enterprise-secrets
+              key: STRIPE_SECRET_KEY
+        - name: ENABLE_REVENUE_FORECASTING
+          value: "true"
+        - name: ENABLE_CHURN_PREDICTION
+          value: "true"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-revenue-service
+  namespace: aia-013a-production
+spec:
+  selector:
+    app: aia-revenue
+  ports:
+  - port: 8003
+    targetPort: 8003
+  type: ClusterIP
+---
+# 🔧 PERFORMANCE MONITORING SYSTEM
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-performance-monitor
+  namespace: aia-013a-production
+  labels:
+    app: aia-monitor
+    tier: monitoring
+    complexity: full
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: aia-monitor
+  template:
+    metadata:
+      labels:
+        app: aia-monitor
+    spec:
+      containers:
+      - name: aia-monitor
+        image: gcr.io/aia-system-prod-1759055445/aia-performance-monitor:latest
+        ports:
+        - containerPort: 8006
+        env:
+        - name: ENVIRONMENT
+          value: "production"
+        - name: POSTGRES_URL
+          valueFrom:
+            secretKeyRef:
+              name: aia-enterprise-secrets
+              key: POSTGRES_URL
+        - name: ENABLE_REAL_TIME_MONITORING
+          value: "true"
+        - name: ENABLE_ALERTING
+          value: "true"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-monitor-service
+  namespace: aia-013a-production
+spec:
+  selector:
+    app: aia-monitor
+  ports:
+  - port: 8006
+    targetPort: 8006
+  type: ClusterIP
+---
+# 🌐 PRODUCTION LOAD BALANCER & INGRESS
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: aia-production-ingress
+  namespace: aia-013a-production
+  labels:
+    environment: production
+    complexity: full
+  annotations:
+    kubernetes.io/ingress.global-static-ip-name: "aia-production-ip"
+    networking.gke.io/managed-certificates: "aia-ssl-certificate"
+    kubernetes.io/ingress.class: "gce"
+    ingress.gcp.kubernetes.io/load-balancer-type: "External"
+    cloud.google.com/neg: '{"ingress": true}'
+    cloud.google.com/backend-config: '{"default": "aia-backend-config"}'
+spec:
+  rules:
+  - host: 013a.tech
+    http:
+      paths:
+      - path: /api/*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-backend-service
+            port:
+              number: 80
+      - path: /ml/*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-ml-engine-service
+            port:
+              number: 8001
+      - path: /payment/*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-payment-service
+            port:
+              number: 8004
+      - path: /enterprise/*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-enterprise-service
+            port:
+              number: 8005
+      - path: /analytics/*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-bi-service
+            port:
+              number: 8002
+      - path: /revenue/*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-revenue-service
+            port:
+              number: 8003
+      - path: /monitoring/*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-monitor-service
+            port:
+              number: 8006
+      - path: /*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-frontend-service
+            port:
+              number: 80
+---
+# 🔒 SSL CERTIFICATE
+apiVersion: networking.gke.io/v1
+kind: ManagedCertificate
+metadata:
+  name: aia-ssl-certificate
+  namespace: aia-013a-production
+spec:
+  domains:
+    - 013a.tech
+    - www.013a.tech
+    - api.013a.tech
+---
+# ⚙️ BACKEND CONFIGURATION
+apiVersion: cloud.google.com/v1
+kind: BackendConfig
+metadata:
+  name: aia-backend-config
+  namespace: aia-013a-production
+spec:
+  healthCheck:
+    checkIntervalSec: 30
+    timeoutSec: 10
+    healthyThreshold: 1
+    unhealthyThreshold: 3
+    type: HTTP
+    requestPath: /health
+    port: 8000
+  sessionAffinity:
+    affinityType: "CLIENT_IP"
+  timeoutSec: 30
+  connectionDraining:
+    drainingTimeoutSec: 60
+---
+# 📈 HORIZONTAL POD AUTOSCALING
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: aia-backend-hpa
+  namespace: aia-013a-production
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: aia-backend-comprehensive
+  minReplicas: 3
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: aia-frontend-hpa
+  namespace: aia-013a-production
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: aia-frontend-3d-advanced
+  minReplicas: 3
+  maxReplicas: 8
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: aia-ml-engine-hpa
+  namespace: aia-013a-production
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: aia-ml-engine-advanced
+  minReplicas: 2
+  maxReplicas: 6
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 75

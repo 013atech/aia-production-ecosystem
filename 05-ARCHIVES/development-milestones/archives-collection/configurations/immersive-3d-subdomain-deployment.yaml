@@ -1,0 +1,751 @@
+# IMMERSIVE 3D SUBDOMAIN DEPLOYMENT - PRODUCTION READY
+# Target: immersive.013a.tech / 3d.013a.tech
+# Optimized for SentientCanvas Experience with 60fps WebXR
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: immersive-analytics
+  labels:
+    name: immersive-analytics
+    version: production
+---
+# ConfigMap for Immersive Landing Page
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: immersive-config
+  namespace: immersive-analytics
+data:
+  REACT_APP_BACKEND_URL: "https://api.013a.tech"
+  REACT_APP_WEBSOCKET_URL: "wss://api.013a.tech/ws"
+  REACT_APP_KNOWLEDGE_ATOMS_COUNT: "2472"
+  REACT_APP_ENVIRONMENT: "production"
+  REACT_APP_PERFORMANCE_TARGET: "60"
+  REACT_APP_WEBXR_ENABLED: "true"
+  REACT_APP_013A_THEME: "immersive"
+---
+# Immersive Frontend Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: immersive-frontend
+  namespace: immersive-analytics
+  labels:
+    app: immersive-frontend
+    version: production
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: immersive-frontend
+  template:
+    metadata:
+      labels:
+        app: immersive-frontend
+        version: production
+    spec:
+      containers:
+      - name: immersive-react-app
+        image: node:18-alpine
+        workingDir: /app
+        command: ["/bin/sh", "-c"]
+        args:
+        - |
+          echo "🚀 Starting Immersive 3D Landing Page Build..."
+
+          # Install dependencies
+          apk add --no-cache nginx curl
+
+          # Create directories and start nginx immediately with a basic health check
+          mkdir -p /usr/share/nginx/html /etc/nginx/conf.d /var/log/nginx /var/cache/nginx
+          echo "Initializing..." > /usr/share/nginx/html/index.html
+
+          # Create basic nginx config first
+          cat > /etc/nginx/conf.d/default.conf << 'EOF'
+          server {
+              listen 3000;
+              server_name localhost;
+              root /usr/share/nginx/html;
+              index index.html;
+
+              location /health {
+                  access_log off;
+                  return 200 "healthy\n";
+                  add_header Content-Type text/plain;
+              }
+
+              location / {
+                  try_files $uri $uri/ /index.html;
+              }
+          }
+          EOF
+
+          # Start nginx in background
+          nginx -g "daemon on;"
+
+          # Create package.json for immersive app
+          cat > package.json << 'EOF'
+          {
+            "name": "013a-immersive-landing",
+            "version": "1.0.0",
+            "private": true,
+            "dependencies": {
+              "react": "^18.2.0",
+              "react-dom": "^18.2.0",
+              "react-scripts": "5.0.1",
+              "@react-three/fiber": "^8.15.0",
+              "@react-three/drei": "^9.88.0",
+              "@react-three/xr": "^6.2.0",
+              "three": "^0.158.0",
+              "@mui/material": "^5.14.0",
+              "@mui/icons-material": "^5.14.0",
+              "@emotion/react": "^11.11.0",
+              "@emotion/styled": "^11.11.0",
+              "framer-motion": "^10.16.0"
+            },
+            "scripts": {
+              "build": "react-scripts build",
+              "start": "react-scripts start"
+            },
+            "browserslist": {
+              "production": [
+                ">0.2%",
+                "not dead",
+                "not op_mini all"
+              ],
+              "development": [
+                "last 1 chrome version",
+                "last 1 firefox version",
+                "last 1 safari version"
+              ]
+            }
+          }
+          EOF
+
+          # Install packages with optimized flags
+          npm install --legacy-peer-deps --prefer-offline --no-audit --progress=false
+
+          # Create immersive app structure
+          mkdir -p src public
+
+          # Copy source files (simplified for container deployment)
+          cat > public/index.html << 'EOF'
+          <!DOCTYPE html>
+          <html lang="en">
+            <head>
+              <meta charset="utf-8" />
+              <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
+              <meta name="viewport" content="width=device-width, initial-scale=1" />
+              <meta name="theme-color" content="#1E1E1E" />
+              <meta name="description" content="013a Analytics - Immersive 3D Data Experience" />
+              <title>013a Analytics - Immersive Experience</title>
+              <style>
+                body {
+                  margin: 0;
+                  background: #0A0A0A;
+                  overflow: hidden;
+                  font-family: 'Inter', -apple-system, sans-serif;
+                }
+                #root {
+                  width: 100vw;
+                  height: 100vh;
+                }
+              </style>
+            </head>
+            <body>
+              <noscript>You need to enable JavaScript to run this app.</noscript>
+              <div id="root"></div>
+            </body>
+          </html>
+          EOF
+
+          cat > src/index.js << 'EOF'
+          import React from 'react';
+          import ReactDOM from 'react-dom/client';
+          import './index.css';
+          import App from './App';
+
+          const root = ReactDOM.createRoot(document.getElementById('root'));
+          root.render(
+            <React.StrictMode>
+              <App />
+            </React.StrictMode>
+          );
+          EOF
+
+          cat > src/index.css << 'EOF'
+          * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+          }
+
+          body {
+            background: #0A0A0A;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            overflow: hidden;
+          }
+
+          canvas {
+            display: block;
+            touch-action: none;
+          }
+          EOF
+
+          cat > src/App.js << 'EOF'
+          import React, { useState, useEffect, Suspense, useRef } from 'react';
+          import { Canvas, useFrame, useThree } from '@react-three/fiber';
+          import {
+            OrbitControls,
+            Environment,
+            Float,
+            Sphere,
+            Box,
+            Points,
+            PointMaterial,
+            Html,
+            Text,
+            ContactShadows,
+            PerformanceMonitor,
+            AdaptiveDpr,
+            AdaptiveEvents
+          } from '@react-three/drei';
+          import { XR, VRButton, ARButton, Controllers, Hands } from '@react-three/xr';
+          import * as THREE from 'three';
+
+          const DESIGN_SYSTEM = {
+            darkCharcoal: '#1E1E1E',
+            shinyIvory: '#F5F5DC',
+            cyanLemon: {
+              from: '#00FFFF',
+              to: '#FFFF00'
+            },
+            depths: {
+              background: '#0A0A0A'
+            }
+          };
+
+          const KnowledgeField = ({ count = 2472 }) => {
+            const meshRef = useRef();
+            const positions = new Float32Array(count * 3);
+            const colors = new Float32Array(count * 3);
+
+            for (let i = 0; i < count; i++) {
+              const radius = 15 + Math.random() * 25;
+              const theta = Math.random() * Math.PI * 2;
+              const phi = Math.acos(2 * Math.random() - 1);
+
+              positions[i * 3] = radius * Math.sin(phi) * Math.cos(theta);
+              positions[i * 3 + 1] = radius * Math.cos(phi);
+              positions[i * 3 + 2] = radius * Math.sin(phi) * Math.sin(theta);
+
+              const gradient = i / count;
+              colors[i * 3] = gradient;
+              colors[i * 3 + 1] = 1;
+              colors[i * 3 + 2] = 1 - gradient;
+            }
+
+            useFrame((state) => {
+              if (meshRef.current) {
+                meshRef.current.rotation.y += 0.001;
+                meshRef.current.position.y = Math.sin(state.clock.elapsedTime * 0.5) * 0.5;
+              }
+            });
+
+            return (
+              <Points ref={meshRef} positions={positions} colors={colors}>
+                <PointMaterial
+                  size={0.05}
+                  sizeAttenuation
+                  vertexColors
+                  transparent
+                  opacity={0.8}
+                  blending={THREE.AdditiveBlending}
+                />
+              </Points>
+            );
+          };
+
+          const CentralCore = () => {
+            const meshRef = useRef();
+
+            useFrame((state) => {
+              if (meshRef.current) {
+                meshRef.current.rotation.x = Math.sin(state.clock.elapsedTime * 0.5) * 0.1;
+                meshRef.current.rotation.y += 0.01;
+                meshRef.current.rotation.z = Math.sin(state.clock.elapsedTime * 0.3) * 0.05;
+              }
+            });
+
+            return (
+              <group position={[0, 0, 0]}>
+                <Box ref={meshRef} args={[3, 3, 3]} position={[0, 2, 0]}>
+                  <meshStandardMaterial
+                    color={DESIGN_SYSTEM.cyanLemon.from}
+                    emissive="#003333"
+                    transparent
+                    opacity={0.8}
+                  />
+                </Box>
+                <Text
+                  position={[0, -1, 0]}
+                  fontSize={1.2}
+                  color={DESIGN_SYSTEM.shinyIvory}
+                  anchorX="center"
+                  anchorY="middle"
+                >
+                  013a Analytics
+                </Text>
+              </group>
+            );
+          };
+
+          const AgentMarketplace = () => {
+            const agents = [
+              { name: 'Neural', position: [-8, 2, 0], color: '#00FFFF' },
+              { name: 'Cognitive', position: [-4, 4, -2], color: '#FF00FF' },
+              { name: 'Analytics', position: [0, 3, 0], color: '#FFFF00' },
+              { name: 'Visualization', position: [4, 2, 2], color: '#00FF00' },
+              { name: 'Automation', position: [8, 4, -1], color: '#FF8000' }
+            ];
+
+            return (
+              <group>
+                {agents.map((agent, i) => (
+                  <Float key={i} speed={2} rotationIntensity={0.2} floatIntensity={0.5} position={agent.position}>
+                    <Sphere args={[0.8, 32, 32]}>
+                      <meshStandardMaterial
+                        color={agent.color}
+                        emissive={agent.color}
+                        emissiveIntensity={0.2}
+                        transparent
+                        opacity={0.7}
+                      />
+                    </Sphere>
+                    <Html position={[0, 1.5, 0]} center distanceFactor={8}>
+                      <div style={{
+                        background: 'rgba(30, 30, 30, 0.9)',
+                        color: DESIGN_SYSTEM.shinyIvory,
+                        padding: '8px 12px',
+                        borderRadius: '20px',
+                        fontSize: '14px',
+                        fontWeight: '500',
+                        backdropFilter: 'blur(10px)',
+                        border: '1px solid ' + agent.color + '40'
+                      }}>
+                        {agent.name}
+                      </div>
+                    </Html>
+                  </Float>
+                ))}
+              </group>
+            );
+          };
+
+          const UI = () => {
+            const [backendConnected, setBackendConnected] = useState(false);
+            const [knowledgeAtoms, setKnowledgeAtoms] = useState(2472);
+
+            useEffect(() => {
+              const checkBackend = async () => {
+                try {
+                  const response = await fetch('/api/health');
+                  setBackendConnected(response.ok);
+                } catch (error) {
+                  setBackendConnected(false);
+                }
+              };
+              checkBackend();
+              const interval = setInterval(checkBackend, 10000);
+              return () => clearInterval(interval);
+            }, []);
+
+            return (
+              <div style={{
+                position: 'absolute',
+                top: 20,
+                left: 20,
+                right: 20,
+                zIndex: 1000,
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                background: 'rgba(30, 30, 30, 0.8)',
+                backdropFilter: 'blur(20px)',
+                borderRadius: '40px',
+                padding: '12px 24px',
+                border: '1px solid #00FFFF40'
+              }}>
+                <div style={{
+                  color: DESIGN_SYSTEM.shinyIvory,
+                  fontSize: '20px',
+                  fontWeight: '600'
+                }}>
+                  013a Analytics
+                </div>
+                <div style={{
+                  display: 'flex',
+                  gap: '12px',
+                  alignItems: 'center'
+                }}>
+                  <div style={{
+                    background: backendConnected ? 'rgba(0, 255, 0, 0.2)' : 'rgba(255, 165, 0, 0.2)',
+                    color: DESIGN_SYSTEM.shinyIvory,
+                    padding: '4px 12px',
+                    borderRadius: '20px',
+                    fontSize: '12px'
+                  }}>
+                    {knowledgeAtoms.toLocaleString()} atoms
+                  </div>
+                  <div style={{
+                    background: 'rgba(0, 255, 255, 0.2)',
+                    color: DESIGN_SYSTEM.shinyIvory,
+                    padding: '4px 12px',
+                    borderRadius: '20px',
+                    fontSize: '12px'
+                  }}>
+                    WebXR Ready
+                  </div>
+                </div>
+              </div>
+            );
+          };
+
+          function App() {
+            const [isLoading, setIsLoading] = useState(true);
+
+            useEffect(() => {
+              const timer = setTimeout(() => setIsLoading(false), 2000);
+              return () => clearTimeout(timer);
+            }, []);
+
+            if (isLoading) {
+              return (
+                <div style={{
+                  width: '100vw',
+                  height: '100vh',
+                  background: DESIGN_SYSTEM.depths.background,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexDirection: 'column'
+                }}>
+                  <div style={{
+                    width: '80px',
+                    height: '80px',
+                    border: '4px solid #00FFFF40',
+                    borderTop: '4px solid #00FFFF',
+                    borderRadius: '50%',
+                    animation: 'spin 1s linear infinite',
+                    marginBottom: '32px'
+                  }} />
+                  <h2 style={{
+                    color: DESIGN_SYSTEM.shinyIvory,
+                    fontFamily: 'Inter, sans-serif',
+                    fontWeight: 300,
+                    marginBottom: '16px'
+                  }}>
+                    Initializing Sentient Canvas...
+                  </h2>
+                  <p style={{
+                    color: DESIGN_SYSTEM.shinyIvory + '80'
+                  }}>
+                    Loading 2,472 knowledge atoms
+                  </p>
+                  <style>{`
+                    @keyframes spin {
+                      0% { transform: rotate(0deg); }
+                      100% { transform: rotate(360deg); }
+                    }
+                  `}</style>
+                </div>
+              );
+            }
+
+            return (
+              <div style={{
+                width: '100vw',
+                height: '100vh',
+                background: DESIGN_SYSTEM.depths.background,
+                position: 'relative',
+                overflow: 'hidden'
+              }}>
+                <UI />
+
+                <Canvas
+                  camera={{ position: [0, 5, 15], fov: 60 }}
+                  gl={{
+                    antialias: true,
+                    powerPreference: 'high-performance'
+                  }}
+                  dpr={[1, 2]}
+                >
+                  <XR>
+                    <AdaptiveDpr pixelated />
+                    <AdaptiveEvents />
+                    <PerformanceMonitor />
+
+                    <ambientLight intensity={0.3} />
+                    <directionalLight position={[10, 10, 5]} intensity={1} castShadow />
+                    <pointLight position={[0, 10, 0]} intensity={0.8} color="#00FFFF" />
+
+                    <Environment preset="night" blur={0.8} />
+                    <fog attach="fog" args={[DESIGN_SYSTEM.depths.background, 20, 60]} />
+
+                    <Suspense fallback={null}>
+                      <KnowledgeField />
+                      <AgentMarketplace />
+                      <CentralCore />
+                    </Suspense>
+
+                    <ContactShadows
+                      position={[0, -2, 0]}
+                      opacity={0.4}
+                      scale={50}
+                      blur={2}
+                      far={10}
+                      resolution={512}
+                      color={DESIGN_SYSTEM.darkCharcoal}
+                    />
+
+                    <OrbitControls
+                      enablePan={false}
+                      enableZoom={true}
+                      enableRotate={true}
+                      minDistance={5}
+                      maxDistance={50}
+                      minPolarAngle={Math.PI / 6}
+                      maxPolarAngle={Math.PI - Math.PI / 6}
+                    />
+
+                    <Controllers />
+                    <Hands />
+                  </XR>
+                </Canvas>
+
+                <div style={{
+                  position: 'absolute',
+                  bottom: 20,
+                  right: 20,
+                  zIndex: 1000
+                }}>
+                  <div style={{
+                    background: 'rgba(30, 30, 30, 0.9)',
+                    backdropFilter: 'blur(20px)',
+                    border: '1px solid #FFFF0040',
+                    borderRadius: '20px',
+                    padding: '20px',
+                    maxWidth: '400px'
+                  }}>
+                    <h3 style={{
+                      color: DESIGN_SYSTEM.shinyIvory,
+                      marginBottom: '12px',
+                      fontFamily: 'Inter, sans-serif'
+                    }}>
+                      Immersive Analytics Experience
+                    </h3>
+                    <p style={{
+                      color: DESIGN_SYSTEM.shinyIvory + '80',
+                      fontSize: '14px',
+                      lineHeight: '1.5',
+                      marginBottom: '16px'
+                    }}>
+                      Experience the future of data analysis with our 3D immersive platform.
+                      Interact with live data streams and explore analytics in VR/AR.
+                    </p>
+                    <button
+                      style={{
+                        width: '100%',
+                        background: 'linear-gradient(135deg, #00FFFF 0%, #FFFF00 100%)',
+                        color: DESIGN_SYSTEM.darkCharcoal,
+                        border: 'none',
+                        borderRadius: '25px',
+                        padding: '12px',
+                        fontWeight: '600',
+                        cursor: 'pointer',
+                        fontSize: '14px'
+                      }}
+                      onClick={() => window.open('https://013a.tech', '_blank')}
+                    >
+                      Enter Full Analytics Platform
+                    </button>
+                  </div>
+                </div>
+
+                <VRButton style={{ position: 'absolute', bottom: 20, left: 20 }} />
+              </div>
+            );
+          }
+
+          export default App;
+          EOF
+
+          # Build the React app
+          echo "🏗️ Building React app..."
+          npm run build
+
+          # Stop nginx and update with built app
+          nginx -s quit || true
+          sleep 2
+
+          # Copy built files
+          cp -r build/* /usr/share/nginx/html/
+
+          # Update nginx config with full functionality
+          cat > /etc/nginx/conf.d/default.conf << 'EOF'
+          server {
+              listen 3000;
+              server_name localhost;
+              root /usr/share/nginx/html;
+              index index.html;
+
+              location / {
+                  try_files $uri $uri/ /index.html;
+              }
+
+              location /health {
+                  access_log off;
+                  return 200 "healthy\n";
+                  add_header Content-Type text/plain;
+              }
+
+              location /api/ {
+                  proxy_pass http://aia-backend-fixed-service.aia-working-production.svc.cluster.local/;
+                  proxy_set_header Host $host;
+                  proxy_set_header X-Real-IP $remote_addr;
+                  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                  proxy_set_header X-Forwarded-Proto $scheme;
+              }
+
+              location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
+                  expires 1y;
+                  add_header Cache-Control "public, immutable";
+                  add_header Access-Control-Allow-Origin "*";
+              }
+          }
+          EOF
+
+          echo "🚀 Starting production nginx server..."
+          exec nginx -g "daemon off;"
+        ports:
+        - containerPort: 3000
+          name: http
+        env:
+        - name: NODE_ENV
+          value: "production"
+        envFrom:
+        - configMapRef:
+            name: immersive-config
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "1"
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 3000
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 30
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 3000
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          timeoutSeconds: 5
+          failureThreshold: 10
+---
+# Immersive Frontend Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: immersive-frontend-service
+  namespace: immersive-analytics
+  annotations:
+    cloud.google.com/neg: '{"ingress": true}'
+spec:
+  selector:
+    app: immersive-frontend
+  ports:
+  - name: http
+    port: 80
+    targetPort: 3000
+  type: ClusterIP
+---
+# Ingress for Immersive Subdomain
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: immersive-ingress
+  namespace: immersive-analytics
+  annotations:
+    kubernetes.io/ingress.class: "gce"
+    kubernetes.io/ingress.global-static-ip-name: "immersive-static-ip"
+    networking.gke.io/managed-certificates: "immersive-ssl-cert"
+    kubernetes.io/ingress.allow-http: "false"
+spec:
+  rules:
+  - host: immersive.013a.tech
+    http:
+      paths:
+      - path: /*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: enhanced-immersive-service
+            port:
+              number: 80
+  - host: 3d.013a.tech
+    http:
+      paths:
+      - path: /*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: enhanced-immersive-service
+            port:
+              number: 80
+---
+# Managed Certificate for SSL
+apiVersion: networking.gke.io/v1
+kind: ManagedCertificate
+metadata:
+  name: immersive-ssl-cert
+  namespace: immersive-analytics
+spec:
+  domains:
+  - immersive.013a.tech
+  - 3d.013a.tech
+---
+# HPA for scaling
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: immersive-frontend-hpa
+  namespace: immersive-analytics
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: immersive-frontend
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80

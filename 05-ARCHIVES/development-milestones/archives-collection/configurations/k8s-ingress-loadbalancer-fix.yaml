@@ -1,0 +1,116 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: sentient-canvas-unified-ingress
+  namespace: aia-working-production
+  annotations:
+    # Modern ingress class specification
+    kubernetes.io/ingress.class: "gce"
+
+    # Force SSL and certificate management
+    ingress.gcp.kubernetes.io/force-ssl-redirect: "true"
+    ingress.gcp.kubernetes.io/managed-certificates: "aia-ssl-cert"
+
+    # Global static IP (force load balancer provisioning)
+    kubernetes.io/ingress.global-static-ip-name: "aia-global-ip"
+
+    # Backend configuration for health checks
+    cloud.google.com/backend-config: |
+      {
+        "default": "aia-frontend-config",
+        "aia-backend-fixed-service": "aia-backend-config"
+      }
+
+    # CORS configuration
+    nginx.ingress.kubernetes.io/cors-allow-headers: "Content-Type, Authorization, X-Requested-With"
+    nginx.ingress.kubernetes.io/cors-allow-methods: "GET, POST, PUT, DELETE, OPTIONS"
+    nginx.ingress.kubernetes.io/cors-allow-origin: "*"
+
+    # Force provisioning annotations
+    ingress.gcp.kubernetes.io/frontend-config: "aia-frontend-config"
+    cloud.google.com/neg: '{"ingress": true}'
+
+spec:
+  # Modern ingress class specification (preferred over annotation)
+  ingressClassName: "gce"
+
+  rules:
+  # Main domain - Route to React Frontend (HIGH PRIORITY)
+  - host: 013a.tech
+    http:
+      paths:
+      # API routes to backend
+      - path: /api/*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-backend-fixed-service
+            port:
+              number: 80
+      - path: /ws/*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-backend-fixed-service
+            port:
+              number: 80
+      - path: /health*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-backend-fixed-service
+            port:
+              number: 80
+      - path: /dkg-v3/*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-backend-fixed-service
+            port:
+              number: 80
+      # ALL OTHER ROUTES to frontend (React UI)
+      - path: /*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-frontend-service
+            port:
+              number: 80
+
+  # WWW subdomain - Route to React Frontend
+  - host: www.013a.tech
+    http:
+      paths:
+      - path: /api/*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-backend-fixed-service
+            port:
+              number: 80
+      - path: /ws/*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-backend-fixed-service
+            port:
+              number: 80
+      - path: /*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-frontend-service
+            port:
+              number: 80
+
+  # API subdomain - Direct to Backend Service
+  - host: api.013a.tech
+    http:
+      paths:
+      - path: /*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-backend-fixed-service
+            port:
+              number: 80

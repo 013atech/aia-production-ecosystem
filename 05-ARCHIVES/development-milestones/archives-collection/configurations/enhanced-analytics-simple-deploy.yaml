@@ -1,0 +1,398 @@
+# Simplified Enhanced Analytics Deployment for Current Resources
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: enhanced-analytics-frontend-simple
+  namespace: aia-enhanced-analytics
+  labels:
+    app: enhanced-analytics-frontend-simple
+    version: v3.0-simple
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: enhanced-analytics-frontend-simple
+  template:
+    metadata:
+      labels:
+        app: enhanced-analytics-frontend-simple
+        version: v3.0-simple
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:1.25.3-alpine
+        ports:
+        - containerPort: 80
+          name: http
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        command: ["/bin/sh", "-c"]
+        args:
+        - |
+          cat > /usr/share/nginx/html/index.html << 'EOF'
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+              <meta charset="UTF-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <meta name="theme-color" content="#1E1E1E">
+              <title>Enhanced 013a Analytics - Production Ready</title>
+              <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r153/three.min.js"></script>
+              <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+              <style>
+                  :root {
+                      --charcoal-deep: #1E1E1E;
+                      --ivory-bright: #F5F5DC;
+                      --cyan-bright: #00FFFF;
+                      --lemon-bright: #FFFF00;
+                  }
+                  * { margin: 0; padding: 0; box-sizing: border-box; }
+                  body {
+                      font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
+                      background: var(--charcoal-deep);
+                      color: var(--ivory-bright);
+                      overflow: hidden;
+                      height: 100vh;
+                  }
+                  #analytics-canvas {
+                      position: fixed;
+                      top: 0;
+                      left: 0;
+                      width: 100vw;
+                      height: 100vh;
+                      background: var(--charcoal-deep);
+                  }
+                  .status-bar {
+                      position: fixed;
+                      top: 20px;
+                      left: 50%;
+                      transform: translateX(-50%);
+                      background: rgba(0, 255, 255, 0.1);
+                      border: 1px solid var(--cyan-bright);
+                      border-radius: 20px;
+                      padding: 12px 24px;
+                      z-index: 1000;
+                      font-weight: 600;
+                      animation: pulse 2s infinite;
+                  }
+                  @keyframes pulse {
+                      0%, 100% { opacity: 1; transform: translateX(-50%) scale(1); }
+                      50% { opacity: 0.8; transform: translateX(-50%) scale(1.05); }
+                  }
+                  .control-panel {
+                      position: fixed;
+                      top: 80px;
+                      right: 20px;
+                      background: rgba(30, 30, 30, 0.9);
+                      border: 1px solid var(--cyan-bright);
+                      border-radius: 16px;
+                      padding: 20px;
+                      z-index: 1000;
+                      min-width: 200px;
+                  }
+                  .control-button {
+                      display: block;
+                      width: 100%;
+                      background: linear-gradient(135deg, rgba(0, 255, 255, 0.1), rgba(30, 30, 30, 0.8));
+                      border: 1px solid var(--cyan-bright);
+                      border-radius: 8px;
+                      color: var(--ivory-bright);
+                      padding: 10px;
+                      margin-bottom: 10px;
+                      cursor: pointer;
+                      transition: all 0.3s ease;
+                  }
+                  .control-button:hover {
+                      background: linear-gradient(135deg, rgba(0, 255, 255, 0.2), rgba(50, 50, 50, 0.8));
+                      transform: translateX(-5px);
+                  }
+              </style>
+          </head>
+          <body>
+              <div class="status-bar">
+                  🚀 Enhanced 013a Analytics - Live Production System
+              </div>
+
+              <canvas id="analytics-canvas"></canvas>
+
+              <div class="control-panel">
+                  <h3 style="color: var(--cyan-bright); margin-bottom: 15px;">🎯 Analytics Control</h3>
+                  <button class="control-button" onclick="setView('overview')">🌐 Overview</button>
+                  <button class="control-button" onclick="setView('performance')">📊 Performance</button>
+                  <button class="control-button" onclick="setView('trends')">📈 Trends</button>
+                  <button class="control-button" onclick="resetAnimation()">🔄 Reset</button>
+              </div>
+
+              <script>
+                  // Enhanced 3D Analytics Engine
+                  class Enhanced013aAnalytics {
+                      constructor() {
+                          this.scene = new THREE.Scene();
+                          this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+                          this.renderer = new THREE.WebGLRenderer({
+                              canvas: document.getElementById('analytics-canvas'),
+                              antialias: true,
+                              alpha: true
+                          });
+                          this.objects = [];
+                          this.time = 0;
+
+                          this.init();
+                      }
+
+                      init() {
+                          this.renderer.setSize(window.innerWidth, window.innerHeight);
+                          this.scene.background = new THREE.Color(0x1E1E1E);
+
+                          // Enhanced lighting
+                          const ambientLight = new THREE.AmbientLight(0x404040, 0.4);
+                          this.scene.add(ambientLight);
+
+                          const directionalLight = new THREE.DirectionalLight(0x00FFFF, 1);
+                          directionalLight.position.set(5, 5, 5);
+                          this.scene.add(directionalLight);
+
+                          const pointLight = new THREE.PointLight(0xFFFF00, 0.8, 50);
+                          pointLight.position.set(-5, 5, -5);
+                          this.scene.add(pointLight);
+
+                          // Create 3D analytics objects
+                          this.createDataVisualization();
+
+                          this.camera.position.set(0, 0, 15);
+
+                          this.animate();
+
+                          // Handle window resize
+                          window.addEventListener('resize', () => this.onWindowResize());
+                      }
+
+                      createDataVisualization() {
+                          // Create central analytics hub
+                          const hubGeometry = new THREE.SphereGeometry(1, 32, 32);
+                          const hubMaterial = new THREE.MeshPhongMaterial({
+                              color: 0x00FFFF,
+                              transparent: true,
+                              opacity: 0.8,
+                              emissive: 0x004444
+                          });
+                          const hub = new THREE.Mesh(hubGeometry, hubMaterial);
+                          this.scene.add(hub);
+                          this.objects.push(hub);
+
+                          // Create data points around the hub
+                          for (let i = 0; i < 50; i++) {
+                              const geometry = new THREE.BoxGeometry(0.2, 0.2, 0.2);
+                              const material = new THREE.MeshPhongMaterial({
+                                  color: new THREE.Color().setHSL(i / 50, 0.8, 0.5),
+                                  emissive: new THREE.Color().setHSL(i / 50, 0.4, 0.1)
+                              });
+                              const cube = new THREE.Mesh(geometry, material);
+
+                              // Position in sphere around hub
+                              const radius = 5 + Math.random() * 5;
+                              const phi = Math.random() * Math.PI * 2;
+                              const theta = Math.random() * Math.PI;
+
+                              cube.position.set(
+                                  radius * Math.sin(theta) * Math.cos(phi),
+                                  radius * Math.sin(theta) * Math.sin(phi),
+                                  radius * Math.cos(theta)
+                              );
+
+                              cube.userData = {
+                                  originalPosition: cube.position.clone(),
+                                  speed: 0.01 + Math.random() * 0.02,
+                                  amplitude: 0.5 + Math.random() * 0.5
+                              };
+
+                              this.scene.add(cube);
+                              this.objects.push(cube);
+                          }
+
+                          // Create connecting lines
+                          this.createConnections();
+
+                          // Add particle system
+                          this.createParticleSystem();
+                      }
+
+                      createConnections() {
+                          const points = [];
+                          for (let i = 1; i < this.objects.length; i++) {
+                              if (Math.random() > 0.7) {
+                                  points.push(this.objects[0].position);
+                                  points.push(this.objects[i].position);
+                              }
+                          }
+
+                          const geometry = new THREE.BufferGeometry().setFromPoints(points);
+                          const material = new THREE.LineBasicMaterial({
+                              color: 0x00FFFF,
+                              transparent: true,
+                              opacity: 0.3
+                          });
+                          const lines = new THREE.LineSegments(geometry, material);
+                          this.scene.add(lines);
+                      }
+
+                      createParticleSystem() {
+                          const particleCount = 1000;
+                          const geometry = new THREE.BufferGeometry();
+                          const positions = new Float32Array(particleCount * 3);
+
+                          for (let i = 0; i < particleCount; i++) {
+                              positions[i * 3] = (Math.random() - 0.5) * 50;
+                              positions[i * 3 + 1] = (Math.random() - 0.5) * 50;
+                              positions[i * 3 + 2] = (Math.random() - 0.5) * 50;
+                          }
+
+                          geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+
+                          const material = new THREE.PointsMaterial({
+                              color: 0xFFFF00,
+                              size: 0.1,
+                              transparent: true,
+                              opacity: 0.6
+                          });
+
+                          const particles = new THREE.Points(geometry, material);
+                          this.scene.add(particles);
+                          this.objects.push(particles);
+                      }
+
+                      animate() {
+                          requestAnimationFrame(() => this.animate());
+
+                          this.time += 0.01;
+
+                          // Animate objects
+                          this.objects.forEach((object, index) => {
+                              if (object.geometry instanceof THREE.BoxGeometry) {
+                                  // Rotate data cubes
+                                  object.rotation.x += 0.01;
+                                  object.rotation.y += 0.01;
+
+                                  // Floating animation
+                                  if (object.userData) {
+                                      object.position.y = object.userData.originalPosition.y +
+                                          Math.sin(this.time * object.userData.speed) * object.userData.amplitude;
+                                  }
+                              } else if (object.geometry instanceof THREE.SphereGeometry) {
+                                  // Pulse the central hub
+                                  const scale = 1 + Math.sin(this.time * 2) * 0.1;
+                                  object.scale.setScalar(scale);
+                                  object.rotation.y += 0.005;
+                              } else if (object instanceof THREE.Points) {
+                                  // Rotate particle system
+                                  object.rotation.y += 0.002;
+                                  object.rotation.x += 0.001;
+                              }
+                          });
+
+                          // Camera orbit
+                          this.camera.position.x = Math.cos(this.time * 0.2) * 15;
+                          this.camera.position.z = Math.sin(this.time * 0.2) * 15;
+                          this.camera.lookAt(0, 0, 0);
+
+                          this.renderer.render(this.scene, this.camera);
+                      }
+
+                      onWindowResize() {
+                          this.camera.aspect = window.innerWidth / window.innerHeight;
+                          this.camera.updateProjectionMatrix();
+                          this.renderer.setSize(window.innerWidth, window.innerHeight);
+                      }
+
+                      setView(viewType) {
+                          switch(viewType) {
+                              case 'overview':
+                                  gsap.to(this.camera.position, { x: 0, y: 10, z: 20, duration: 2 });
+                                  break;
+                              case 'performance':
+                                  gsap.to(this.camera.position, { x: 15, y: 5, z: 10, duration: 2 });
+                                  break;
+                              case 'trends':
+                                  gsap.to(this.camera.position, { x: -10, y: 15, z: 5, duration: 2 });
+                                  break;
+                          }
+                      }
+
+                      reset() {
+                          gsap.to(this.camera.position, { x: 0, y: 0, z: 15, duration: 2 });
+                          this.time = 0;
+                      }
+                  }
+
+                  // Global functions
+                  let analytics;
+
+                  function setView(viewType) {
+                      analytics.setView(viewType);
+                  }
+
+                  function resetAnimation() {
+                      analytics.reset();
+                  }
+
+                  // Initialize
+                  window.addEventListener('DOMContentLoaded', () => {
+                      analytics = new Enhanced013aAnalytics();
+                      console.log('Enhanced 013a Analytics initialized successfully!');
+                  });
+              </script>
+          </body>
+          </html>
+          EOF
+
+          # Add nginx health endpoint
+          cat > /usr/share/nginx/html/health << 'EOF'
+          OK
+          EOF
+
+          # Configure nginx
+          cat > /etc/nginx/conf.d/default.conf << 'EOF'
+          server {
+              listen 80;
+              server_name _;
+              root /usr/share/nginx/html;
+              index index.html;
+
+              location / {
+                  try_files $uri $uri/ /index.html;
+                  add_header Cache-Control "no-cache, no-store, must-revalidate";
+                  add_header Pragma "no-cache";
+                  add_header Expires "0";
+              }
+
+              location /health {
+                  return 200 'OK';
+                  add_header Content-Type text/plain;
+              }
+          }
+          EOF
+
+          nginx -g "daemon off;"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: enhanced-analytics-simple-service
+  namespace: aia-enhanced-analytics
+  labels:
+    app: enhanced-analytics-frontend-simple
+spec:
+  type: NodePort
+  ports:
+  - name: http
+    port: 80
+    targetPort: 80
+    protocol: TCP
+  selector:
+    app: enhanced-analytics-frontend-simple
+---

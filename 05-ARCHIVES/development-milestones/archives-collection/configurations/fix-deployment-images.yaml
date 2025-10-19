@@ -1,0 +1,61 @@
+# Fix deployment images to use correct available tags
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-global-backend
+  namespace: global-013a-analytics
+spec:
+  template:
+    spec:
+      containers:
+      - name: aia-backend
+        image: gcr.io/aia-system-prod-1759055445/aia-global-backend:latest
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-global-frontend
+  namespace: global-013a-analytics
+spec:
+  template:
+    spec:
+      containers:
+      - name: aia-frontend
+        image: gcr.io/aia-system-prod-1759055445/aia-global-frontend:latest
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-global-ml-service
+  namespace: global-013a-analytics
+spec:
+  template:
+    spec:
+      containers:
+      - name: aia-ml
+        image: gcr.io/aia-system-prod-1759055445/aia-ml-processor:latest
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-global-enterprise
+  namespace: global-013a-analytics
+spec:
+  template:
+    spec:
+      containers:
+      - name: aia-enterprise
+        image: gcr.io/aia-system-prod-1759055445/aia-frontend:latest  # Use working image
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-global-payment
+  namespace: global-013a-analytics
+spec:
+  template:
+    spec:
+      containers:
+      - name: aia-payment
+        image: gcr.io/aia-system-prod-1759055445/aia-api:latest  # Use working image

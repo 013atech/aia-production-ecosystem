@@ -1,0 +1,207 @@
+{
+  "monitoring_session": {
+    "started": "2025-10-02T19:40:20.085033",
+    "iteration_count": 3,
+    "ssl_active": false
+  },
+  "test_results": [
+    {
+      "iteration": 1,
+      "timestamp": "2025-10-02T19:30:19.902653",
+      "test_name": "Comprehensive E2E Cycle #1",
+      "passed": false,
+      "duration_seconds": 99.38788986206055,
+      "details": {
+        "health_metrics": {
+          "013a.tech_accessible": false,
+          "013a.tech_response_time": 0,
+          "www.013a.tech_accessible": false,
+          "www.013a.tech_response_time": 0,
+          "api.013a.tech_accessible": false,
+          "api.013a.tech_response_time": 0.268685,
+          "ey.013a.tech_accessible": false,
+          "ey.013a.tech_response_time": 0,
+          "jpmorgan.013a.tech_accessible": false,
+          "jpmorgan.013a.tech_response_time": 0,
+          "gcp.013a.tech_accessible": false,
+          "gcp.013a.tech_response_time": 0,
+          "apple.013a.tech_accessible": false,
+          "apple.013a.tech_response_time": 0,
+          "healthy_pods": 101,
+          "overall_health": false
+        },
+        "devtools_metrics": {
+          "integration_working": false,
+          "test_output": "{\n  \"config\": {\n    \"rootDir\": \"/Users/wXy/dev/Projects/aia\",\n    \"forbidOnly\": false,\n    \"fullyParallel\": false,\n    \"globalSetup\": null,\n    \"globalTeardown\": null,\n    \"globalTimeout\": 0,\n    \"grep\": {},\n    \"grepInvert\": null,\n    \"maxFailures\": 0,\n    \"metadata\": {\n      \"actualWorkers\": 1\n    },\n    \"preserveOutput\": \"always\",\n    \"reporter\": [\n      [\n        \"json\"\n      ]\n    ],\n    \"reportSlowTests\": {\n      \"max\": 5,\n      \"threshold\": 300000\n    },\n    \"quiet\": false,\n    \"projects\": [\n      {\n        \"outputDir\": \"/Users/wXy/dev/Projects/aia/test-results\",\n        \"repeatEach\": 1,\n        \"retries\": 0,\n        \"metadata\": {\n          \"actualWorkers\": 1\n        },\n        \"id\": \"\",\n        \"name\": \"\",\n        \"testDir\": \"/Users/wXy/dev/Projects/aia\",\n        \"testIgnore\": [],\n        \"testMatch\": [\n          \"**/*.@(spec|test).?(c|m)[jt]s?(x)\"\n        ],\n        \"timeout\": 30000\n      }\n    ],\n    \"shard\": null,\n    \"updateSnapshots\": \"missing\",\n    \"updateSourceMethod\": \"",
+          "error_output": "",
+          "performance_score": 0.0
+        },
+        "enterprise_results": {
+          "all_partners_accessible": false,
+          "partner_results": {
+            "ey.013a.tech": {
+              "accessible": false,
+              "error": "HTTPConnectionPool(host='ey.013a.tech', port=80): Read timed out. (read timeout=5)"
+            },
+            "jpmorgan.013a.tech": {
+              "accessible": false,
+              "error": "HTTPConnectionPool(host='jpmorgan.013a.tech', port=80): Read timed out. (read timeout=5)"
+            },
+            "gcp.013a.tech": {
+              "accessible": false,
+              "error": "HTTPConnectionPool(host='gcp.013a.tech', port=80): Read timed out. (read timeout=5)"
+            },
+            "apple.013a.tech": {
+              "accessible": false,
+              "error": "HTTPConnectionPool(host='apple.013a.tech', port=80): Read timed out. (read timeout=5)"
+            }
+          },
+          "accessible_count": 0
+        },
+        "payment_results": {
+          "stripe_integration_ready": true,
+          "payment_endpoints_configured": true,
+          "security_compliance": true,
+          "test_mode_functional": true
+        }
+      },
+      "performance_metrics": {
+        "cycle_duration": 99.38788986206055,
+        "ssl_active": false,
+        "domains_accessible": 0
+      }
+    },
+    {
+      "iteration": 2,
+      "timestamp": "2025-10-02T19:35:20.157948",
+      "test_name": "Comprehensive E2E Cycle #2",
+      "passed": false,
+      "duration_seconds": 96.93547701835632,
+      "details": {
+        "health_metrics": {
+          "013a.tech_accessible": false,
+          "013a.tech_response_time": 0,
+          "www.013a.tech_accessible": false,
+          "www.013a.tech_response_time": 0,
+          "api.013a.tech_accessible": false,
+          "api.013a.tech_response_time": 0.088288,
+          "ey.013a.tech_accessible": false,
+          "ey.013a.tech_response_time": 0,
+          "jpmorgan.013a.tech_accessible": false,
+          "jpmorgan.013a.tech_response_time": 0,
+          "gcp.013a.tech_accessible": false,
+          "gcp.013a.tech_response_time": 0,
+          "apple.013a.tech_accessible": false,
+          "apple.013a.tech_response_time": 0,
+          "healthy_pods": 101,
+          "overall_health": false
+        },
+        "devtools_metrics": {
+          "integration_working": false,
+          "test_output": "{\n  \"config\": {\n    \"rootDir\": \"/Users/wXy/dev/Projects/aia\",\n    \"forbidOnly\": false,\n    \"fullyParallel\": false,\n    \"globalSetup\": null,\n    \"globalTeardown\": null,\n    \"globalTimeout\": 0,\n    \"grep\": {},\n    \"grepInvert\": null,\n    \"maxFailures\": 0,\n    \"metadata\": {\n      \"actualWorkers\": 1\n    },\n    \"preserveOutput\": \"always\",\n    \"reporter\": [\n      [\n        \"json\"\n      ]\n    ],\n    \"reportSlowTests\": {\n      \"max\": 5,\n      \"threshold\": 300000\n    },\n    \"quiet\": false,\n    \"projects\": [\n      {\n        \"outputDir\": \"/Users/wXy/dev/Projects/aia/test-results\",\n        \"repeatEach\": 1,\n        \"retries\": 0,\n        \"metadata\": {\n          \"actualWorkers\": 1\n        },\n        \"id\": \"\",\n        \"name\": \"\",\n        \"testDir\": \"/Users/wXy/dev/Projects/aia\",\n        \"testIgnore\": [],\n        \"testMatch\": [\n          \"**/*.@(spec|test).?(c|m)[jt]s?(x)\"\n        ],\n        \"timeout\": 30000\n      }\n    ],\n    \"shard\": null,\n    \"updateSnapshots\": \"missing\",\n    \"updateSourceMethod\": \"",
+          "error_output": "",
+          "performance_score": 0.0
+        },
+        "enterprise_results": {
+          "all_partners_accessible": false,
+          "partner_results": {
+            "ey.013a.tech": {
+              "accessible": false,
+              "error": "HTTPConnectionPool(host='ey.013a.tech', port=80): Read timed out. (read timeout=5)"
+            },
+            "jpmorgan.013a.tech": {
+              "accessible": false,
+              "error": "HTTPConnectionPool(host='jpmorgan.013a.tech', port=80): Read timed out. (read timeout=5)"
+            },
+            "gcp.013a.tech": {
+              "accessible": false,
+              "error": "HTTPConnectionPool(host='gcp.013a.tech', port=80): Read timed out. (read timeout=5)"
+            },
+            "apple.013a.tech": {
+              "accessible": false,
+              "error": "HTTPConnectionPool(host='apple.013a.tech', port=80): Read timed out. (read timeout=5)"
+            }
+          },
+          "accessible_count": 0
+        },
+        "payment_results": {
+          "stripe_integration_ready": true,
+          "payment_endpoints_configured": true,
+          "security_compliance": true,
+          "test_mode_functional": true
+        }
+      },
+      "performance_metrics": {
+        "cycle_duration": 96.93547701835632,
+        "ssl_active": false,
+        "domains_accessible": 0
+      }
+    },
+    {
+      "iteration": 3,
+      "timestamp": "2025-10-02T19:40:20.083112",
+      "test_name": "Comprehensive E2E Cycle #3",
+      "passed": false,
+      "duration_seconds": 96.55173707008362,
+      "details": {
+        "health_metrics": {
+          "013a.tech_accessible": false,
+          "013a.tech_response_time": 0,
+          "www.013a.tech_accessible": false,
+          "www.013a.tech_response_time": 0,
+          "api.013a.tech_accessible": false,
+          "api.013a.tech_response_time": 0.126626,
+          "ey.013a.tech_accessible": false,
+          "ey.013a.tech_response_time": 0,
+          "jpmorgan.013a.tech_accessible": false,
+          "jpmorgan.013a.tech_response_time": 0,
+          "gcp.013a.tech_accessible": false,
+          "gcp.013a.tech_response_time": 0,
+          "apple.013a.tech_accessible": false,
+          "apple.013a.tech_response_time": 0,
+          "healthy_pods": 98,
+          "overall_health": false
+        },
+        "devtools_metrics": {
+          "integration_working": false,
+          "test_output": "{\n  \"config\": {\n    \"rootDir\": \"/Users/wXy/dev/Projects/aia\",\n    \"forbidOnly\": false,\n    \"fullyParallel\": false,\n    \"globalSetup\": null,\n    \"globalTeardown\": null,\n    \"globalTimeout\": 0,\n    \"grep\": {},\n    \"grepInvert\": null,\n    \"maxFailures\": 0,\n    \"metadata\": {\n      \"actualWorkers\": 1\n    },\n    \"preserveOutput\": \"always\",\n    \"reporter\": [\n      [\n        \"json\"\n      ]\n    ],\n    \"reportSlowTests\": {\n      \"max\": 5,\n      \"threshold\": 300000\n    },\n    \"quiet\": false,\n    \"projects\": [\n      {\n        \"outputDir\": \"/Users/wXy/dev/Projects/aia/test-results\",\n        \"repeatEach\": 1,\n        \"retries\": 0,\n        \"metadata\": {\n          \"actualWorkers\": 1\n        },\n        \"id\": \"\",\n        \"name\": \"\",\n        \"testDir\": \"/Users/wXy/dev/Projects/aia\",\n        \"testIgnore\": [],\n        \"testMatch\": [\n          \"**/*.@(spec|test).?(c|m)[jt]s?(x)\"\n        ],\n        \"timeout\": 30000\n      }\n    ],\n    \"shard\": null,\n    \"updateSnapshots\": \"missing\",\n    \"updateSourceMethod\": \"",
+          "error_output": "",
+          "performance_score": 0.0
+        },
+        "enterprise_results": {
+          "all_partners_accessible": false,
+          "partner_results": {
+            "ey.013a.tech": {
+              "accessible": false,
+              "error": "HTTPConnectionPool(host='ey.013a.tech', port=80): Read timed out. (read timeout=5)"
+            },
+            "jpmorgan.013a.tech": {
+              "accessible": false,
+              "error": "HTTPConnectionPool(host='jpmorgan.013a.tech', port=80): Read timed out. (read timeout=5)"
+            },
+            "gcp.013a.tech": {
+              "accessible": false,
+              "error": "HTTPConnectionPool(host='gcp.013a.tech', port=80): Read timed out. (read timeout=5)"
+            },
+            "apple.013a.tech": {
+              "accessible": false,
+              "error": "HTTPConnectionPool(host='apple.013a.tech', port=80): Read timed out. (read timeout=5)"
+            }
+          },
+          "accessible_count": 0
+        },
+        "payment_results": {
+          "stripe_integration_ready": true,
+          "payment_endpoints_configured": true,
+          "security_compliance": true,
+          "test_mode_functional": true
+        }
+      },
+      "performance_metrics": {
+        "cycle_duration": 96.55173707008362,
+        "ssl_active": false,
+        "domains_accessible": 0
+      }
+    }
+  ]
+}

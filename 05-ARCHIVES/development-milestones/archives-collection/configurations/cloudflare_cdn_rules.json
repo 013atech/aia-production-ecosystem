@@ -1,0 +1,307 @@
+{
+  "aia_optimal_cdn_configuration": {
+    "version": "2.0.0",
+    "created_by": "AIA Multi-Agent System - Cryptography Agent Lead",
+    "deployment_date": "2025-10-04",
+    "
+": "Enterprise-grade Cloudflare optimization for 013a.tech",
+
+    "page_rules": [
+      {
+        "url": "013a.tech/*",
+        "actions": {
+          "cache_level": "cache_everything",
+          "edge_cache_ttl": 7200,
+          "browser_cache_ttl": 1800,
+          "security_level": "high",
+          "ssl": "strict"
+        },
+        "priority": 1,
+        "status": "active",
+        "description": "Root domain optimization - Frontend assets"
+      },
+      {
+        "url": "api.013a.tech/*",
+        "actions": {
+          "cache_level": "bypass",
+          "security_level": "high",
+          "ssl": "strict",
+          "browser_integrity_check": "on"
+        },
+        "priority": 2,
+        "status": "active",
+        "description": "API endpoint - Dynamic content, high security"
+      },
+      {
+        "url": "*.013a.tech/*.{wasm,glb,gltf,bin,hdr}",
+        "actions": {
+          "cache_level": "cache_everything",
+          "edge_cache_ttl": 86400,
+          "browser_cache_ttl": 3600,
+          "compress": "gzip"
+        },
+        "priority": 3,
+        "status": "active",
+        "description": "3D Assets - Three.js WebXR optimization"
+      },
+      {
+        "url": "xr.013a.tech/*",
+        "actions": {
+          "cache_level": "cache_everything",
+          "edge_cache_ttl": 1800,
+          "browser_cache_ttl": 300,
+          "security_level": "medium",
+          "development_mode": "off"
+        },
+        "priority": 4,
+        "status": "active",
+        "description": "WebXR endpoint - Immersive 3D experiences"
+      }
+    ],
+
+    "firewall_rules": [
+      {
+        "description": "Enterprise API Rate Limiting",
+        "expression": "(http.host eq \"api.013a.tech\")",
+        "action": "challenge",
+        "priority": 1000,
+        "rate_limit": {
+          "threshold": 1000,
+          "period": 60,
+          "action": "challenge"
+        }
+      },
+      {
+        "description": "ML Endpoint Protection",
+        "expression": "(http.request.uri.path contains \"/api/ml/\")",
+        "action": "managed_challenge",
+        "priority": 2000,
+        "rate_limit": {
+          "threshold": 100,
+          "period": 60,
+          "action": "block"
+        }
+      },
+      {
+        "description": "Enterprise Partner Access",
+        "expression": "(http.host eq \"partners.013a.tech\")",
+        "action": "whitelist",
+        "priority": 500,
+        "description_detail": "JPMorgan Chase + EY integration endpoints"
+      }
+    ],
+
+    "load_balancing": {
+      "pools": [
+        {
+          "name": "aia-blue-production",
+          "origins": [
+            {
+              "name": "blue-api",
+              "address": "34.6.14.233",
+              "weight": 1.0,
+              "enabled": true
+            }
+          ],
+          "monitor": {
+            "type": "http",
+            "path": "/health",
+            "interval": 30,
+            "timeout": 10,
+            "retries": 3,
+            "expected_codes": "200"
+          }
+        },
+        {
+          "name": "aia-green-staging",
+          "origins": [
+            {
+              "name": "green-api",
+              "address": "34.6.14.233",
+              "weight": 0.0,
+              "enabled": false,
+              "comment": "Staging environment - activated during deployments"
+            }
+          ],
+          "monitor": {
+            "type": "http",
+            "path": "/health",
+            "interval": 60,
+            "timeout": 10,
+            "retries": 2,
+            "expected_codes": "200"
+          }
+        },
+        {
+          "name": "aia-enterprise-ultimate",
+          "origins": [
+            {
+              "name": "ultimate-monitoring",
+              "address": "34.6.155.119",
+              "weight": 1.0,
+              "enabled": true
+            }
+          ],
+          "monitor": {
+            "type": "http",
+            "path": "/health",
+            "interval": 15,
+            "timeout": 5,
+            "retries": 5,
+            "expected_codes": "200,201,202"
+          }
+        }
+      ],
+
+      "load_balancers": [
+        {
+          "name": "aia-api-lb",
+          "default_pool": "aia-blue-production",
+          "fallback_pool": "aia-enterprise-ultimate",
+          "region_pools": {
+            "WEU": ["aia-blue-production"],
+            "NAE": ["aia-blue-production"],
+            "APAC": ["aia-blue-production"]
+          },
+          "session_affinity": "cookie"
+        }
+      ]
+    },
+
+    "cache_rules": {
+      "frontend_assets": {
+        "match": "*.{js,css,png,jpg,svg,ico,woff,woff2}",
+        "cache_level": "cache_everything",
+        "edge_cache_ttl": 7200,
+        "browser_cache_ttl": 1800,
+        "compress": "brotli"
+      },
+
+      "3d_assets": {
+        "match": "*.{wasm,glb,gltf,bin,hdr,exr,ktx2}",
+        "cache_level": "cache_everything",
+        "edge_cache_ttl": 86400,
+        "browser_cache_ttl": 3600,
+        "compress": "gzip",
+        "description": "Three.js and WebXR asset optimization"
+      },
+
+      "api_responses": {
+        "match": "/api/analytics/*",
+        "cache_level": "cache_everything",
+        "edge_cache_ttl": 300,
+        "browser_cache_ttl": 60,
+        "description": "Analytics API caching for dashboard performance"
+      },
+
+      "ml_inference": {
+        "match": "/api/ml/*",
+        "cache_level": "cache_everything",
+        "edge_cache_ttl": 300,
+        "browser_cache_ttl": 0,
+        "description": "ML inference response caching"
+      },
+
+      "dynamic_content": {
+        "match": "/api/user/*",
+        "cache_level": "bypass",
+        "description": "User-specific dynamic content - no caching"
+      }
+    },
+
+    "security_headers": {
+      "content_security_policy": "default-src 'self'; script-src 'self' 'unsafe-eval' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' wss: https:; worker-src 'self' blob:; frame-src 'self' https://js.stripe.com;",
+      "x_frame_options": "DENY",
+      "x_content_type_options": "nosniff",
+      "referrer_policy": "strict-origin-when-cross-origin",
+      "permissions_policy": "accelerometer=(), camera=(), geolocation=(), microphone=(), payment=(self)",
+      "strict_transport_security": "max-age=31536000; includeSubDomains; preload"
+    },
+
+    "geographic_optimization": {
+      "europe": {
+        "edge_servers": "optimized_for_webxr",
+        "compression": "maximum",
+        "cdn_priority": "ultra_low_latency"
+      },
+      "north_america": {
+        "edge_servers": "high_performance_rendering",
+        "compression": "balanced",
+        "cdn_priority": "high_throughput"
+      },
+      "asia_pacific": {
+        "edge_servers": "mobile_first_optimization",
+        "compression": "maximum",
+        "cdn_priority": "bandwidth_efficient"
+      }
+    },
+
+    "enterprise_features": {
+      "jpmorgan_integration": {
+        "subdomain": "partners.013a.tech",
+        "security_level": "ultra_high",
+        "ssl_mode": "strict",
+        "rate_limiting": {
+          "requests_per_minute": 500,
+          "burst_capacity": 100
+        }
+      },
+
+      "ey_partnership": {
+        "subdomain": "partners.013a.tech",
+        "compliance": "sox_ready",
+        "audit_logging": "comprehensive"
+      },
+
+      "webxr_enterprise": {
+        "subdomain": "xr.013a.tech",
+        "optimization": "ultra_low_latency",
+        "target_fps": 90,
+        "motion_to_photon": "sub_20ms"
+      }
+    },
+
+    "monitoring_and_analytics": {
+      "real_time_metrics": true,
+      "custom_analytics": {
+        "3d_performance_tracking": true,
+        "webxr_session_analytics": true,
+        "ml_inference_metrics": true,
+        "blue_green_deployment_tracking": true
+      },
+      "alerts": {
+        "performance_degradation": {
+          "threshold": "response_time > 500ms",
+          "action": "email_notification"
+        },
+        "security_incidents": {
+          "threshold": "threat_score > 25",
+          "action": "immediate_notification"
+        },
+        "capacity_issues": {
+          "threshold": "cpu_usage > 80%",
+          "action": "auto_scale_trigger"
+        }
+      }
+    },
+
+    "deployment_automation": {
+      "blue_green_switching": {
+        "health_check_required": true,
+        "gradual_rollout_percentage": [1, 5, 25, 50, 100],
+        "rollback_triggers": [
+          "error_rate > 1%",
+          "response_time > 1000ms",
+          "health_check_failure"
+        ]
+      },
+
+      "canary_deployment": {
+        "enabled": true,
+        "default_percentage": 0,
+        "max_percentage": 25,
+        "duration_minutes": 30
+      }
+    }
+  }
+}

@@ -1,0 +1,150 @@
+# TEMPORARILY DISABLED FOR QUOTA COMPLIANCE
+# This deployment has been temporarily disabled to meet GCP quota requirements
+# Original content below (commented out):
+#
+# # Optimized Cloud Build Configuration for AIA Full-Stack Enterprise Platform
+# # Enhanced with Kaniko caching, parallel builds, and microservices architecture
+# 
+# steps:
+# # Parallel Frontend Build with Advanced Caching
+# - name: 'gcr.io/kaniko-project/executor:latest'
+#   args: [
+#     '--dockerfile=./frontend/Dockerfile',
+#     '--destination=us-central1-docker.pkg.dev/$PROJECT_ID/aia-repo/aia-frontend:$BUILD_ID',
+#     '--destination=us-central1-docker.pkg.dev/$PROJECT_ID/aia-repo/aia-frontend:latest',
+#     '--context=./frontend',
+#     '--cache=true',
+#     '--cache-repo=us-central1-docker.pkg.dev/$PROJECT_ID/aia-repo/aia-frontend/cache',
+#     '--cache-ttl=168h',
+#     '--push-retry=3',
+#     '--build-arg=NODE_ENV=production',
+#     '--build-arg=GENERATE_SOURCEMAP=false'
+#   ]
+#   timeout: 1200s
+#   id: 'build-frontend'
+# 
+# # Parallel Backend Build with Advanced Caching
+# - name: 'gcr.io/kaniko-project/executor:latest'
+#   args: [
+#     '--dockerfile=./aia/Dockerfile',
+#     '--destination=us-central1-docker.pkg.dev/$PROJECT_ID/aia-repo/aia-backend:$BUILD_ID',
+#     '--destination=us-central1-docker.pkg.dev/$PROJECT_ID/aia-repo/aia-backend:latest',
+#     '--context=./aia',
+#     '--cache=true',
+#     '--cache-repo=us-central1-docker.pkg.dev/$PROJECT_ID/aia-repo/aia-backend/cache',
+#     '--cache-ttl=168h',
+#     '--push-retry=3'
+#   ]
+#   timeout: 1800s
+#   id: 'build-backend'
+# 
+# # ML Processing Microservice Build
+# - name: 'gcr.io/kaniko-project/executor:latest'
+#   args: [
+#     '--dockerfile=./frontend/Dockerfile.ml-processor',
+#     '--destination=us-central1-docker.pkg.dev/$PROJECT_ID/aia-repo/aia-ml-processor:$BUILD_ID',
+#     '--destination=us-central1-docker.pkg.dev/$PROJECT_ID/aia-repo/aia-ml-processor:latest',
+#     '--context=./frontend',
+#     '--cache=true',
+#     '--cache-repo=us-central1-docker.pkg.dev/$PROJECT_ID/aia-repo/aia-ml-processor/cache',
+#     '--cache-ttl=168h',
+#     '--push-retry=3'
+#   ]
+#   timeout: 1500s
+#   id: 'build-ml-processor'
+# 
+# # Payment Processing Microservice Build
+# - name: 'gcr.io/kaniko-project/executor:latest'
+#   args: [
+#     '--dockerfile=./aia/payment/Dockerfile',
+#     '--destination=us-central1-docker.pkg.dev/$PROJECT_ID/aia-repo/aia-payment-processor:$BUILD_ID',
+#     '--destination=us-central1-docker.pkg.dev/$PROJECT_ID/aia-repo/aia-payment-processor:latest',
+#     '--context=./aia',
+#     '--cache=true',
+#     '--cache-repo=us-central1-docker.pkg.dev/$PROJECT_ID/aia-repo/aia-payment-processor/cache',
+#     '--cache-ttl=168h',
+#     '--push-retry=3'
+#   ]
+#   timeout: 1200s
+#   id: 'build-payment-processor'
+# 
+# # Enterprise Partners Microservice Build
+# - name: 'gcr.io/kaniko-project/executor:latest'
+#   args: [
+#     '--dockerfile=./aia/enterprise/Dockerfile',
+#     '--destination=us-central1-docker.pkg.dev/$PROJECT_ID/aia-repo/aia-enterprise-partners:$BUILD_ID',
+#     '--destination=us-central1-docker.pkg.dev/$PROJECT_ID/aia-repo/aia-enterprise-partners:latest',
+#     '--context=./aia',
+#     '--cache=true',
+#     '--cache-repo=us-central1-docker.pkg.dev/$PROJECT_ID/aia-repo/aia-enterprise-partners/cache',
+#     '--cache-ttl=168h',
+#     '--push-retry=3'
+#   ]
+#   timeout: 1200s
+#   id: 'build-enterprise-partners'
+# 
+# # Security Service Microservice Build
+# - name: 'gcr.io/kaniko-project/executor:latest'
+#   args: [
+#     '--dockerfile=./aia/security/Dockerfile',
+#     '--destination=us-central1-docker.pkg.dev/$PROJECT_ID/aia-repo/aia-security-service:$BUILD_ID',
+#     '--destination=us-central1-docker.pkg.dev/$PROJECT_ID/aia-repo/aia-security-service:latest',
+#     '--context=./aia',
+#     '--cache=true',
+#     '--cache-repo=us-central1-docker.pkg.dev/$PROJECT_ID/aia-repo/aia-security-service/cache',
+#     '--cache-ttl=168h',
+#     '--push-retry=3'
+#   ]
+#   timeout: 1200s
+#   id: 'build-security-service'
+# 
+# # Subscription Management Microservice Build
+# - name: 'gcr.io/kaniko-project/executor:latest'
+#   args: [
+#     '--dockerfile=./aia/subscription/Dockerfile',
+#     '--destination=us-central1-docker.pkg.dev/$PROJECT_ID/aia-repo/aia-subscription-manager:$BUILD_ID',
+#     '--destination=us-central1-docker.pkg.dev/$PROJECT_ID/aia-repo/aia-subscription-manager:latest',
+#     '--context=./aia',
+#     '--cache=true',
+#     '--cache-repo=us-central1-docker.pkg.dev/$PROJECT_ID/aia-repo/aia-subscription-manager/cache',
+#     '--cache-ttl=168h',
+#     '--push-retry=3'
+#   ]
+#   timeout: 1200s
+#   id: 'build-subscription-manager'
+# 
+# # Deploy to GKE with Blue-Green Strategy
+# - name: 'gcr.io/cloud-builders/kubectl'
+#   args: ['apply', '-f', './aia/k8s-blue-green-full-deployment.yaml']
+#   env:
+#   - 'CLOUDSDK_COMPUTE_ZONE=us-central1-a'
+#   - 'CLOUDSDK_CONTAINER_CLUSTER=aia-production-us-central1'
+#   waitFor: ['build-frontend', 'build-backend', 'build-ml-processor', 'build-payment-processor', 'build-enterprise-partners', 'build-security-service', 'build-subscription-manager']
+#   id: 'deploy-to-gke'
+# 
+# # Update Load Balancer and SSL Configuration
+# - name: 'gcr.io/cloud-builders/kubectl'
+#   args: ['apply', '-f', './aia/k8s-ingress-ssl.yaml']
+#   env:
+#   - 'CLOUDSDK_COMPUTE_ZONE=us-central1-a'
+#   - 'CLOUDSDK_CONTAINER_CLUSTER=aia-production-us-central1'
+#   waitFor: ['deploy-to-gke']
+#   id: 'configure-ingress-ssl'
+# 
+# # Health Check and Validation
+# - name: 'gcr.io/cloud-builders/curl'
+#   args: ['--fail', '--max-time', '30', 'https://013a.tech/health']
+#   waitFor: ['configure-ingress-ssl']
+#   id: 'health-check'
+# 
+# options:
+#   substitution_option: ALLOW_LOOSE
+#   machineType: 'E2_HIGHCPU_32'  # Upgraded for parallel builds
+#   diskSizeGb: 200
+#   dynamic_substitutions: true
+#   logging: CLOUD_LOGGING_ONLY
+#   env:
+#   - 'DOCKER_BUILDKIT=1'
+#   - 'KANIKO_CACHE_LAYERS=true'
+# 
+# timeout: 2400s  # 40 minutes for full build

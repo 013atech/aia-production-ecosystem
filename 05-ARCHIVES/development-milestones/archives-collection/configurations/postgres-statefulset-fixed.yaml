@@ -1,0 +1,70 @@
+# PostgreSQL Database for 013a Analytics - Fixed
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: aia-analytics-postgres
+  namespace: analytics-platform
+spec:
+  serviceName: aia-analytics-postgres
+  replicas: 1
+  selector:
+    matchLabels:
+      app: aia-analytics-postgres
+  template:
+    metadata:
+      labels:
+        app: aia-analytics-postgres
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:15-alpine
+        env:
+        - name: POSTGRES_DB
+          value: "analytics_db"
+        - name: POSTGRES_USER
+          value: "analytics_user"
+        - name: POSTGRES_PASSWORD
+          value: "analytics_pass"
+        - name: PGDATA
+          value: "/var/lib/postgresql/data/pgdata"
+        ports:
+        - containerPort: 5432
+        volumeMounts:
+        - name: postgres-storage
+          mountPath: /var/lib/postgresql/data
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "200m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+        livenessProbe:
+          exec:
+            command:
+            - pg_isready
+            - -U
+            - analytics_user
+            - -d
+            - analytics_db
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          exec:
+            command:
+            - pg_isready
+            - -U
+            - analytics_user
+            - -d
+            - analytics_db
+          initialDelaySeconds: 5
+          periodSeconds: 5
+  volumeClaimTemplates:
+  - metadata:
+      name: postgres-storage
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 20Gi
+      storageClassName: premium-rwo

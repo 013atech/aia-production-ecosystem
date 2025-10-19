@@ -1,0 +1,233 @@
+{
+  "production_validation_summary": {
+    "overall_score": 78.0,
+    "status": "GOOD",
+    "status_icon": "\ud83d\udfe1",
+    "test_timestamp": "2025-10-03T14:33:34.367037",
+    "recommendations": [
+      "\ud83d\udd12 Implement additional security headers"
+    ]
+  },
+  "detailed_results": {
+    "website_accessibility": [
+      {
+        "url": "https://013a.tech",
+        "status": "PASS",
+        "http_status": 200,
+        "load_time_ms": 185.90307235717773,
+        "content_size": 11387,
+        "has_aia_branding": true,
+        "has_title": true,
+        "has_scripts": true,
+        "headers": {
+          "Date": "Fri, 03 Oct 2025 12:33:31 GMT",
+          "Content-Type": "text/html",
+          "Transfer-Encoding": "chunked",
+          "Connection": "keep-alive",
+          "Server": "cloudflare",
+          "Last-Modified": "Mon, 29 Sep 2025 14:29:47 GMT",
+          "Nel": "{\"report_to\":\"cf-nel\",\"success_fraction\":0.0,\"max_age\":604800}",
+          "Report-To": "{\"group\":\"cf-nel\",\"max_age\":604800,\"endpoints\":[{\"url\":\"https://a.nel.cloudflare.com/report/v4?s=hkmbdXIlyFbBxuT7M1mpH3MTk5cTgXPwike7usRzTGDDAW8G4rUPfwh88k8hWtiDSK3X59%2BwHUzsXYGpXIsU%2FgBJWkk6lBCRow%3D%3D\"}]}",
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          "Pragma": "no-cache",
+          "Expires": "0",
+          "Speculation-Rules": "\"/cdn-cgi/speculation\"",
+          "cf-cache-status": "DYNAMIC",
+          "Content-Encoding": "br",
+          "CF-RAY": "988c77ed6d6d86dc-AMS",
+          "alt-svc": "h3=\":443\"; ma=86400"
+        }
+      },
+      {
+        "url": "https://013a.tech/",
+        "status": "PASS",
+        "http_status": 200,
+        "load_time_ms": 54.69512939453125,
+        "content_size": 11387,
+        "has_aia_branding": true,
+        "has_title": true,
+        "has_scripts": true,
+        "headers": {
+          "Date": "Fri, 03 Oct 2025 12:33:31 GMT",
+          "Content-Type": "text/html",
+          "Transfer-Encoding": "chunked",
+          "Connection": "keep-alive",
+          "Server": "cloudflare",
+          "Last-Modified": "Mon, 29 Sep 2025 14:29:47 GMT",
+          "Nel": "{\"report_to\":\"cf-nel\",\"success_fraction\":0.0,\"max_age\":604800}",
+          "Report-To": "{\"group\":\"cf-nel\",\"max_age\":604800,\"endpoints\":[{\"url\":\"https://a.nel.cloudflare.com/report/v4?s=sc7Iyj6NG3QumMZMmqssHoLNqP3g0LsMddAP4dW8vY6RyhBgueDC%2FuzzROHfuUFotYiIfaFIGIeLtqCYli8cKsCangnLgubjXQ%3D%3D\"}]}",
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          "Pragma": "no-cache",
+          "Expires": "0",
+          "Speculation-Rules": "\"/cdn-cgi/speculation\"",
+          "cf-cache-status": "DYNAMIC",
+          "Content-Encoding": "br",
+          "CF-RAY": "988c77ee0ec486dc-AMS",
+          "alt-svc": "h3=\":443\"; ma=86400"
+        }
+      },
+      {
+        "url": "http://35.204.144.16/",
+        "status": "PASS",
+        "http_status": 200,
+        "load_time_ms": 120.89800834655762,
+        "content_size": 10468,
+        "has_aia_branding": true,
+        "has_title": true,
+        "has_scripts": true,
+        "headers": {
+          "Server": "nginx/1.29.1",
+          "Date": "Fri, 03 Oct 2025 12:33:31 GMT",
+          "Content-Type": "text/html",
+          "Content-Length": "10468",
+          "Last-Modified": "Mon, 29 Sep 2025 14:29:47 GMT",
+          "Connection": "keep-alive",
+          "Etag": "\"68da97db-28e4\"",
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          "Pragma": "no-cache",
+          "Expires": "0",
+          "Accept-Ranges": "bytes"
+        }
+      }
+    ],
+    "frontend_performance": {
+      "statistics": {
+        "avg_response_time_ms": 70.23000717163086,
+        "min_response_time_ms": 54.30126190185547,
+        "max_response_time_ms": 93.8868522644043,
+        "std_deviation": 19.12719434193759,
+        "success_rate": 100.0
+      },
+      "individual_requests": [
+        {
+          "request_number": 1,
+          "response_time_ms": 54.30126190185547,
+          "status_code": 200,
+          "cache_status": "DYNAMIC"
+        },
+        {
+          "request_number": 2,
+          "response_time_ms": 88.14477920532227,
+          "status_code": 200,
+          "cache_status": "DYNAMIC"
+        },
+        {
+          "request_number": 3,
+          "response_time_ms": 57.015180587768555,
+          "status_code": 200,
+          "cache_status": "DYNAMIC"
+        },
+        {
+          "request_number": 4,
+          "response_time_ms": 57.80196189880371,
+          "status_code": 200,
+          "cache_status": "DYNAMIC"
+        },
+        {
+          "request_number": 5,
+          "response_time_ms": 93.8868522644043,
+          "status_code": 200,
+          "cache_status": "DYNAMIC"
+        }
+      ]
+    },
+    "content_validation": {
+      "validation_checks": {
+        "has_html_structure": true,
+        "has_css_styles": true,
+        "has_javascript": true,
+        "has_meta_tags": true,
+        "has_navigation": false,
+        "has_responsive_design": true,
+        "aia_branding_present": true,
+        "modern_ui_elements": true,
+        "interactive_elements": true,
+        "professional_styling": true
+      },
+      "element_counts": {
+        "total_links": 0,
+        "total_buttons": 4,
+        "total_scripts": 2,
+        "total_images": 0,
+        "content_length": 11387
+      },
+      "content_quality_score": 90.0,
+      "content_preview": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n    <meta charset=\"UTF-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n    <title>AIA Cognitive System - Live</title>\n    <style>\n        * {\n            margin: 0;\n            padding: 0;\n            box-sizing: border-box;\n        }\n\n        body {\n            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;\n            background: #1E1E1E;\n            color: #F5F5DC;\n            line-height: 1.6;\n        }\n\n  ..."
+    },
+    "security_headers": {
+      "security_headers_present": {
+        "strict-transport-security": null,
+        "content-security-policy": null,
+        "x-frame-options": null,
+        "x-content-type-options": null,
+        "x-xss-protection": null,
+        "referrer-policy": null
+      },
+      "cloudflare_headers": {
+        "cf-cache-status": "DYNAMIC",
+        "cf-ray": "988c77f1a82f86dc-AMS",
+        "server": "cloudflare"
+      },
+      "security_score": 0.0,
+      "all_headers": {
+        "Date": "Fri, 03 Oct 2025 12:33:32 GMT",
+        "Content-Type": "text/html",
+        "Transfer-Encoding": "chunked",
+        "Connection": "keep-alive",
+        "Server": "cloudflare",
+        "Last-Modified": "Mon, 29 Sep 2025 14:29:47 GMT",
+        "Nel": "{\"report_to\":\"cf-nel\",\"success_fraction\":0.0,\"max_age\":604800}",
+        "Report-To": "{\"group\":\"cf-nel\",\"max_age\":604800,\"endpoints\":[{\"url\":\"https://a.nel.cloudflare.com/report/v4?s=6aLZQo21fDWi%2BZy230uAxEb2O8iDC%2BZZI3nHDY6Hjf4aa5QBpdX4WPKbEdyNCnQSuhPXqjah4IG%2FM2oFvz6dv4BTE0KAKd5H%2Bg%3D%3D\"}]}",
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+        "Pragma": "no-cache",
+        "Expires": "0",
+        "Speculation-Rules": "\"/cdn-cgi/speculation\"",
+        "cf-cache-status": "DYNAMIC",
+        "Content-Encoding": "br",
+        "CF-RAY": "988c77f1a82f86dc-AMS",
+        "alt-svc": "h3=\":443\"; ma=86400"
+      }
+    },
+    "load_capacity": {
+      "total_requests": 10,
+      "successful_requests": 10,
+      "failed_requests": 0,
+      "success_rate": 100.0,
+      "avg_response_time": 218.60618591308594,
+      "max_response_time": 282.6848030090332,
+      "requests_per_second": 35.30065664225369,
+      "total_test_time_ms": 283.2808494567871
+    },
+    "cdn_performance": {
+      "cache_test_results": [
+        {
+          "request": 1,
+          "cf_cache_status": "DYNAMIC",
+          "cf_ray": "988c77f3dfc9c886-AMS",
+          "server": "cloudflare",
+          "cache_control": "no-cache, no-store, must-revalidate"
+        },
+        {
+          "request": 2,
+          "cf_cache_status": "DYNAMIC",
+          "cf_ray": "988c77f74e325671-AMS",
+          "server": "cloudflare",
+          "cache_control": "no-cache, no-store, must-revalidate"
+        },
+        {
+          "request": 3,
+          "cf_cache_status": "DYNAMIC",
+          "cf_ray": "988c77faceb98cb0-AMS",
+          "server": "cloudflare",
+          "cache_control": "no-cache, no-store, must-revalidate"
+        }
+      ],
+      "cdn_effectiveness_percent": 100.0,
+      "cloudflare_active": true
+    }
+  },
+  "system_readiness": {
+    "ready_for_production": true,
+    "confidence_level": "MEDIUM"
+  }
+}

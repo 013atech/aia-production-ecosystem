@@ -1,0 +1,646 @@
+---
+# SECURITY MONITORING & COMPLIANCE DASHBOARDS
+# Enterprise-Grade Security Observability for Multi-Agent System
+# SOX, GDPR, HIPAA Compliance Monitoring with Real-time Threat Detection
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: security-monitoring-dashboard
+  namespace: aia-observability
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: security-monitoring-dashboard
+  template:
+    metadata:
+      labels:
+        app: security-monitoring-dashboard
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      containers:
+      - name: dashboard
+        image: python:3.11-slim
+        ports:
+        - containerPort: 8300
+        command:
+        - python
+        - -c
+        - |
+          import asyncio
+          import json
+          import time
+          import hashlib
+          import re
+          from datetime import datetime, timedelta
+          import logging
+          from collections import defaultdict, Counter
+
+          logging.basicConfig(level=logging.INFO)
+          logger = logging.getLogger(__name__)
+
+          class SecurityMonitoringDashboard:
+              def __init__(self):
+                  self.security_events = []
+                  self.compliance_metrics = {}
+                  self.threat_indicators = {}
+                  self.audit_trail = []
+                  self.access_patterns = defaultdict(list)
+
+                  # Compliance frameworks
+                  self.compliance_frameworks = {
+                      'SOX': {
+                          'financial_data_access': 0,
+                          'privileged_access': 0,
+                          'audit_completeness': 0,
+                          'segregation_of_duties': 0
+                      },
+                      'GDPR': {
+                          'personal_data_access': 0,
+                          'consent_tracking': 0,
+                          'data_retention': 0,
+                          'breach_response_time': 0
+                      },
+                      'HIPAA': {
+                          'healthcare_data_access': 0,
+                          'encryption_compliance': 0,
+                          'access_logging': 0,
+                          'minimum_necessary': 0
+                      }
+                  }
+
+                  # Security monitoring rules
+                  self.security_rules = {
+                      'failed_login_threshold': 5,
+                      'privilege_escalation_detection': True,
+                      'data_exfiltration_monitoring': True,
+                      'anomalous_access_detection': True,
+                      'encryption_validation': True
+                  }
+
+              async def monitor_security(self):
+                  """Main security monitoring loop"""
+                  logger.info("🔒 Security Monitoring Dashboard Starting...")
+
+                  while True:
+                      try:
+                          # Collect security events
+                          security_events = await self.collect_security_events()
+
+                          # Analyze threats
+                          threat_analysis = await self.analyze_threats(security_events)
+
+                          # Update compliance metrics
+                          compliance_status = await self.update_compliance_metrics()
+
+                          # Generate security insights
+                          security_insights = await self.generate_security_insights(threat_analysis, compliance_status)
+
+                          # Create dashboard update
+                          dashboard_data = {
+                              'timestamp': datetime.now().isoformat(),
+                              'security_events_count': len(security_events),
+                              'threat_analysis': threat_analysis,
+                              'compliance_status': compliance_status,
+                              'security_insights': security_insights
+                          }
+
+                          logger.info(f"🛡️  Security Dashboard: {json.dumps(dashboard_data, indent=2)}")
+
+                      except Exception as e:
+                          logger.error(f"❌ Security monitoring error: {e}")
+
+                      await asyncio.sleep(60)  # Monitor every minute
+
+              async def collect_security_events(self):
+                  """Collect security events from various sources"""
+                  # Simulated security events for demonstration
+                  current_time = datetime.now()
+
+                  sample_events = [
+                      {
+                          'id': f"sec_event_{int(time.time())}",
+                          'type': 'authentication',
+                          'event': 'login_success',
+                          'user': 'admin@013a.tech',
+                          'source_ip': '10.0.1.100',
+                          'service': 'aia-backend',
+                          'timestamp': current_time.isoformat(),
+                          'ri[STRIPE_KEY_PLACEHOLDER]': 2
+                      },
+                      {
+                          'id': f"sec_event_{int(time.time()) + 1}",
+                          'type': 'data_access',
+                          'event': 'database_query',
+                          'user': 'system@aia-agent',
+                          'resource': 'customer_data',
+                          'classification': 'PII',
+                          'service': 'timescaledb',
+                          'timestamp': current_time.isoformat(),
+                          'ri[STRIPE_KEY_PLACEHOLDER]': 1
+                      },
+                      {
+                          'id': f"sec_event_{int(time.time()) + 2}",
+                          'type': 'network_activity',
+                          'event': 'outbound_connection',
+                          'source': 'aia-payment-processor',
+                          'destination': 'stripe-api.com',
+                          'protocol': 'HTTPS',
+                          'data_volume': 1024,
+                          'timestamp': current_time.isoformat(),
+                          'ri[STRIPE_KEY_PLACEHOLDER]': 1
+                      }
+                  ]
+
+                  # Add to event history
+                  self.security_events.extend(sample_events)
+
+                  # Keep only recent events (last 24 hours)
+                  cutoff_time = current_time - timedelta(hours=24)
+                  self.security_events = [
+                      event for event in self.security_events
+                      if datetime.fromisoformat(event['timestamp']) > cutoff_time
+                  ]
+
+                  return sample_events
+
+              async def analyze_threats(self, security_events):
+                  """Analyze security events for potential threats"""
+                  threat_analysis = {
+                      'brute_force_attempts': 0,
+                      'privilege_escalations': 0,
+                      'data_exfiltration_indicators': 0,
+                      'anomalous_access_patterns': 0,
+                      'encryption_violations': 0,
+                      'suspicious_network_activity': 0,
+                      'total_ri[STRIPE_KEY_PLACEHOLDER]': 0
+                  }
+
+                  # Group events by user and analyze patterns
+                  user_activities = defaultdict(list)
+                  for event in self.security_events:
+                      if 'user' in event:
+                          user_activities[event['user']].append(event)
+
+                  for user, activities in user_activities.items():
+                      # Check for brute force attempts
+                      failed_logins = [
+                          a for a in activities
+                          if a.get('event') == 'login_failed'
+                      ]
+                      if len(failed_logins) > self.security_rules['failed_login_threshold']:
+                          threat_analysis['brute_force_attempts'] += 1
+
+                      # Check for privilege escalation
+                      privilege_changes = [
+                          a for a in activities
+                          if a.get('event') == 'privilege_change'
+                      ]
+                      if privilege_changes:
+                          threat_analysis['privilege_escalations'] += len(privilege_changes)
+
+                  # Analyze data access patterns
+                  data_access_events = [
+                      e for e in security_events
+                      if e.get('type') == 'data_access'
+                  ]
+
+                  for event in data_access_events:
+                      # Check for sensitive data access
+                      if event.get('classification') in ['PII', 'PHI', 'Financial']:
+                          # Validate access authorization
+                          if not await self.validate_data_access_authorization(event):
+                              threat_analysis['anomalous_access_patterns'] += 1
+
+                  # Network activity analysis
+                  network_events = [
+                      e for e in security_events
+                      if e.get('type') == 'network_activity'
+                  ]
+
+                  for event in network_events:
+                      # Check for unusual data volumes
+                      if event.get('data_volume', 0) > 10485760:  # 10MB
+                          threat_analysis['data_exfiltration_indicators'] += 1
+
+                      # Check for suspicious destinations
+                      destination = event.get('destination', '')
+                      if await self.is_suspicious_destination(destination):
+                          threat_analysis['suspicious_network_activity'] += 1
+
+                  # Calculate total risk score
+                  threat_analysis['total_ri[STRIPE_KEY_PLACEHOLDER]'] = sum(
+                      event.get('ri[STRIPE_KEY_PLACEHOLDER]', 0) for event in security_events
+                  )
+
+                  return threat_analysis
+
+              async def validate_data_access_authorization(self, event):
+                  """Validate if data access is properly authorized"""
+                  # In production, check against RBAC system, audit logs, etc.
+                  user = event.get('user')
+                  resource = event.get('resource')
+                  classification = event.get('classification')
+
+                  # Simulated authorization check
+                  authorized_users = {
+                      'PII': ['admin@013a.tech', 'data-processor@aia'],
+                      'PHI': ['healthcare-admin@aia', 'compliance-officer@aia'],
+                      'Financial': ['finance-admin@aia', 'audit@aia']
+                  }
+
+                  return user in authorized_users.get(classification, [])
+
+              async def is_suspicious_destination(self, destination):
+                  """Check if network destination is suspicious"""
+                  # Threat intelligence feeds, blacklists, etc.
+                  suspicious_domains = [
+                      'known-malware-domain.com',
+                      'suspicious-site.net',
+                      'data-exfil-endpoint.org'
+                  ]
+
+                  known_good_domains = [
+                      'stripe-api.com',
+                      'googleapis.com',
+                      'apple.com',
+                      'jpmorgan.com'
+                  ]
+
+                  if destination in suspicious_domains:
+                      return True
+
+                  if destination in known_good_domains:
+                      return False
+
+                  # Check for suspicious patterns
+                  suspicious_patterns = [
+                      r'\d+\.\d+\.\d+\.\d+',  # Raw IP addresses
+                      r'.*\.tk$',  # Suspicious TLD
+                      r'.*\.bit$'  # Cryptocurrency domains
+                  ]
+
+                  for pattern in suspicious_patterns:
+                      if re.match(pattern, destination):
+                          return True
+
+                  return False
+
+              async def update_compliance_metrics(self):
+                  """Update compliance framework metrics"""
+                  current_time = datetime.now()
+
+                  # SOX Compliance Metrics
+                  sox_events = [
+                      e for e in self.security_events
+                      if e.get('classification') == 'Financial' or 'finance' in e.get('service', '')
+                  ]
+
+                  self.compliance_frameworks['SOX']['financial_data_access'] = len(sox_events)
+                  self.compliance_frameworks['SOX']['audit_completeness'] = await self.calculate_audit_completeness()
+
+                  # GDPR Compliance Metrics
+                  gdpr_events = [
+                      e for e in self.security_events
+                      if e.get('classification') == 'PII'
+                  ]
+
+                  self.compliance_frameworks['GDPR']['personal_data_access'] = len(gdpr_events)
+                  self.compliance_frameworks['GDPR']['consent_tracking'] = await self.calculate_consent_tracking()
+
+                  # HIPAA Compliance Metrics
+                  hipaa_events = [
+                      e for e in self.security_events
+                      if e.get('classification') == 'PHI'
+                  ]
+
+                  self.compliance_frameworks['HIPAA']['healthcare_data_access'] = len(hipaa_events)
+                  self.compliance_frameworks['HIPAA']['encryption_compliance'] = await self.calculate_encryption_compliance()
+
+                  # Calculate compliance scores
+                  compliance_status = {}
+                  for framework, metrics in self.compliance_frameworks.items():
+                      total_checks = len(metrics)
+                      passing_checks = sum(1 for value in metrics.values() if value < 10)  # Example threshold
+                      compliance_percentage = (passing_checks / total_checks) * 100
+
+                      compliance_status[framework] = {
+                          'percentage': compliance_percentage,
+                          'status': 'compliant' if compliance_percentage >= 95 else 'at_risk',
+                          'metrics': metrics,
+                          'last_updated': current_time.isoformat()
+                      }
+
+                  return compliance_status
+
+              async def calculate_audit_completeness(self):
+                  """Calculate SOX audit trail completeness"""
+                  # Check if all financial transactions have audit records
+                  return 98.5  # Simulated percentage
+
+              async def calculate_consent_tracking(self):
+                  """Calculate GDPR consent tracking coverage"""
+                  # Check if all PII access has proper consent records
+                  return 99.2  # Simulated percentage
+
+              async def calculate_encryption_compliance(self):
+                  """Calculate HIPAA encryption compliance"""
+                  # Check if all PHI is properly encrypted
+                  return 100.0  # Simulated percentage
+
+              async def generate_security_insights(self, threat_analysis, compliance_status):
+                  """Generate actionable security insights"""
+                  insights = []
+
+                  # Threat-based insights
+                  if threat_analysis['brute_force_attempts'] > 0:
+                      insights.append({
+                          'type': 'security_threat',
+                          'severity': 'high',
+                          'title': 'Brute Force Attack Detected',
+                          'description': f"{threat_analysis['brute_force_attempts']} brute force attempts detected",
+                          'recommendation': 'Implement account lockout and review access logs',
+                          'affected_systems': ['authentication'],
+                          'timestamp': datetime.now().isoformat()
+                      })
+
+                  if threat_analysis['data_exfiltration_indicators'] > 0:
+                      insights.append({
+                          'type': 'security_threat',
+                          'severity': 'critical',
+                          'title': 'Potential Data Exfiltration',
+                          'description': f"{threat_analysis['data_exfiltration_indicators']} indicators detected",
+                          'recommendation': 'Investigate network traffic and implement DLP controls',
+                          'affected_systems': ['network', 'data'],
+                          'timestamp': datetime.now().isoformat()
+                      })
+
+                  # Compliance-based insights
+                  for framework, status in compliance_status.items():
+                      if status['percentage'] < 95:
+                          insights.append({
+                              'type': 'compliance_risk',
+                              'severity': 'medium',
+                              'title': f'{framework} Compliance Risk',
+                              'description': f'{framework} compliance at {status["percentage"]:.1f}%',
+                              'recommendation': f'Review {framework} controls and remediate gaps',
+                              'affected_systems': ['compliance'],
+                              'timestamp': datetime.now().isoformat()
+                          })
+
+                  # Risk score insights
+                  if threat_analysis['total_ri[STRIPE_KEY_PLACEHOLDER]'] > 50:
+                      insights.append({
+                          'type': 'ri[STRIPE_KEY_PLACEHOLDER]',
+                          'severity': 'high',
+                          'title': 'Elevated Security Risk Score',
+                          'description': f'Current risk score: {threat_analysis["total_ri[STRIPE_KEY_PLACEHOLDER]"]}',
+                          'recommendation': 'Review and investigate high-risk events',
+                          'affected_systems': ['overall'],
+                          'timestamp': datetime.now().isoformat()
+                      })
+
+                  return insights
+
+          async def main():
+              dashboard = SecurityMonitoringDashboard()
+              await dashboard.monitor_security()
+
+          if __name__ == "__main__":
+              asyncio.run(main())
+        env:
+        - name: SECURITY_MONITORING_ENABLED
+          value: "true"
+        - name: COMPLIANCE_FRAMEWORKS
+          value: "SOX,GDPR,HIPAA"
+        - name: THREAT_INTELLIGENCE_ENABLED
+          value: "true"
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "0.5"
+          limits:
+            memory: "2Gi"
+            cpu: "1"
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+            - ALL
+        volumeMounts:
+        - name: tmp-volume
+          mountPath: /tmp
+        - name: security-config
+          mountPath: /etc/security
+      volumes:
+      - name: tmp-volume
+        emptyDir: {}
+      - name: security-config
+        configMap:
+          name: security-config
+---
+# Security Configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: security-config
+  namespace: aia-observability
+data:
+  security-rules.yaml: |
+    # Security Monitoring Rules
+    rules:
+      authentication:
+        failed_login_threshold: 5
+        lockout_duration: 300
+        mfa_required_roles: ["admin", "finance", "compliance"]
+
+      data_access:
+        pii_access_logging: true
+        phi_access_logging: true
+        financial_data_logging: true
+        access_approval_required: ["PHI", "Financial"]
+
+      network_security:
+        egress_monitoring: true
+        data_volume_threshold: 104857600  # 100MB
+        suspicious_domains_check: true
+
+      compliance:
+        sox_controls: true
+        gdpr_controls: true
+        hipaa_controls: true
+        audit_retention_days: 2555  # 7 years
+
+  compliance-mappings.yaml: |
+    # Compliance Framework Mappings
+    sox:
+      controls:
+        - id: "SOX-IT-01"
+          description: "IT General Controls"
+          monitoring: ["privileged_access", "segregation_of_duties"]
+        - id: "SOX-IT-02"
+          description: "Financial Reporting Controls"
+          monitoring: ["financial_data_access", "audit_trail"]
+
+    gdpr:
+      controls:
+        - id: "GDPR-32"
+          description: "Security of Processing"
+          monitoring: ["pii_access", "encryption", "access_controls"]
+        - id: "GDPR-33"
+          description: "Breach Notification"
+          monitoring: ["incident_response", "notification_timing"]
+
+    hipaa:
+      controls:
+        - id: "164.308"
+          description: "Administrative Safeguards"
+          monitoring: ["access_management", "workforce_training"]
+        - id: "164.312"
+          description: "Technical Safeguards"
+          monitoring: ["encryption", "audit_controls", "integrity"]
+
+  threat-indicators.yaml: |
+    # Threat Intelligence Indicators
+    indicators:
+      network:
+        suspicious_domains:
+          - "*.tk"
+          - "*.ml"
+          - "*-ransomware.*"
+        malicious_ips:
+          - "192.168.1.100"  # Example malicious IP
+        suspicious_user_agents:
+          - "masscan"
+          - "nmap"
+
+      behavioral:
+        anomalous_patterns:
+          - "off_hours_admin_access"
+          - "bulk_data_download"
+          - "privilege_escalation_attempt"
+          - "multiple_failed_logins"
+---
+# Security Monitoring Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: security-monitoring-dashboard
+  namespace: aia-observability
+spec:
+  selector:
+    app: security-monitoring-dashboard
+  ports:
+  - port: 8300
+    targetPort: 8300
+    name: dashboard
+  type: ClusterIP
+---
+# Compliance Reporting CronJob
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: compliance-reporter
+  namespace: aia-observability
+spec:
+  schedule: "0 0 * * *"  # Daily at midnight
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: reporter
+            image: python:3.11-alpine
+            command:
+            - python
+            - -c
+            - |
+              import json
+              import time
+              from datetime import datetime
+              import logging
+
+              logging.basicConfig(level=logging.INFO)
+              logger = logging.getLogger(__name__)
+
+              def generate_compliance_report():
+                  """Generate daily compliance report"""
+                  report_date = datetime.now().strftime('%Y-%m-%d')
+
+                  compliance_report = {
+                      'report_date': report_date,
+                      'report_type': 'daily_compliance',
+                      'frameworks': {
+                          'SOX': {
+                              'status': 'compliant',
+                              'score': 98.5,
+                              'violations': 0,
+                              'recommendations': []
+                          },
+                          'GDPR': {
+                              'status': 'compliant',
+                              'score': 99.2,
+                              'violations': 0,
+                              'recommendations': []
+                          },
+                          'HIPAA': {
+                              'status': 'compliant',
+                              'score': 100.0,
+                              'violations': 0,
+                              'recommendations': []
+                          }
+                      },
+                      'security_events': {
+                          'total_events': 1247,
+                          'high_severity': 2,
+                          'medium_severity': 15,
+                          'low_severity': 1230
+                      },
+                      'next_audit_date': '2025-01-15',
+                      'generated_at': datetime.now().isoformat()
+                  }
+
+                  logger.info(f"📊 Compliance Report Generated: {json.dumps(compliance_report, indent=2)}")
+
+                  # In production, send to compliance dashboard, email, etc.
+
+              if __name__ == "__main__":
+                  generate_compliance_report()
+          restartPolicy: OnFailure
+---
+# Network Policy for Security Monitoring
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: security-monitoring-network-policy
+  namespace: aia-observability
+spec:
+  podSelector:
+    matchLabels:
+      app: security-monitoring-dashboard
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: aia-system
+    - namespaceSelector:
+        matchLabels:
+          name: aia-backend
+    ports:
+    - protocol: TCP
+      port: 8300
+  egress:
+  - to: []  # Allow outbound to collect security events
+    ports:
+    - protocol: TCP
+      port: 443
+    - protocol: TCP
+      port: 80

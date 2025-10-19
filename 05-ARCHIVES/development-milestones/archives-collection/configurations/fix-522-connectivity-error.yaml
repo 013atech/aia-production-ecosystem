@@ -1,0 +1,122 @@
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    cloud.google.com/backend-config: '{"default": "aia-backend-config"}'
+  labels:
+    app: aia-backend
+    version: cloud-sql
+  name: aia-backend-cloud-sql-service
+  namespace: aia-production
+spec:
+  ports:
+  - name: http
+    port: 80
+    protocol: TCP
+    targetPort: 8000
+    nodePort: 30900
+  - name: metrics
+    port: 8080
+    protocol: TCP
+    targetPort: 8080
+    nodePort: 30901
+  selector:
+    app: aia-backend
+    version: cloud-sql
+  type: NodePort
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: aia-frontend
+  name: aia-frontend-service-fixed
+  namespace: aia-production
+spec:
+  ports:
+  - name: http
+    port: 80
+    protocol: TCP
+    targetPort: 80
+    nodePort: 30902
+  selector:
+    app: aia-frontend
+  type: NodePort
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    cloud.google.com/armor-config: '{"default-rule": {"action": "allow"}}'
+    cloud.google.com/backend-config: '{"default": "aia-backend-config"}'
+    ingress.gcp.kubernetes.io/pre-shared-cert: mcrt-aaa6d3c3-7a01-44a3-8f6b-55be1b437d1d
+    kubernetes.io/ingress.allow-http: "true"
+    kubernetes.io/ingress.class: gce
+    kubernetes.io/ingress.global-static-ip-name: aia-production-ip
+    networking.gke.io/managed-certificates: aia-ssl-cert-013atech
+  name: aia-production-ingress-fixed
+  namespace: aia-production
+spec:
+  rules:
+  - host: 013a.tech
+    http:
+      paths:
+      - path: /api/*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-backend-cloud-sql-service
+            port:
+              number: 80
+      - path: /health
+        pathType: Exact
+        backend:
+          service:
+            name: aia-backend-cloud-sql-service
+            port:
+              number: 80
+      - path: /metrics
+        pathType: Exact
+        backend:
+          service:
+            name: aia-backend-cloud-sql-service
+            port:
+              number: 8080
+      - path: /*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-frontend-service-fixed
+            port:
+              number: 80
+  - host: www.013a.tech
+    http:
+      paths:
+      - path: /api/*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-backend-cloud-sql-service
+            port:
+              number: 80
+      - path: /health
+        pathType: Exact
+        backend:
+          service:
+            name: aia-backend-cloud-sql-service
+            port:
+              number: 80
+      - path: /metrics
+        pathType: Exact
+        backend:
+          service:
+            name: aia-backend-cloud-sql-service
+            port:
+              number: 8080
+      - path: /*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-frontend-service-fixed
+            port:
+              number: 80

@@ -1,0 +1,683 @@
+# TEMPORARILY DISABLED FOR QUOTA COMPLIANCE
+# This deployment has been temporarily disabled to meet GCP quota requirements
+# Original content below (commented out):
+#
+# # AIA Production Monitoring and Alerting System
+# # Comprehensive monitoring with Prometheus, Grafana, and Google Cloud Operations
+# apiVersion: v1
+# kind: Namespace
+# metadata:
+#   name: aia-monitoring
+#   labels:
+#     name: aia-monitoring
+#     environment: production
+# ---
+# # Prometheus Configuration
+# apiVersion: v1
+# kind: ConfigMap
+# metadata:
+#   name: prometheus-config
+#   namespace: aia-monitoring
+# data:
+#   prometheus.yml: |
+#     global:
+#       scrape_interval: 15s
+#       evaluation_interval: 15s
+#       external_labels:
+#         cluster: 'aia-production'
+#         environment: 'production'
+# 
+#     rule_files:
+#       - "/etc/prometheus/rules/*.yml"
+# 
+#     scrape_configs:
+#       # Kubernetes API Server
+#       - job_name: 'kubernetes-apiservers'
+#         kubernetes_sd_configs:
+#         - role: endpoints
+#         scheme: https
+#         tls_config:
+#           ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+#         bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+#         relabel_configs:
+#         - source_labels: [__meta_kubernetes_namespace, __meta_kubernetes_service_name, __meta_kubernetes_endpoint_port_name]
+#           action: keep
+#           regex: default;kubernetes;https
+# 
+#       # Kubernetes Nodes
+#       - job_name: 'kubernetes-nodes'
+#         kubernetes_sd_configs:
+#         - role: node
+#         scheme: https
+#         tls_config:
+#           ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+#         bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+#         relabel_configs:
+#         - action: labelmap
+#           regex: __meta_kubernetes_node_label_(.+)
+# 
+#       # AIA Backend Services
+#       - job_name: 'aia-backend'
+#         kubernetes_sd_configs:
+#         - role: endpoints
+#           namespaces:
+#             names:
+#             - aia-production-v2
+#         relabel_configs:
+#         - source_labels: [__meta_kubernetes_service_name]
+#           action: keep
+#           regex: aia-backend-api-service
+#         - source_labels: [__address__]
+#           regex: '([^:]+):.*'
+#           target_label: instance
+#           replacement: '${1}:8000'
+# 
+#       # AIA Frontend Services
+#       - job_name: 'aia-frontend'
+#         kubernetes_sd_configs:
+#         - role: endpoints
+#           namespaces:
+#             names:
+#             - aia-production-v2
+#         relabel_configs:
+#         - source_labels: [__meta_kubernetes_service_name]
+#           action: keep
+#           regex: aia-frontend-service
+# 
+#       # PostgreSQL Database
+#       - job_name: 'aia-postgresql'
+#         kubernetes_sd_configs:
+#         - role: endpoints
+#           namespaces:
+#             names:
+#             - aia-production-v2
+#         relabel_configs:
+#         - source_labels: [__meta_kubernetes_service_name]
+#           action: keep
+#           regex: aia-postgresql-service
+# 
+#       # Redis Cache
+#       - job_name: 'aia-redis'
+#         kubernetes_sd_configs:
+#         - role: endpoints
+#           namespaces:
+#             names:
+#             - aia-production-v2
+#         relabel_configs:
+#         - source_labels: [__meta_kubernetes_service_name]
+#           action: keep
+#           regex: aia-redis-service
+# 
+#       # GKE Cluster Monitoring
+#       - job_name: 'gke-cluster'
+#         static_configs:
+#         - targets: ['kubernetes.default.svc:443']
+# 
+#     alerting:
+#       alertmanagers:
+#       - static_configs:
+#         - targets:
+#           - alertmanager:9093
+# 
+#   rules.yml: |
+#     groups:
+#     - name: aia-production-alerts
+#       rules:
+#       # High CPU Usage
+#       - alert: HighCPUUsage
+#         expr: (100 - (avg by (instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100)) > 80
+#         for: 2m
+#         labels:
+#           severity: warning
+#           service: infrastructure
+#         annotations:
+#           summary: "High CPU usage detected"
+#           description: "CPU usage is above 80% on {{ $labels.instance }} for more than 2 minutes"
+# 
+#       # High Memory Usage
+#       - alert: HighMemoryUsage
+#         expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 90
+#         for: 2m
+#         labels:
+#           severity: critical
+#           service: infrastructure
+#         annotations:
+#           summary: "High memory usage detected"
+#           description: "Memory usage is above 90% on {{ $labels.instance }}"
+# 
+#       # Pod Crash Loop
+#       - alert: PodCrashLooping
+#         expr: increase(kube_pod_container_status_restarts_total[15m]) > 0
+#         for: 2m
+#         labels:
+#           severity: critical
+#           service: kubernetes
+#         annotations:
+#           summary: "Pod is crash looping"
+#           description: "Pod {{ $labels.namespace }}/{{ $labels.pod }} is crash looping"
+# 
+#       # AIA Backend API Down
+#       - alert: AIABackendDown
+#         expr: up{job="aia-backend"} == 0
+#         for: 1m
+#         labels:
+#           severity: critical
+#           service: aia-backend
+#         annotations:
+#           summary: "AIA Backend API is down"
+#           description: "AIA Backend API has been down for more than 1 minute"
+# 
+#       # AIA Frontend Down
+#       - alert: AIAFrontendDown
+#         expr: up{job="aia-frontend"} == 0
+#         for: 1m
+#         labels:
+#           severity: critical
+#           service: aia-frontend
+#         annotations:
+#           summary: "AIA Frontend is down"
+#           description: "AIA Frontend has been down for more than 1 minute"
+# 
+#       # Database Connection Issues
+#       - alert: DatabaseConnectionFailed
+#         expr: up{job="aia-postgresql"} == 0
+#         for: 30s
+#         labels:
+#           severity: critical
+#           service: database
+#         annotations:
+#           summary: "Database connection failed"
+#           description: "Cannot connect to PostgreSQL database"
+# 
+#       # Redis Connection Issues
+#       - alert: RedisConnectionFailed
+#         expr: up{job="aia-redis"} == 0
+#         for: 30s
+#         labels:
+#           severity: warning
+#           service: cache
+#         annotations:
+#           summary: "Redis connection failed"
+#           description: "Cannot connect to Redis cache"
+# 
+#       # High Response Time
+#       - alert: HighResponseTime
+#         expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 1
+#         for: 2m
+#         labels:
+#           severity: warning
+#           service: performance
+#         annotations:
+#           summary: "High response time detected"
+#           description: "95th percentile response time is above 1 second"
+# 
+#       # SSL Certificate Expiry
+#       - alert: SSLCertificateExpiring
+#         expr: probe_ssl_earliest_cert_expiry - time() < 86400 * 7
+#         for: 1h
+#         labels:
+#           severity: warning
+#           service: security
+#         annotations:
+#           summary: "SSL certificate expiring soon"
+#           description: "SSL certificate for {{ $labels.instance }} expires in less than 7 days"
+# 
+#       # Disk Space Low
+#       - alert: DiskSpaceLow
+#         expr: (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"}) * 100 < 20
+#         for: 5m
+#         labels:
+#           severity: warning
+#           service: infrastructure
+#         annotations:
+#           summary: "Low disk space"
+#           description: "Disk space is below 20% on {{ $labels.instance }}"
+# 
+#       # Load Balancer Issues
+#       - alert: LoadBalancerUnhealthy
+#         expr: gcp_lb_backend_target_capacity_unhealthy_percent > 50
+#         for: 2m
+#         labels:
+#           severity: critical
+#           service: load_balancer
+#         annotations:
+#           summary: "Load balancer backends unhealthy"
+#           description: "More than 50% of load balancer backends are unhealthy"
+# ---
+# # Prometheus Deployment
+# apiVersion: apps/v1
+# kind: Deployment
+# metadata:
+#   name: prometheus
+#   namespace: aia-monitoring
+#   labels:
+#     app: prometheus
+# spec:
+#   replicas: 1
+#   selector:
+#     matchLabels:
+#       app: prometheus
+#   template:
+#     metadata:
+#       labels:
+#         app: prometheus
+#     spec:
+#       serviceAccountName: prometheus
+#       containers:
+#       - name: prometheus
+#         image: prom/prometheus:v2.48.0
+#         ports:
+#         - containerPort: 9090
+#         args:
+#           - --config.file=/etc/prometheus/prometheus.yml
+#           - --storage.tsdb.path=/prometheus/
+#           - --web.console.libraries=/etc/prometheus/console_libraries
+#           - --web.console.templates=/etc/prometheus/consoles
+#           - --storage.tsdb.retention.time=30d
+#           - --web.enable-lifecycle
+#           - --web.enable-admin-api
+#         volumeMounts:
+#         - name: prometheus-config
+#           mountPath: /etc/prometheus/
+#         - name: prometheus-storage
+#           mountPath: /prometheus/
+#         resources:
+#           requests:
+#             memory: "128Mi"
+#             cpu: "100m"
+#           limits:
+#             memory: "128Mi"
+#             cpu: "100m"
+#         livenessProbe:
+#           httpGet:
+#             path: /-/healthy
+#             port: 9090
+#           initialDelaySeconds: 30
+#           periodSeconds: 10
+#         readinessProbe:
+#           httpGet:
+#             path: /-/ready
+#             port: 9090
+#           initialDelaySeconds: 30
+#           periodSeconds: 5
+#       volumes:
+#       - name: prometheus-config
+#         configMap:
+#           name: prometheus-config
+#       - name: prometheus-storage
+#         emptyDir: {}
+# ---
+# # Prometheus Service Account
+# apiVersion: v1
+# kind: ServiceAccount
+# metadata:
+#   name: prometheus
+#   namespace: aia-monitoring
+# ---
+# # Prometheus Cluster Role
+# apiVersion: rbac.authorization.k8s.io/v1
+# kind: ClusterRole
+# metadata:
+#   name: prometheus
+# rules:
+# - apiGroups: [""]
+#   resources: ["nodes", "nodes/metrics", "services", "endpoints", "pods"]
+#   verbs: ["get", "list", "watch"]
+# - apiGroups: ["extensions"]
+#   resources: ["ingresses"]
+#   verbs: ["get", "list", "watch"]
+# - nonResourceURLs: ["/metrics"]
+#   verbs: ["get"]
+# ---
+# # Prometheus Cluster Role Binding
+# apiVersion: rbac.authorization.k8s.io/v1
+# kind: ClusterRoleBinding
+# metadata:
+#   name: prometheus
+# roleRef:
+#   apiGroup: rbac.authorization.k8s.io
+#   kind: ClusterRole
+#   name: prometheus
+# subjects:
+# - kind: ServiceAccount
+#   name: prometheus
+#   namespace: aia-monitoring
+# ---
+# # Prometheus Service
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   name: prometheus
+#   namespace: aia-monitoring
+#   labels:
+#     app: prometheus
+# spec:
+#   selector:
+#     app: prometheus
+#   ports:
+#   - name: http
+#     port: 9090
+#     targetPort: 9090
+#   type: ClusterIP
+# ---
+# # Grafana Configuration
+# apiVersion: v1
+# kind: ConfigMap
+# metadata:
+#   name: grafana-config
+#   namespace: aia-monitoring
+# data:
+#   grafana.ini: |
+#     [server]
+#     root_url = https://grafana.013a.tech
+# 
+#     [security]
+#     admin_user = admin
+#     admin_password = aia_secure_grafana_2025
+# 
+#     [auth.anonymous]
+#     enabled = false
+# 
+#     [dashboards]
+#     default_home_dashboard_path = /var/lib/grafana/dashboards/aia-overview.json
+# 
+#   datasource.yml: |
+#     apiVersion: 1
+#     datasources:
+#     - name: Prometheus
+#       type: prometheus
+#       access: proxy
+#       url: http://prometheus:9090
+#       isDefault: true
+#     - name: Google Cloud Monitoring
+#       type: stackdriver
+#       access: proxy
+#       jsonData:
+#         authenticationType: gce
+# 
+#   dashboard-aia-overview.json: |
+#     {
+#       "dashboard": {
+#         "id": null,
+#         "title": "AIA Production Overview",
+#         "tags": ["aia", "production"],
+#         "timezone": "browser",
+#         "panels": [
+#           {
+#             "id": 1,
+#             "title": "System Health",
+#             "type": "stat",
+#             "targets": [
+#               {
+#                 "expr": "up{job=~\"aia-.*\"}",
+#                 "refId": "A"
+#               }
+#             ],
+#             "fieldConfig": {
+#               "defaults": {
+#                 "color": {
+#                   "mode": "thresholds"
+#                 },
+#                 "thresholds": {
+#                   "steps": [
+#                     {"color": "red", "value": 0},
+#                     {"color": "green", "value": 1}
+#                   ]
+#                 }
+#               }
+#             }
+#           },
+#           {
+#             "id": 2,
+#             "title": "Response Time",
+#             "type": "graph",
+#             "targets": [
+#               {
+#                 "expr": "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m]))",
+#                 "refId": "A"
+#               }
+#             ]
+#           },
+#           {
+#             "id": 3,
+#             "title": "Request Rate",
+#             "type": "graph",
+#             "targets": [
+#               {
+#                 "expr": "rate(http_requests_total[5m])",
+#                 "refId": "A"
+#               }
+#             ]
+#           },
+#           {
+#             "id": 4,
+#             "title": "Error Rate",
+#             "type": "graph",
+#             "targets": [
+#               {
+#                 "expr": "rate(http_requests_total{status=~\"5.*\"}[5m]) / rate(http_requests_total[5m]) * 100",
+#                 "refId": "A"
+#               }
+#             ]
+#           }
+#         ],
+#         "time": {
+#           "from": "now-1h",
+#           "to": "now"
+#         },
+#         "refresh": "30s"
+#       }
+#     }
+# ---
+# # Grafana Deployment
+# apiVersion: apps/v1
+# kind: Deployment
+# metadata:
+#   name: grafana
+#   namespace: aia-monitoring
+#   labels:
+#     app: grafana
+# spec:
+#   replicas: 1
+#   selector:
+#     matchLabels:
+#       app: grafana
+#   template:
+#     metadata:
+#       labels:
+#         app: grafana
+#     spec:
+#       containers:
+#       - name: grafana
+#         image: grafana/grafana:10.2.0
+#         ports:
+#         - containerPort: 3000
+#         env:
+#         - name: GF_SECURITY_ADMIN_PASSWORD
+#           value: "aia_secure_grafana_2025"
+#         volumeMounts:
+#         - name: grafana-config
+#           mountPath: /etc/grafana/
+#         - name: grafana-dashboards
+#           mountPath: /var/lib/grafana/dashboards/
+#         - name: grafana-storage
+#           mountPath: /var/lib/grafana/
+#         resources:
+#           requests:
+#             memory: "128Mi"
+#             cpu: "100m"
+#           limits:
+#             memory: "128Mi"
+#             cpu: "100m"
+#         livenessProbe:
+#           httpGet:
+#             path: /api/health
+#             port: 3000
+#           initialDelaySeconds: 30
+#           periodSeconds: 10
+#         readinessProbe:
+#           httpGet:
+#             path: /api/health
+#             port: 3000
+#           initialDelaySeconds: 30
+#           periodSeconds: 5
+#       volumes:
+#       - name: grafana-config
+#         configMap:
+#           name: grafana-config
+#       - name: grafana-dashboards
+#         configMap:
+#           name: grafana-config
+#       - name: grafana-storage
+#         emptyDir: {}
+# ---
+# # Grafana Service
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   name: grafana
+#   namespace: aia-monitoring
+#   labels:
+#     app: grafana
+# spec:
+#   selector:
+#     app: grafana
+#   ports:
+#   - name: http
+#     port: 3000
+#     targetPort: 3000
+#   type: ClusterIP
+# ---
+# # Alertmanager Configuration
+# apiVersion: v1
+# kind: ConfigMap
+# metadata:
+#   name: alertmanager-config
+#   namespace: aia-monitoring
+# data:
+#   alertmanager.yml: |
+#     global:
+#       smtp_smarthost: 'smtp.gmail.com:587'
+#       smtp_from: 'alerts@013a.tech'
+#       smtp_auth_username: 'hello@013a.tech'
+#       smtp_auth_password: 'fgpz-mjdy-xlzm-okev'
+# 
+#     route:
+#       group_by: ['alertname', 'severity']
+#       group_wait: 10s
+#       group_interval: 10s
+#       repeat_interval: 1h
+#       receiver: 'aia-alerts'
+#       routes:
+#       - match:
+#           severity: critical
+#         receiver: 'critical-alerts'
+#       - match:
+#           severity: warning
+#         receiver: 'warning-alerts'
+# 
+#     receivers:
+#     - name: 'aia-alerts'
+#       email_configs:
+#       - to: 'hello@013a.tech'
+#         from: 'alerts@013a.tech'
+#         subject: 'AIA Alert {{ .GroupLabels.alertname }}'
+#         html: |
+#           <h3>AIA System Alert</h3>
+#           {{ range .Alerts }}
+#           <p><strong>Alert:</strong> {{ .Annotations.summary }}</p>
+#           <p><strong>Description:</strong> {{ .Annotations.description }}</p>
+#           <p><strong>Instance:</strong> {{ .Labels.instance }}</p>
+#           <p><strong>Severity:</strong> {{ .Labels.severity }}</p>
+#           {{ end }}
+# 
+#     - name: 'critical-alerts'
+#       email_configs:
+#       - to: 'hello@013a.tech'
+#         from: 'alerts@013a.tech'
+#         subject: 'CRITICAL AIA System Alert'
+#         html: |
+#           <h2 style="color: red;">CRITICAL ALERT - Immediate attention required!</h2>
+#           {{ range .Alerts }}
+#           <p><strong>Alert:</strong> {{ .Annotations.summary }}</p>
+#           <p><strong>Description:</strong> {{ .Annotations.description }}</p>
+#           <p><strong>Instance:</strong> {{ .Labels.instance }}</p>
+#           <p><strong>Time:</strong> {{ .StartsAt }}</p>
+#           {{ end }}
+# 
+#     - name: 'warning-alerts'
+#       email_configs:
+#       - to: 'hello@013a.tech'
+#         from: 'alerts@013a.tech'
+#         subject: 'WARNING AIA System Alert'
+#         html: |
+#           <h3 style="color: orange;">Warning Alert - Please investigate when possible</h3>
+#           {{ range .Alerts }}
+#           <p><strong>Alert:</strong> {{ .Annotations.summary }}</p>
+#           <p><strong>Description:</strong> {{ .Annotations.description }}</p>
+#           <p><strong>Instance:</strong> {{ .Labels.instance }}</p>
+#           <p><strong>Time:</strong> {{ .StartsAt }}</p>
+#           {{ end }}
+# ---
+# # Alertmanager Deployment
+# apiVersion: apps/v1
+# kind: Deployment
+# metadata:
+#   name: alertmanager
+#   namespace: aia-monitoring
+#   labels:
+#     app: alertmanager
+# spec:
+#   replicas: 1
+#   selector:
+#     matchLabels:
+#       app: alertmanager
+#   template:
+#     metadata:
+#       labels:
+#         app: alertmanager
+#     spec:
+#       containers:
+#       - name: alertmanager
+#         image: prom/alertmanager:v0.26.0
+#         ports:
+#         - containerPort: 9093
+#         args:
+#           - --config.file=/etc/alertmanager/alertmanager.yml
+#           - --storage.path=/alertmanager
+#           - --web.external-url=https://alerts.013a.tech
+#         volumeMounts:
+#         - name: alertmanager-config
+#           mountPath: /etc/alertmanager/
+#         - name: alertmanager-storage
+#           mountPath: /alertmanager/
+#         resources:
+#           requests:
+#             memory: "128Mi"
+#             cpu: "100m"
+#           limits:
+#             memory: "128Mi"
+#             cpu: "100m"
+#       volumes:
+#       - name: alertmanager-config
+#         configMap:
+#           name: alertmanager-config
+#       - name: alertmanager-storage
+#         emptyDir: {}
+# ---
+# # Alertmanager Service
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   name: alertmanager
+#   namespace: aia-monitoring
+#   labels:
+#     app: alertmanager
+# spec:
+#   selector:
+#     app: alertmanager
+#   ports:
+#   - name: http
+#     port: 9093
+#     targetPort: 9093
+#   type: ClusterIP

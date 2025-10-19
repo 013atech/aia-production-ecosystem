@@ -1,0 +1,221 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: gcp-optimization-strategy
+  namespace: 013a-analytics-production
+data:
+  optimization-plan: |
+    # GCP AIA System Optimization Strategy
+
+    ## CRITICAL ISSUES IDENTIFIED:
+    1. CPU Starvation: 8.75 CPU cores needed vs ~5.5 available after system overhead
+    2. GPU Shortage: ML Engine pods require GPUs but none available
+    3. Inefficient Resource Allocation: e2-standard-8 not optimal for mixed workloads
+    4. Missing Horizontal Pod Autoscaling: No dynamic scaling based on load
+
+    ## OPTIMIZATION STRATEGY:
+
+    ### Phase 1: Immediate Resource Scaling
+    - Add GPU-enabled node pool for ML workloads
+    - Scale existing node pool to handle CPU requirements
+    - Implement resource quotas and limits optimization
+
+    ### Phase 2: Workload Distribution
+    - Separate compute-intensive from lightweight workloads
+    - Implement node affinity and taints/tolerations
+    - Configure HPA for dynamic scaling
+
+    ### Phase 3: Performance Optimization
+    - Enable cluster autoscaler optimization
+    - Implement resource monitoring and alerting
+    - Configure vertical pod autoscaling for efficiency
+
+---
+apiVersion: container.cnrm.cloud.google.com/v1beta1
+kind: ContainerNodePool
+metadata:
+  name: gpu-ml-nodepool
+  namespace: 013a-analytics-production
+spec:
+  location: europe-west4
+  cluster: aia-production-optimal
+  nodeCount: 2
+  autoscaling:
+    minNodeCount: 1
+    maxNodeCount: 4
+  nodeConfig:
+    machineType: n1-standard-4
+    accelerators:
+    - count: 1
+      type: nvidia-tesla-t4
+    diskSizeGb: 100
+    diskType: pd-ssd
+    oauthScopes:
+    - "https://www.googleapis.com/auth/cloud-platform"
+    labels:
+      workload-type: "ml-gpu"
+    taints:
+    - key: "nvidia.com/gpu"
+      value: "present"
+      effect: "NO_SCHEDULE"
+  management:
+    autoRepair: true
+    autoUpgrade: true
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: analytics-ml-engine-optimized
+  namespace: 013a-analytics-production
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: analytics-ml-engine
+  template:
+    metadata:
+      labels:
+        app: analytics-ml-engine
+    spec:
+      nodeSelector:
+        workload-type: ml-gpu
+      tolerations:
+      - key: nvidia.com/gpu
+        operator: Equal
+        value: present
+        effect: NoSchedule
+      containers:
+      - name: ml-engine
+        image: gcr.io/aia-system-prod-1759055445/analytics-ml-engine:latest
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+            nvidia.com/gpu: 1
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+            nvidia.com/gpu: 1
+        env:
+        - name: CUDA_VISIBLE_DEVICES
+          value: "0"
+        - name: NVIDIA_VISIBLE_DEVICES
+          value: "all"
+        - name: NVIDIA_DRIVER_CAPABILITIES
+          value: "compute,utility"
+
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: analytics-backend-hpa
+  namespace: 013a-analytics-production
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: analytics-backend
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+      - type: Percent
+        value: 25
+        periodSeconds: 60
+    scaleUp:
+      stabilizationWindowSeconds: 120
+      policies:
+      - type: Percent
+        value: 100
+        periodSeconds: 60
+
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: analytics-data-processor-hpa
+  namespace: 013a-analytics-production
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: analytics-data-processor
+  minReplicas: 1
+  maxReplicas: 8
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 75
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+      - type: Pods
+        value: 1
+        periodSeconds: 60
+    scaleUp:
+      stabilizationWindowSeconds: 60
+      policies:
+      - type: Pods
+        value: 2
+        periodSeconds: 60
+
+---
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: analytics-resource-quota
+  namespace: 013a-analytics-production
+spec:
+  hard:
+    requests.cpu: "20"
+    requests.memory: "128Mi"
+    limits.cpu: "40"
+    limits.memory: "128Mi"
+    requests.nvidia.com/gpu: "4"
+    limits.nvidia.com/gpu: "4"
+    pods: "100"
+    services: "20"
+    persistentvolumeclaims: "10"
+
+---
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: analytics-limit-range
+  namespace: 013a-analytics-production
+spec:
+  limits:
+  - default:
+      cpu: "100m"
+      memory: "128Mi"
+    defaultRequest:
+      cpu: "100m"
+      memory: "128Mi"
+    type: Container
+  - max:
+      cpu: "2"
+      memory: "128Mi"
+    min:
+      cpu: "100m"
+      memory: "128Mi"
+    type: Container

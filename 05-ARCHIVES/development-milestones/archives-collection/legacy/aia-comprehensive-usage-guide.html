@@ -1,0 +1,1362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AIA System - Comprehensive Usage Guide</title>
+
+    <!-- Security Headers -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' https:; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; object-src 'none'; base-uri 'self'; frame-ancestors 'none';">
+    <meta http-equiv="X-Frame-Options" content="DENY">
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+
+    <!-- SEO and Meta -->
+    <meta name="description" content="Comprehensive usage guide for AIA (Artificial Intelligence Analytics) system - Multi-agent orchestration, immersive 3D analytics, production deployment, and enterprise integration">
+    <meta name="keywords" content="AIA, artificial intelligence, multi-agent system, 3D analytics, usage guide, orchestration">
+    <meta name="author" content="013a Technologies">
+
+    <!-- Fonts and Styles -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --charcoal: #1E1E1E;
+            --ivory: #F5F5DC;
+            --cyan: #00FFFF;
+            --lemon: #FFFF00;
+            --gradient: linear-gradient(135deg, var(--cyan), var(--lemon));
+            --success: #51cf66;
+            --warning: #ffb84d;
+            --error: #ff6b6b;
+            --glass: rgba(30, 30, 30, 0.9);
+            --glass-border: rgba(0, 255, 255, 0.2);
+            --shadow: 0 8px 32px rgba(0, 255, 255, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--charcoal);
+            color: var(--ivory);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* Header */
+        .header {
+            background: var(--glass);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--glass-border);
+            padding: 20px 0;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: var(--shadow);
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 2rem;
+            font-weight: 700;
+            background: var(--gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .nav-menu {
+            display: flex;
+            gap: 30px;
+        }
+
+        .nav-link {
+            color: var(--ivory);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s ease;
+            position: relative;
+        }
+
+        .nav-link:hover {
+            color: var(--cyan);
+        }
+
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: var(--gradient);
+            transition: width 0.3s ease;
+        }
+
+        .nav-link:hover::after {
+            width: 100%;
+        }
+
+        /* Hero Section */
+        .hero {
+            padding: 100px 0;
+            text-align: center;
+            background: linear-gradient(135deg, var(--charcoal) 0%, #2a2a2a 100%);
+        }
+
+        .hero h1 {
+            font-size: 3.5rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+            background: var(--gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero p {
+            font-size: 1.3rem;
+            opacity: 0.8;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        /* Section Styles */
+        .section {
+            padding: 80px 0;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .section-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+            color: var(--cyan);
+        }
+
+        .section-subtitle {
+            font-size: 1.2rem;
+            opacity: 0.8;
+            margin-bottom: 50px;
+        }
+
+        /* Grid Layout */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 30px;
+            margin-top: 50px;
+        }
+
+        .card {
+            background: var(--glass);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 30px;
+            transition: all 0.3s ease;
+            box-shadow: var(--shadow);
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            border-color: var(--cyan);
+            box-shadow: 0 12px 40px rgba(0, 255, 255, 0.2);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .card-icon {
+            font-size: 2rem;
+            margin-right: 15px;
+        }
+
+        .card-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--cyan);
+        }
+
+        .card-description {
+            margin-bottom: 20px;
+            opacity: 0.8;
+        }
+
+        .card-features {
+            list-style: none;
+            margin-bottom: 25px;
+        }
+
+        .card-features li {
+            padding: 5px 0;
+            position: relative;
+            padding-left: 20px;
+        }
+
+        .card-features li:before {
+            content: '✓';
+            position: absolute;
+            left: 0;
+            color: var(--success);
+            font-weight: bold;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 12px 25px;
+            background: var(--gradient);
+            color: var(--charcoal);
+            text-decoration: none;
+            border-radius: 25px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 255, 255, 0.3);
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: var(--cyan);
+            border: 2px solid var(--cyan);
+        }
+
+        .btn-outline:hover {
+            background: var(--cyan);
+            color: var(--charcoal);
+        }
+
+        /* Code Blocks */
+        .code-block {
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--glass-border);
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            overflow-x: auto;
+            font-family: 'Monaco', monospace;
+            font-size: 0.9rem;
+        }
+
+        .code-block pre {
+            margin: 0;
+        }
+
+        /* Table Styles */
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 30px 0;
+            background: var(--glass);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .table th,
+        .table td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .table th {
+            background: rgba(0, 255, 255, 0.1);
+            color: var(--cyan);
+            font-weight: 600;
+        }
+
+        /* Status Indicators */
+        .status {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .status.active {
+            background: rgba(81, 207, 102, 0.2);
+            color: var(--success);
+            border: 1px solid var(--success);
+        }
+
+        .status.warning {
+            background: rgba(255, 184, 77, 0.2);
+            color: var(--warning);
+            border: 1px solid var(--warning);
+        }
+
+        .status.error {
+            background: rgba(255, 107, 107, 0.2);
+            color: var(--error);
+            border: 1px solid var(--error);
+        }
+
+        /* Architecture Diagram */
+        .architecture {
+            background: var(--glass);
+            border-radius: 20px;
+            padding: 40px;
+            margin: 40px 0;
+            text-align: center;
+        }
+
+        .architecture-flow {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin: 30px 0;
+        }
+
+        .architecture-node {
+            background: rgba(0, 255, 255, 0.1);
+            border: 2px solid var(--cyan);
+            border-radius: 15px;
+            padding: 20px;
+            min-width: 150px;
+            text-align: center;
+        }
+
+        .architecture-arrow {
+            font-size: 2rem;
+            color: var(--lemon);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2.5rem;
+            }
+
+            .nav-menu {
+                display: none;
+            }
+
+            .grid {
+                grid-template-columns: 1fr;
+            }
+
+            .architecture-flow {
+                flex-direction: column;
+            }
+
+            .architecture-arrow {
+                transform: rotate(90deg);
+            }
+        }
+
+        /* Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-in {
+            animation: fadeInUp 0.6s ease-out;
+        }
+
+        /* Accessibility */
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            border: 0;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--charcoal);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--gradient);
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">AIA System</div>
+                <nav class="nav-menu" role="navigation">
+                    <a href="#overview" class="nav-link">Overview</a>
+                    <a href="#agents" class="nav-link">Agents</a>
+                    <a href="#frontend" class="nav-link">Frontend</a>
+                    <a href="#deployment" class="nav-link">Deployment</a>
+                    <a href="#api" class="nav-link">API</a>
+                    <a href="#support" class="nav-link">Support</a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="container">
+            <h1>AIA System Usage Guide</h1>
+            <p>Comprehensive documentation for the Artificial Intelligence Analytics platform - Multi-agent orchestration, immersive 3D visualization, and enterprise-grade deployment capabilities</p>
+        </div>
+    </section>
+
+    <!-- System Overview -->
+    <section id="overview" class="section">
+        <div class="container">
+            <h2 class="section-title">System Overview</h2>
+            <p class="section-subtitle">AIA (Artificial Intelligence Analytics) is a comprehensive multi-agent system designed for immersive data analysis and autonomous orchestration</p>
+
+            <div class="architecture">
+                <h3 style="color: var(--lemon); margin-bottom: 30px;">System Architecture</h3>
+                <div class="architecture-flow">
+                    <div class="architecture-node">
+                        <strong>Frontend</strong><br>
+                        Immersive 3D Analytics<br>
+                        <span class="status active">Active</span>
+                    </div>
+                    <div class="architecture-arrow">→</div>
+                    <div class="architecture-node">
+                        <strong>Orchestrator</strong><br>
+                        Multi-Agent Coordination<br>
+                        <span class="status active">Active</span>
+                    </div>
+                    <div class="architecture-arrow">→</div>
+                    <div class="architecture-node">
+                        <strong>Agents</strong><br>
+                        Specialized AI Services<br>
+                        <span class="status active">Active</span>
+                    </div>
+                    <div class="architecture-arrow">→</div>
+                    <div class="architecture-node">
+                        <strong>Backend</strong><br>
+                        GCP Infrastructure<br>
+                        <span class="status active">Active</span>
+                    </div>
+                </div>
+            </div>
+
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Component</th>
+                        <th>Status</th>
+                        <th>Version</th>
+                        <th>URL/Endpoint</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Main Platform</strong></td>
+                        <td><span class="status active">Live</span></td>
+                        <td>v3.0.0</td>
+                        <td><a href="https://013a.tech" target="_blank">https://013a.tech</a></td>
+                        <td>Primary immersive analytics interface</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Frontend Application</strong></td>
+                        <td><span class="status active">Active</span></td>
+                        <td>v1.0.0</td>
+                        <td><code>aia-main-frontend.html</code></td>
+                        <td>Enhanced 3D visualization with WebXR</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Multi-Agent System</strong></td>
+                        <td><span class="status active">Orchestrating</span></td>
+                        <td>v2.0.0</td>
+                        <td>Internal Network</td>
+                        <td>15+ specialized AI agents coordination</td>
+                    </tr>
+                    <tr>
+                        <td><strong>GKE Cluster</strong></td>
+                        <td><span class="status active">Running</span></td>
+                        <td>v1.33.4</td>
+                        <td>aia-production-optim</td>
+                        <td>3-node cluster with monitoring</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Knowledge Graph</strong></td>
+                        <td><span class="status active">Indexed</span></td>
+                        <td>v2.1</td>
+                        <td>2,472 atoms</td>
+                        <td>Dynamic knowledge orchestration</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- Multi-Agent System -->
+    <section id="agents" class="section">
+        <div class="container">
+            <h2 class="section-title">Multi-Agent System</h2>
+            <p class="section-subtitle">15+ specialized AI agents working in coordination for optimal results</p>
+
+            <div class="grid">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon">🔐</div>
+                        <div class="card-title">Cryptography Agent</div>
+                    </div>
+                    <div class="card-description">
+                        Lead orchestration agent managing cryptographic security, multi-agent coordination, and system-wide authentication protocols.
+                    </div>
+                    <ul class="card-features">
+                        <li>Multi-agent team leadership</li>
+                        <li>Cryptographic security implementation</li>
+                        <li>System orchestration and coordination</li>
+                        <li>Production security standards</li>
+                    </ul>
+                    <div class="code-block">
+                        <pre>Agent Type: Lead Orchestrator
+Security: AES-256, RSA-4096
+Capabilities: Team coordination, security</pre>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon">🎯</div>
+                        <div class="card-title">Orchestrator Agent</div>
+                    </div>
+                    <div class="card-description">
+                        Central coordination hub for multi-agent workflows, task distribution, and strategic planning across all system components.
+                    </div>
+                    <ul class="card-features">
+                        <li>Multi-agent workflow coordination</li>
+                        <li>Task assignment and distribution</li>
+                        <li>Strategic planning and execution</li>
+                        <li>Resource optimization</li>
+                    </ul>
+                    <div class="code-block">
+                        <pre>Agent Type: Central Coordinator
+Model: Sonnet 4
+Color: Cyan
+Always Apply: True</pre>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon">🎮</div>
+                        <div class="card-title">Three.js UI Optimizer</div>
+                    </div>
+                    <div class="card-description">
+                        Elite 3D UI/UX specialist creating immersive web experiences with Three.js, React Three Fiber, and WebXR technologies.
+                    </div>
+                    <ul class="card-features">
+                        <li>Immersive 3D interface design</li>
+                        <li>013a design system implementation</li>
+                        <li>60fps performance optimization</li>
+                        <li>WebXR spatial computing</li>
+                    </ul>
+                    <div class="code-block">
+                        <pre>Agent Type: 3D UI/UX Specialist
+Technologies: Three.js, React Three Fiber
+Features: WebXR, Physics, Particles</pre>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon">☁️</div>
+                        <div class="card-title">GCP Deployment Orchestrator</div>
+                    </div>
+                    <div class="card-description">
+                        Expert cloud infrastructure architect for complex GCP deployments with quota management and automated bug resolution.
+                    </div>
+                    <ul class="card-features">
+                        <li>Full-complexity GCP deployment</li>
+                        <li>Quota analysis and optimization</li>
+                        <li>DNS/SSL configuration</li>
+                        <li>Automated deployment iteration</li>
+                    </ul>
+                    <div class="code-block">
+                        <pre>Agent Type: Cloud Infrastructure
+Platform: Google Cloud Platform
+Approach: Full complexity, no simplifications</pre>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon">🚀</div>
+                        <div class="card-title">Production Readiness Assessor</div>
+                    </div>
+                    <div class="card-description">
+                        Comprehensive production validation with security audit, performance testing, and enterprise compliance verification.
+                    </div>
+                    <ul class="card-features">
+                        <li>Security audit and validation</li>
+                        <li>Performance benchmarking</li>
+                        <li>Enterprise compliance check</li>
+                        <li>Production certification</li>
+                    </ul>
+                    <div class="code-block">
+                        <pre>Assessment Score: 94/100
+Certification: Enterprise Ready
+Security: OWASP Level AA</pre>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon">⚙️</div>
+                        <div class="card-title">MLOps Specialist</div>
+                    </div>
+                    <div class="card-description">
+                        Advanced machine learning operations with model deployment, drift detection, and ML pipeline automation.
+                    </div>
+                    <ul class="card-features">
+                        <li>ML pipeline automation</li>
+                        <li>Model deployment management</li>
+                        <li>Drift detection monitoring</li>
+                        <li>GCP Vertex AI integration</li>
+                    </ul>
+                    <div class="code-block">
+                        <pre>Agent Type: MLOps Specialist
+Pricing: 12.0 AIA tokens
+Multiplier: 1.4x complexity</pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Frontend Services -->
+    <section id="frontend" class="section">
+        <div class="container">
+            <h2 class="section-title">Frontend Services</h2>
+            <p class="section-subtitle">Immersive 3D analytics interface with enterprise-grade security and WebXR capabilities</p>
+
+            <div class="grid">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon">🌐</div>
+                        <div class="card-title">Main Analytics Platform</div>
+                    </div>
+                    <div class="card-description">
+                        Primary web interface featuring immersive 3D data visualization with physics-based interactions and real-time analytics.
+                    </div>
+                    <ul class="card-features">
+                        <li><strong>URL:</strong> <a href="https://013a.tech" target="_blank">https://013a.tech</a></li>
+                        <li>50+ interactive data points with physics</li>
+                        <li>Cinematic camera system with 4 views</li>
+                        <li>Real-time performance monitoring</li>
+                        <li>WebXR VR/AR compatibility</li>
+                    </ul>
+                    <a href="https://013a.tech" class="btn">Launch Platform</a>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon">🎮</div>
+                        <div class="card-title">Enhanced Frontend</div>
+                    </div>
+                    <div class="card-description">
+                        Advanced HTML5 application with Three.js rendering, security hardening, and production-ready deployment.
+                    </div>
+                    <ul class="card-features">
+                        <li><strong>File:</strong> aia-main-frontend.html</li>
+                        <li>Enterprise security headers (CSP, XSS protection)</li>
+                        <li>60 FPS performance optimization</li>
+                        <li>Mobile-responsive design</li>
+                        <li>WebGL security validation</li>
+                    </ul>
+                    <div class="code-block">
+                        <pre>// Frontend Controls
+Keyboard Shortcuts:
+- 1-4: Switch cinematic views
+- Space: Toggle auto-rotation
+- R: Reset view
+- F: Toggle fullscreen</pre>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon">📱</div>
+                        <div class="card-title">React Application</div>
+                    </div>
+                    <div class="card-description">
+                        Full React.js application with TypeScript, Material-UI integration, and comprehensive 3D analytics components.
+                    </div>
+                    <ul class="card-features">
+                        <li><strong>Port:</strong> http://localhost:3000</li>
+                        <li>React Three Fiber integration</li>
+                        <li>TypeScript for type safety</li>
+                        <li>Hot reload development</li>
+                        <li>Component-based architecture</li>
+                    </ul>
+                    <div class="code-block">
+                        <pre>cd /frontend
+npm install
+npm start</pre>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon">🥽</div>
+                        <div class="card-title">WebXR Integration</div>
+                    </div>
+                    <div class="card-description">
+                        Virtual and Augmented Reality capabilities for immersive spatial computing experiences.
+                    </div>
+                    <ul class="card-features">
+                        <li>VR headset support (Oculus, HTC Vive)</li>
+                        <li>AR capabilities for mobile devices</li>
+                        <li>Hand tracking integration</li>
+                        <li>Spatial audio for data sonification</li>
+                        <li>Room-scale tracking</li>
+                    </ul>
+                    <div class="code-block">
+                        <pre>// WebXR Activation
+Click the VR button (🥽) in the bottom-right
+Requires VR headset or AR-capable device
+Browser: Chrome/Edge with WebXR support</pre>
+                    </div>
+                </div>
+            </div>
+
+            <h3 style="color: var(--lemon); margin-top: 50px; margin-bottom: 30px;">Frontend Features</h3>
+
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Feature</th>
+                        <th>Technology</th>
+                        <th>Status</th>
+                        <th>Performance</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>3D Rendering</strong></td>
+                        <td>Three.js v0.156</td>
+                        <td><span class="status active">Active</span></td>
+                        <td>60 FPS target</td>
+                        <td>Hardware-accelerated WebGL rendering</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Physics Engine</strong></td>
+                        <td>Cannon.js</td>
+                        <td><span class="status active">Active</span></td>
+                        <td>Real-time</td>
+                        <td>Collision detection and physics simulation</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Particle Systems</strong></td>
+                        <td>Custom WebGL</td>
+                        <td><span class="status active">Active</span></td>
+                        <td>1500+ particles</td>
+                        <td>High-importance data visualization effects</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Animation</strong></td>
+                        <td>GSAP 3.12</td>
+                        <td><span class="status active">Active</span></td>
+                        <td>Cinematic</td>
+                        <td>Smooth transitions and camera movements</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Security Headers</strong></td>
+                        <td>CSP, OWASP</td>
+                        <td><span class="status active">Enforced</span></td>
+                        <td><5% overhead</td>
+                        <td>XSS protection, frame denial, content type</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- Deployment Services -->
+    <section id="deployment" class="section">
+        <div class="container">
+            <h2 class="section-title">Deployment & Infrastructure</h2>
+            <p class="section-subtitle">Enterprise-grade deployment on Google Cloud Platform with comprehensive monitoring</p>
+
+            <div class="grid">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon">🏗️</div>
+                        <div class="card-title">GKE Cluster</div>
+                    </div>
+                    <div class="card-description">
+                        Production Kubernetes cluster with high availability, auto-scaling, and comprehensive monitoring systems.
+                    </div>
+                    <ul class="card-features">
+                        <li><strong>Cluster:</strong> aia-production-optim</li>
+                        <li>3-node cluster (e2-standard-8)</li>
+                        <li>Multi-zone deployment</li>
+                        <li>Auto-scaling enabled</li>
+                        <li>Prometheus monitoring</li>
+                    </ul>
+                    <div class="code-block">
+                        <pre>gcloud container clusters get-credentials \
+  aia-production-optim --region=europe-west4</pre>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon">🌐</div>
+                        <div class="card-title">DNS & SSL</div>
+                    </div>
+                    <div class="card-description">
+                        Cloudflare-managed DNS with enterprise SSL certificates, HTTP/2 support, and edge optimization.
+                    </div>
+                    <ul class="card-features">
+                        <li><strong>Domain:</strong> 013a.tech</li>
+                        <li>Cloudflare proxy enabled</li>
+                        <li>Automatic SSL certificates</li>
+                        <li>Edge caching and optimization</li>
+                        <li>DDoS protection</li>
+                    </ul>
+                    <div class="code-block">
+                        <pre>DNS Resolution:
+013a.tech → 34.147.2.160
+SSL: Cloudflare Universal SSL
+CDN: Global edge network</pre>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon">📊</div>
+                        <div class="card-title">Monitoring Systems</div>
+                    </div>
+                    <div class="card-description">
+                        Comprehensive monitoring with Prometheus, Grafana, and AlertManager for real-time system health tracking.
+                    </div>
+                    <ul class="card-features">
+                        <li>Prometheus metrics collection</li>
+                        <li>Grafana dashboard visualization</li>
+                        <li>AlertManager notifications</li>
+                        <li>Custom AIA metrics</li>
+                        <li>Performance benchmarking</li>
+                    </ul>
+                    <div class="code-block">
+                        <pre>Monitoring Stack:
+- Prometheus: Metrics collection
+- Grafana: Dashboard visualization
+- AlertManager: Alert notifications
+- Custom: AIA-specific metrics</pre>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon">🔄</div>
+                        <div class="card-title">CI/CD Pipeline</div>
+                    </div>
+                    <div class="card-description">
+                        Automated deployment pipeline with Google Cloud Build, Docker containerization, and zero-downtime deployments.
+                    </div>
+                    <ul class="card-features">
+                        <li>Google Cloud Build integration</li>
+                        <li>Docker containerization</li>
+                        <li>Automated testing pipeline</li>
+                        <li>Zero-downtime deployments</li>
+                        <li>Rollback capabilities</li>
+                    </ul>
+                    <div class="code-block">
+                        <pre>Deployment Process:
+1. Code push to repository
+2. Cloud Build triggers
+3. Docker image creation
+4. Automated testing
+5. Deployment to GKE</pre>
+                    </div>
+                </div>
+            </div>
+
+            <h3 style="color: var(--lemon); margin-top: 50px; margin-bottom: 30px;">Infrastructure Status</h3>
+
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Service</th>
+                        <th>Status</th>
+                        <th>Endpoint</th>
+                        <th>Health</th>
+                        <th>Last Updated</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Frontend LoadBalancer</strong></td>
+                        <td><span class="status active">Running</span></td>
+                        <td>34.147.2.160</td>
+                        <td>✅ Healthy</td>
+                        <td>2025-10-02</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Backend API</strong></td>
+                        <td><span class="status active">Running</span></td>
+                        <td>Internal</td>
+                        <td>✅ Healthy</td>
+                        <td>2025-10-02</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Monitoring</strong></td>
+                        <td><span class="status active">Active</span></td>
+                        <td>aia-monitoring</td>
+                        <td>✅ Collecting</td>
+                        <td>2025-10-02</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Knowledge Graph</strong></td>
+                        <td><span class="status active">Indexed</span></td>
+                        <td>Internal</td>
+                        <td>✅ 2,472 atoms</td>
+                        <td>2025-10-01</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Multi-Agent System</strong></td>
+                        <td><span class="status active">Orchestrating</span></td>
+                        <td>Internal</td>
+                        <td>✅ 15+ agents</td>
+                        <td>2025-10-02</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- API Documentation -->
+    <section id="api" class="section">
+        <div class="container">
+            <h2 class="section-title">API & Integration</h2>
+            <p class="section-subtitle">Comprehensive API endpoints for system integration and agent communication</p>
+
+            <div class="grid">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon">🔌</div>
+                        <div class="card-title">Agent Communication API</div>
+                    </div>
+                    <div class="card-description">
+                        Multi-agent communication protocols with AES-256 encryption and secure message passing.
+                    </div>
+                    <ul class="card-features">
+                        <li>Secure agent-to-agent communication</li>
+                        <li>AES-256 encryption</li>
+                        <li>State synchronization</li>
+                        <li>Task coordination protocols</li>
+                    </ul>
+                    <div class="code-block">
+                        <pre>POST /api/agent/communicate
+Content-Type: application/json
+Authorization: Bearer {token}
+
+{
+  "from": "cryptography-agent",
+  "to": "orchestrator-agent",
+  "message": "encrypted_payload",
+  "task_id": "task_12345"
+}</pre>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon">📊</div>
+                        <div class="card-title">Analytics Data API</div>
+                    </div>
+                    <div class="card-description">
+                        Real-time analytics data streaming with WebSocket support for immersive visualization updates.
+                    </div>
+                    <ul class="card-features">
+                        <li>Real-time data streaming</li>
+                        <li>WebSocket connections</li>
+                        <li>JSON data format</li>
+                        <li>Performance metrics</li>
+                    </ul>
+                    <div class="code-block">
+                        <pre>GET /api/analytics/stream
+WebSocket: wss://013a.tech/api/ws
+
+Response:
+{
+  "dataPoints": [...],
+  "clusters": [...],
+  "performance": {...},
+  "timestamp": "2025-10-02T20:00:00Z"
+}</pre>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon">⚙️</div>
+                        <div class="card-title">System Configuration</div>
+                    </div>
+                    <div class="card-description">
+                        System configuration and management endpoints for runtime parameter adjustment.
+                    </div>
+                    <ul class="card-features">
+                        <li>Runtime configuration updates</li>
+                        <li>Security parameter adjustment</li>
+                        <li>Performance tuning</li>
+                        <li>Agent management</li>
+                    </ul>
+                    <div class="code-block">
+                        <pre>PUT /api/config/update
+{
+  "qualityLevel": 3,
+  "animationSpeed": 1.0,
+  "securityMode": "production",
+  "agentCoordination": "enabled"
+}</pre>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon">🔍</div>
+                        <div class="card-title">Health & Monitoring</div>
+                    </div>
+                    <div class="card-description">
+                        System health checks, performance monitoring, and diagnostic information endpoints.
+                    </div>
+                    <ul class="card-features">
+                        <li>Health status checks</li>
+                        <li>Performance metrics</li>
+                        <li>Error reporting</li>
+                        <li>Diagnostic information</li>
+                    </ul>
+                    <div class="code-block">
+                        <pre>GET /api/health
+{
+  "status": "healthy",
+  "services": {
+    "frontend": "active",
+    "agents": "orchestrating",
+    "infrastructure": "running"
+  },
+  "metrics": {...}
+}</pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Usage Examples -->
+    <section class="section" style="background: rgba(0, 0, 0, 0.3);">
+        <div class="container">
+            <h2 class="section-title">Usage Examples</h2>
+            <p class="section-subtitle">Common usage patterns and implementation examples</p>
+
+            <div class="grid">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon">🚀</div>
+                        <div class="card-title">Quick Start</div>
+                    </div>
+                    <div class="card-description">
+                        Get started with AIA system in minutes with this basic setup guide.
+                    </div>
+                    <div class="code-block">
+                        <pre># 1. Access the main platform
+https://013a.tech
+
+# 2. Launch local development
+cd /frontend
+npm install && npm start
+
+# 3. Open immersive interface
+open aia-main-frontend.html
+
+# 4. Use keyboard shortcuts
+1-4: Switch views
+Space: Auto-rotate
+R: Reset view</pre>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon">🔧</div>
+                        <div class="card-title">Agent Coordination</div>
+                    </div>
+                    <div class="card-description">
+                        Example of coordinating multiple agents for a complex task.
+                    </div>
+                    <div class="code-block">
+                        <pre>// Multi-agent task coordination
+const task = {
+  objective: "Deploy enhanced frontend",
+  agents: [
+    "cryptography-agent",
+    "three-js-ui-optimizer",
+    "gcp-deployment-orchestrator"
+  ],
+  strategy: "collaborative-sprint",
+  security: "enterprise-grade"
+};
+
+orchestrator.executeTask(task);</pre>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon">🎮</div>
+                        <div class="card-title">3D Visualization</div>
+                    </div>
+                    <div class="card-description">
+                        Creating custom 3D data visualizations with the immersive interface.
+                    </div>
+                    <div class="code-block">
+                        <pre>// Custom data visualization
+const dataPoints = [
+  {
+    position: new THREE.Vector3(x, y, z),
+    value: 0.85,
+    category: "Performance",
+    importance: 0.9
+  }
+];
+
+analyticsEngine.addDataPoints(dataPoints);
+analyticsEngine.setCinematicView(1);</pre>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon">☁️</div>
+                        <div class="card-title">GCP Deployment</div>
+                    </div>
+                    <div class="card-description">
+                        Deploy AIA components to Google Cloud Platform infrastructure.
+                    </div>
+                    <div class="code-block">
+                        <pre># Deploy to GKE cluster
+gcloud container clusters get-credentials \
+  aia-production-optim --region=europe-west4
+
+kubectl apply -f aia-production-deployment.yaml
+kubectl get services</pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Support & Resources -->
+    <section id="support" class="section">
+        <div class="container">
+            <h2 class="section-title">Support & Resources</h2>
+            <p class="section-subtitle">Documentation, troubleshooting, and community resources</p>
+
+            <div class="grid">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon">📚</div>
+                        <div class="card-title">Documentation</div>
+                    </div>
+                    <div class="card-description">
+                        Comprehensive documentation for all AIA system components and services.
+                    </div>
+                    <ul class="card-features">
+                        <li>API Reference Documentation</li>
+                        <li>Agent Configuration Guides</li>
+                        <li>Deployment Instructions</li>
+                        <li>Security Best Practices</li>
+                    </ul>
+                    <a href="#" class="btn-outline btn">View Documentation</a>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon">🐛</div>
+                        <div class="card-title">Troubleshooting</div>
+                    </div>
+                    <div class="card-description">
+                        Common issues, error codes, and resolution steps for AIA system components.
+                    </div>
+                    <ul class="card-features">
+                        <li>Common Error Solutions</li>
+                        <li>Performance Optimization</li>
+                        <li>Security Issue Resolution</li>
+                        <li>Deployment Troubleshooting</li>
+                    </ul>
+                    <a href="#" class="btn-outline btn">Get Help</a>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon">💬</div>
+                        <div class="card-title">Community</div>
+                    </div>
+                    <div class="card-description">
+                        Connect with other AIA system users, developers, and contributors.
+                    </div>
+                    <ul class="card-features">
+                        <li>Developer Community Forum</li>
+                        <li>GitHub Repository</li>
+                        <li>Technical Support</li>
+                        <li>Feature Requests</li>
+                    </ul>
+                    <a href="#" class="btn-outline btn">Join Community</a>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon">📧</div>
+                        <div class="card-title">Contact</div>
+                    </div>
+                    <div class="card-description">
+                        Direct support channels for enterprise customers and technical assistance.
+                    </div>
+                    <ul class="card-features">
+                        <li>Enterprise Support</li>
+                        <li>Technical Consultation</li>
+                        <li>Custom Integration</li>
+                        <li>Training Services</li>
+                    </ul>
+                    <a href="#" class="btn-outline btn">Contact Support</a>
+                </div>
+            </div>
+
+            <!-- System Status -->
+            <div style="margin-top: 60px; text-align: center;">
+                <h3 style="color: var(--lemon); margin-bottom: 30px;">Current System Status</h3>
+                <div style="display: flex; justify-content: center; gap: 40px; flex-wrap: wrap;">
+                    <div>
+                        <div style="font-size: 2rem; color: var(--success);">✅</div>
+                        <div>All Systems</div>
+                        <div><span class="status active">Operational</span></div>
+                    </div>
+                    <div>
+                        <div style="font-size: 2rem; color: var(--success);">🔒</div>
+                        <div>Security</div>
+                        <div><span class="status active">Protected</span></div>
+                    </div>
+                    <div>
+                        <div style="font-size: 2rem; color: var(--success);">⚡</div>
+                        <div>Performance</div>
+                        <div><span class="status active">60 FPS</span></div>
+                    </div>
+                    <div>
+                        <div style="font-size: 2rem; color: var(--success);">🌐</div>
+                        <div>Uptime</div>
+                        <div><span class="status active">99.9%</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer style="background: rgba(0, 0, 0, 0.5); padding: 40px 0; text-align: center; border-top: 1px solid var(--glass-border);">
+        <div class="container">
+            <div class="logo" style="margin-bottom: 20px;">AIA System</div>
+            <p style="opacity: 0.7;">© 2025 013a Technologies. All rights reserved.</p>
+            <p style="opacity: 0.5; margin-top: 10px;">Generated with enterprise-grade security and comprehensive multi-agent orchestration</p>
+        </div>
+    </footer>
+
+    <!-- JavaScript for interactivity -->
+    <script>
+        // Smooth scrolling for navigation links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth'
+                    });
+                }
+            });
+        });
+
+        // Animate cards on scroll
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('animate-in');
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.card').forEach(card => {
+            observer.observe(card);
+        });
+
+        // Update system status (simulation)
+        function updateSystemStatus() {
+            const statusElements = document.querySelectorAll('.status.active');
+            statusElements.forEach(el => {
+                el.style.animation = 'pulse 2s infinite';
+            });
+        }
+
+        updateSystemStatus();
+        setInterval(updateSystemStatus, 30000); // Update every 30 seconds
+
+        console.log('🚀 AIA System Usage Guide Loaded');
+        console.log('📊 System Status: All components operational');
+        console.log('🔒 Security: Enterprise-grade protection active');
+    </script>
+</body>
+</html>

@@ -1,0 +1,170 @@
+# TEMPORARILY DISABLED FOR QUOTA COMPLIANCE
+# This deployment has been temporarily disabled to meet GCP quota requirements
+# Original content below (commented out):
+#
+# # PostgreSQL StatefulSet
+# apiVersion: apps/v1
+# kind: StatefulSet
+# metadata:
+#   name: aia-postgresql
+#   namespace: analytics-production
+# spec:
+#   serviceName: aia-postgresql-service
+#   replicas: 1
+#   selector:
+#     matchLabels:
+#       app: aia-postgresql
+#   template:
+#     metadata:
+#       labels:
+#         app: aia-postgresql
+#     spec:
+#       containers:
+#       - name: postgresql
+#         image: postgres:15-alpine
+#         ports:
+#         - containerPort: 5432
+#         env:
+#         - name: POSTGRES_DB
+#           valueFrom:
+#             configMapKeyRef:
+#               name: aia-production-config
+#               key: POSTGRES_DB
+#         - name: POSTGRES_USER
+#           valueFrom:
+#             secretKeyRef:
+#               name: aia-production-secrets
+#               key: POSTGRES_USER
+#         - name: POSTGRES_PASSWORD
+#           valueFrom:
+#             secretKeyRef:
+#               name: aia-production-secrets
+#               key: POSTGRES_PASSWORD
+#         - name: PGDATA
+#           value: /var/lib/postgresql/data/pgdata
+#         volumeMounts:
+#         - name: postgres-storage
+#           mountPath: /var/lib/postgresql/data
+#         resources:
+#           requests:
+#             memory: "128Mi"
+#             cpu: "100m"
+#           limits:
+#             memory: "128Mi"
+#             cpu: "100m"
+#         livenessProbe:
+#           exec:
+#             command:
+#               - /bin/sh
+#               - -c
+#               - exec pg_isready -U $POSTGRES_USER -d $POSTGRES_DB -h 127.0.0.1 -p 5432
+#           initialDelaySeconds: 30
+#           periodSeconds: 10
+#           timeoutSeconds: 5
+#           successThreshold: 1
+#           failureThreshold: 6
+#         readinessProbe:
+#           exec:
+#             command:
+#               - /bin/sh
+#               - -c
+#               - exec pg_isready -U $POSTGRES_USER -d $POSTGRES_DB -h 127.0.0.1 -p 5432
+#           initialDelaySeconds: 5
+#           periodSeconds: 10
+#           timeoutSeconds: 5
+#           successThreshold: 1
+#           failureThreshold: 6
+#       volumes:
+#       - name: postgres-storage
+#         persistentVolumeClaim:
+#           claimName: aia-postgres-pvc
+# ---
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   name: aia-postgresql-service
+#   namespace: analytics-production
+# spec:
+#   selector:
+#     app: aia-postgresql
+#   ports:
+#   - port: 5432
+#     targetPort: 5432
+#   type: ClusterIP
+# ---
+# # Redis Deployment
+# apiVersion: apps/v1
+# kind: Deployment
+# metadata:
+#   name: aia-redis
+#   namespace: analytics-production
+# spec:
+#   replicas: 1
+#   selector:
+#     matchLabels:
+#       app: aia-redis
+#   template:
+#     metadata:
+#       labels:
+#         app: aia-redis
+#     spec:
+#       containers:
+#       - name: redis
+#         image: redis:7-alpine
+#         ports:
+#         - containerPort: 6379
+#         args:
+#         - redis-server
+#         - --requirepass
+#         - $(REDIS_PASSWORD)
+#         - --maxmemory
+#         - 1gb
+#         - --maxmemory-policy
+#         - allkeys-lru
+#         env:
+#         - name: REDIS_PASSWORD
+#           valueFrom:
+#             secretKeyRef:
+#               name: aia-production-secrets
+#               key: REDIS_PASSWORD
+#         volumeMounts:
+#         - name: redis-storage
+#           mountPath: /data
+#         resources:
+#           requests:
+#             memory: "128Mi"
+#             cpu: "100m"
+#           limits:
+#             memory: "128Mi"
+#             cpu: "100m"
+#         livenessProbe:
+#           exec:
+#             command:
+#             - redis-cli
+#             - ping
+#           initialDelaySeconds: 30
+#           periodSeconds: 10
+#         readinessProbe:
+#           exec:
+#             command:
+#             - redis-cli
+#             - ping
+#           initialDelaySeconds: 5
+#           periodSeconds: 5
+#       volumes:
+#       - name: redis-storage
+#         persistentVolumeClaim:
+#           claimName: aia-redis-pvc
+# ---
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   name: aia-redis-service
+#   namespace: analytics-production
+# spec:
+#   selector:
+#     app: aia-redis
+#   ports:
+#   - port: 6379
+#     targetPort: 6379
+#   type: ClusterIP

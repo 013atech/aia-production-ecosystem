@@ -1,0 +1,266 @@
+# Immediate deployment using existing working images
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-frontend-working
+  namespace: analytics-production
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: aia-frontend-working
+  template:
+    metadata:
+      labels:
+        app: aia-frontend-working
+    spec:
+      containers:
+      - name: aia-frontend
+        image: gcr.io/aia-system-prod-1759055445/aia-frontend:latest
+        ports:
+        - containerPort: 80
+        envFrom:
+        - configMapRef:
+            name: aia-production-config
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 30
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 10
+          periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-frontend-working-service
+  namespace: analytics-production
+spec:
+  selector:
+    app: aia-frontend-working
+  ports:
+  - port: 80
+    targetPort: 80
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-backend-working
+  namespace: analytics-production
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: aia-backend-working
+  template:
+    metadata:
+      labels:
+        app: aia-backend-working
+    spec:
+      containers:
+      - name: aia-backend
+        image: gcr.io/aia-system-prod-1759055445/aia-api:latest
+        ports:
+        - containerPort: 8000
+        env:
+        - name: DATABASE_URL
+          value: "postgresql://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@aia-postgresql-service:5432/$(POSTGRES_DB)"
+        - name: REDIS_URL
+          valueFrom:
+            configMapKeyRef:
+              name: aia-production-config
+              key: REDIS_URL
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: aia-production-secrets
+              key: JWT_SECRET
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: aia-production-secrets
+              key: POSTGRES_USER
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: aia-production-secrets
+              key: POSTGRES_PASSWORD
+        - name: POSTGRES_DB
+          valueFrom:
+            configMapKeyRef:
+              name: aia-production-config
+              key: POSTGRES_DB
+        envFrom:
+        - configMapRef:
+            name: aia-production-config
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 8000
+          initialDelaySeconds: 60
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-backend-working-service
+  namespace: analytics-production
+spec:
+  selector:
+    app: aia-backend-working
+  ports:
+  - port: 80
+    targetPort: 8000
+  type: ClusterIP
+---
+# WebSocket Service
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-websocket-working
+  namespace: analytics-production
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: aia-websocket-working
+  template:
+    metadata:
+      labels:
+        app: aia-websocket-working
+    spec:
+      containers:
+      - name: aia-websocket
+        image: gcr.io/aia-system-prod-1759055445/aia-websocket-server:latest
+        ports:
+        - containerPort: 8090
+        env:
+        - name: REDIS_URL
+          valueFrom:
+            configMapKeyRef:
+              name: aia-production-config
+              key: REDIS_URL
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: aia-production-secrets
+              key: REDIS_PASSWORD
+        envFrom:
+        - configMapRef:
+            name: aia-production-config
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8090
+          initialDelaySeconds: 30
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8090
+          initialDelaySeconds: 15
+          periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-websocket-working-service
+  namespace: analytics-production
+spec:
+  selector:
+    app: aia-websocket-working
+  ports:
+  - port: 8090
+    targetPort: 8090
+  type: ClusterIP
+---
+# Immediate Ingress
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: aia-production-working-ingress
+  namespace: analytics-production
+  annotations:
+    kubernetes.io/ingress.global-static-ip-name: "aia-production-ip"
+    networking.gke.io/managed-certificates: "aia-ssl-cert"
+    kubernetes.io/ingress.class: "gce"
+    ingress.gcp.kubernetes.io/backend-config: '{"default": "aia-backend-config"}'
+spec:
+  rules:
+  - host: 013a.tech
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-frontend-working-service
+            port:
+              number: 80
+      - path: /api
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-backend-working-service
+            port:
+              number: 80
+      - path: /ws
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-websocket-working-service
+            port:
+              number: 8090
+  - host: www.013a.tech
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-frontend-working-service
+            port:
+              number: 80
+  - host: api.013a.tech
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-backend-working-service
+            port:
+              number: 80

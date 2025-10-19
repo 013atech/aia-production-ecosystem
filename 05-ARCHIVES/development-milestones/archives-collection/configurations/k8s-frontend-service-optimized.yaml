@@ -1,0 +1,37 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-frontend-service
+  namespace: aia-working-production
+  labels:
+    app: aia-frontend
+    service: frontend
+    version: v1
+  annotations:
+    # Optimize for GCP Load Balancer
+    cloud.google.com/backend-config: '{"default": "aia-frontend-config"}'
+    cloud.google.com/neg: '{"ingress": true}'
+spec:
+  type: ClusterIP  # Required for GKE ingress
+  sessionAffinity: ClientIP
+  ports:
+  - name: http
+    protocol: TCP
+    port: 80
+    targetPort: 80
+  # No selector - using manual endpoints for cross-namespace access
+---
+apiVersion: v1
+kind: Endpoints
+metadata:
+  name: aia-frontend-service
+  namespace: aia-working-production
+subsets:
+- addresses:
+  - ip: 10.28.0.57  # Working frontend pod IPs
+  - ip: 10.28.3.223
+  - ip: 10.28.4.2
+  ports:
+  - name: http
+    port: 80
+    protocol: TCP

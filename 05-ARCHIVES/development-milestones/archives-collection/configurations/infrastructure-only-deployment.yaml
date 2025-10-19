@@ -1,0 +1,196 @@
+# Infrastructure components that don't require container images
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: analytics-production
+  labels:
+    env: production
+    application: 013a-analytics
+    complexity: full
+---
+# ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: aia-production-config
+  namespace: analytics-production
+data:
+  NODE_ENV: "production"
+  REACT_APP_API_URL: "https://api.013a.tech"
+  REACT_APP_WS_URL: "wss://api.013a.tech"
+  REACT_APP_ENVIRONMENT: "production"
+  REACT_APP_3D_OPTIMIZED: "true"
+  REACT_APP_WEBXR_ENABLED: "true"
+  REACT_APP_PERFORMANCE_MONITORING: "true"
+  ML_MODEL_VERSION: "v2.0.0"
+  ML_DRIFT_DETECTION_ENABLED: "true"
+  ML_AUTO_RETRAINING: "true"
+  BI_REAL_TIME_ANALYTICS: "true"
+  BI_PREDICTIVE_MODELS: "true"
+  BI_DASHBOARD_UPDATES: "live"
+  ENTERPRISE_PARTNERS_ENABLED: "true"
+  STRIPE_INTEGRATION: "true"
+  PAYMENT_PROCESSING: "live"
+  POSTGRES_DB: "aia_production"
+  POSTGRES_HOST: "aia-postgresql-service"
+  POSTGRES_PORT: "5432"
+  REDIS_URL: "redis://aia-redis-service:6379"
+  PROMETHEUS_ENABLED: "true"
+  GRAFANA_DASHBOARD_ENABLED: "true"
+  JAEGER_TRACING: "true"
+  LOG_LEVEL: "info"
+  JWT_ALGORITHM: "RS256"
+  CORS_ORIGINS: "https://013a.tech,https://www.013a.tech,https://api.013a.tech"
+  RATE_LIMITING: "true"
+  CACHE_TTL: "3600"
+  CONNECTION_POOL_SIZE: "20"
+  MAX_CONCURRENT_REQUESTS: "1000"
+---
+# Secrets
+apiVersion: v1
+kind: Secret
+metadata:
+  name: aia-production-secrets
+  namespace: analytics-production
+type: Opaque
+stringData:
+  POSTGRES_USER: "aia_admin"
+  POSTGRES_PASSWORD: "aia_secure_2024_prod!"
+  JWT_SECRET: "aia_jwt_super_secret_key_2024_production"
+  JWT_PRIVATE_KEY: |
+    -----BEGIN PRIVATE KEY-----
+    MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC7VJTUt9Us8cKB
+    xhQnHQwuTvLduiBNeqRXribfvtbhIOco8MG4NHD0ZSBNGGZXVSqP3sBTYFEX8LK9
+    VEKENYYHxxC2dNiPkN4DjQfbqTAEuiBKkYXfEq0X7TQv5z5bLQPLg2ooO8hIqwCs
+    A2Kxt3k4g2nGiGrXkQBAKsBYpgNaKYvwXABJuNHNj
+    -----END PRIVATE KEY-----
+  STRIPE_SECRET_KEY: "[STRIPE_KEY_PLACEHOLDER]"
+  OPENAI_API_KEY: "sk-proj-1234567890"
+  GOOGLE_CLOUD_API_KEY: "AIza1234567890"
+  REDIS_PASSWORD: "redis_secure_password_2024"
+  MONITORING_TOKEN: "monitoring_secure_token_2024"
+---
+# PVCs
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: aia-postgres-pvc
+  namespace: analytics-production
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: standard-rwo
+  resources:
+    requests:
+      storage: 100Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: aia-redis-pvc
+  namespace: analytics-production
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: standard-rwo
+  resources:
+    requests:
+      storage: 20Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: aia-ml-models-pvc
+  namespace: analytics-production
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: standard-rwo
+  resources:
+    requests:
+      storage: 50Gi
+---
+# Managed Certificate
+apiVersion: networking.gke.io/v1
+kind: ManagedCertificate
+metadata:
+  name: aia-ssl-cert
+  namespace: analytics-production
+spec:
+  domains:
+    - 013a.tech
+    - www.013a.tech
+    - api.013a.tech
+---
+# Backend Config
+apiVersion: cloud.google.com/v1
+kind: BackendConfig
+metadata:
+  name: aia-backend-config
+  namespace: analytics-production
+spec:
+  healthCheck:
+    checkIntervalSec: 15
+    port: 8000
+    type: HTTP
+    requestPath: /health
+  sessionAffinity:
+    affinityType: "CLIENT_IP"
+  timeoutSec: 300
+  connectionDraining:
+    drainingTimeoutSec: 60
+---
+# Frontend Config
+apiVersion: cloud.google.com/v1
+kind: FrontendConfig
+metadata:
+  name: aia-frontend-config
+  namespace: analytics-production
+spec:
+  sslPolicy: modern-ssl-policy
+  redirectToHttps:
+    enabled: true
+---
+# Network Policy
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: aia-production-network-policy
+  namespace: analytics-production
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: analytics-production
+    - podSelector: {}
+  - from: []
+    ports:
+    - protocol: TCP
+      port: 80
+    - protocol: TCP
+      port: 443
+  egress:
+  - {}
+---
+# Resource Quotas
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: aia-production-quota
+  namespace: analytics-production
+spec:
+  hard:
+    requests.cpu: "20"
+    requests.memory: "40Gi"
+    limits.cpu: "40"
+    limits.memory: "80Gi"
+    persistentvolumeclaims: "10"
+    services: "20"
+    secrets: "10"
+    configmaps: "10"
+    pods: "50"

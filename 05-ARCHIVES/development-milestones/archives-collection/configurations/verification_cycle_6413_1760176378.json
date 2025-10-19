@@ -1,0 +1,39 @@
+{
+  "cycle_number": 6413,
+  "timestamp": "2025-10-11T11:38:50.831566",
+  "tests": {
+    "production_endpoints": {
+      "frontend": {
+        "status_code": 520,
+        "response_time": 0.548299,
+        "status": "unhealthy"
+      },
+      "api": {
+        "status": "error",
+        "error": "HTTPSConnectionPool(host='api.013a.tech', port=443): Read timed out. (read timeout=10)"
+      },
+      "health": {
+        "status": "error",
+        "error": "HTTPSConnectionPool(host='013a.tech', port=443): Max retries exceeded with url: /health (Caused by NameResolutionError(\"<urllib3.connection.HTTPSConnection object at 0x10306ddc0>: Failed to resolve '013a.tech' ([Errno 8] nodename nor servname provided, or not known)\"))"
+      }
+    },
+    "knowledge_graph": {
+      "status": "success",
+      "insights_count": 10,
+      "query_time": 0.006306
+    },
+    "gcp_infrastructure": {
+      "status": "healthy",
+      "pods_running": true,
+      "services_available": true,
+      "load_balancer": "active"
+    },
+    "monitoring": {
+      "status": "active",
+      "prometheus": "running",
+      "grafana": "accessible"
+    }
+  },
+  "cycle_duration": 848.0036051273346,
+  "status": "completed"
+}

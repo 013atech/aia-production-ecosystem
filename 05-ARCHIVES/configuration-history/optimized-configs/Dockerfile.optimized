@@ -1,0 +1,69 @@
+# Multi-stage optimized Dockerfile for AIA System
+ARG PYTHON_VERSION=3.12-slim
+ARG NODE_VERSION=20-alpine
+
+# Base stage with common dependencies
+FROM python:${PYTHON_VERSION} as base
+LABEL maintainer="AIA System Team"
+LABEL version="3.0.0"
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    curl \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python dependencies
+COPY requirements.txt /tmp/requirements.txt
+RUN pip install --no-cache-dir -r /tmp/requirements.txt
+
+# Create application user
+RUN groupadd -r aia && useradd -r -g aia aia
+
+# API stage
+FROM base as api
+WORKDIR /app
+COPY aia/ ./aia/
+RUN chown -R aia:aia /app
+USER aia
+EXPOSE 8000
+CMD ["python", "-m", "aia.main"]
+
+# Frontend build stage
+FROM node:${NODE_VERSION} as frontend-build
+WORKDIR /app/frontend
+COPY frontend/package*.json ./
+RUN npm ci --only=production --silent
+COPY frontend/ ./
+RUN npm run build
+
+# Frontend runtime stage
+FROM nginx:alpine as frontend
+COPY --from=frontend-build /app/frontend/build /usr/share/nginx/html
+COPY nginx.conf /etc/nginx/nginx.conf
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]
+
+# Multi-Agent System stage
+FROM base as mas-orchestrator
+WORKDIR /app
+COPY aia/ ./aia/
+RUN chown -R aia:aia /app
+USER aia
+CMD ["python", "-m", "aia.orchestration.production_multi_agent_system"]
+
+# Development stage (includes dev dependencies)
+FROM base as development
+RUN pip install pytest pytest-cov black flake8 mypy
+WORKDIR /app
+COPY . .
+RUN chown -R aia:aia /app
+USER aia
+CMD ["python", "-m", "aia.main"]

@@ -1,0 +1,214 @@
+# Fixed Blue-Green Deployment Strategy for AIA Analytics
+# Using existing working images and fixing configuration issues
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-blue-backend
+  namespace: aia-blue-production
+  labels:
+    app: aia-backend
+    environment: blue
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: aia-backend
+      environment: blue
+  template:
+    metadata:
+      labels:
+        app: aia-backend
+        environment: blue
+    spec:
+      containers:
+      - name: backend
+        image: gcr.io/aia-system-prod-1759055445/aia-api:latest  # Use existing working image
+        ports:
+        - containerPort: 8000
+        env:
+        - name: ENVIRONMENT
+          value: "blue"
+        - name: PYTHONPATH
+          value: "/app"
+        command: ["python", "-m", "uvicorn", "aia.main:app", "--host", "0.0.0.0", "--port", "8000"]  # Fixed command
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 8000
+          initialDelaySeconds: 15
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 15
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-green-backend
+  namespace: aia-green-production
+  labels:
+    app: aia-backend
+    environment: green
+spec:
+  replicas: 0  # Start with 0, scale up when ready for cutover
+  selector:
+    matchLabels:
+      app: aia-backend
+      environment: green
+  template:
+    metadata:
+      labels:
+        app: aia-backend
+        environment: green
+    spec:
+      containers:
+      - name: backend
+        image: gcr.io/aia-system-prod-1759055445/aia-api:latest  # Use existing image for now
+        ports:
+        - containerPort: 8000
+        env:
+        - name: ENVIRONMENT
+          value: "green"
+        - name: PYTHONPATH
+          value: "/app"
+        command: ["python", "-m", "uvicorn", "aia.main:app", "--host", "0.0.0.0", "--port", "8000"]
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-green-frontend
+  namespace: aia-green-production
+  labels:
+    app: aia-frontend
+    environment: green
+spec:
+  replicas: 0  # Start with 0, scale up when ready for cutover
+  selector:
+    matchLabels:
+      app: aia-frontend
+      environment: green
+  template:
+    metadata:
+      labels:
+        app: aia-frontend
+        environment: green
+    spec:
+      containers:
+      - name: frontend
+        image: gcr.io/aia-system-prod-1759055445/aia-frontend:latest  # Use existing image
+        ports:
+        - containerPort: 3000
+        env:
+        - name: REACT_APP_API_URL
+          value: "https://api.013a.tech"
+        - name: REACT_APP_ENVIRONMENT
+          value: "green"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+---
+# Optimized PostgreSQL with fixed mount issue
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-postgres-fixed
+  namespace: aia-blue-production
+  labels:
+    app: aia-postgres
+    tier: database
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: aia-postgres-fixed
+  template:
+    metadata:
+      labels:
+        app: aia-postgres-fixed
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:15-alpine
+        ports:
+        - containerPort: 5432
+        env:
+        - name: POSTGRES_DB
+          value: "aia_db"
+        - name: POSTGRES_USER
+          value: "postgres"
+        - name: POSTGRES_PASSWORD
+          value: "secure_password_2025"
+        - name: PGDATA
+          value: /var/lib/postgresql/data/pgdata  # This fixes the mount point issue
+        volumeMounts:
+        - name: postgres-storage
+          mountPath: /var/lib/postgresql/data
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        readinessProbe:
+          exec:
+            command:
+            - pg_isready
+            - -U
+            - postgres
+          initialDelaySeconds: 15
+          periodSeconds: 10
+      volumes:
+      - name: postgres-storage
+        persistentVolumeClaim:
+          claimName: aia-postgres-pvc-fixed
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: aia-postgres-pvc-fixed
+  namespace: aia-blue-production
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-postgres-service-fixed
+  namespace: aia-blue-production
+  labels:
+    app: aia-postgres-fixed
+spec:
+  selector:
+    app: aia-postgres-fixed
+  ports:
+    - protocol: TCP
+      port: 5432
+      targetPort: 5432
+  type: ClusterIP

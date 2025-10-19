@@ -1,0 +1,219 @@
+# TEMPORARILY DISABLED FOR QUOTA COMPLIANCE
+# This deployment has been temporarily disabled to meet GCP quota requirements
+# Original content below (commented out):
+#
+# # SSL Validation and Monitoring Suite
+# # Real-time monitoring of SSL certificate provisioning and website health
+# ---
+# apiVersion: v1
+# kind: ConfigMap
+# metadata:
+#   name: ssl-validation-scripts
+#   namespace: aia-unified-production
+# data:
+#   validate_ssl.sh: |
+#     #!/bin/bash
+#     set -e
+# 
+#     DOMAINS=("013a.tech" "www.013a.tech" "api.013a.tech" "founder.013a.tech" "ey.013a.tech" "jpmorgan.013a.tech" "gcp.013a.tech" "apple.013a.tech")
+#     LOAD_BALANCER_IP="34.96.90.243"
+# 
+#     echo "🔒 SSL Validation Suite - $(date)"
+#     echo "=================================="
+# 
+#     # Check DNS resolution
+#     echo "🌐 DNS Resolution Check:"
+#     for domain in "${DOMAINS[@]}"; do
+#         echo -n "  $domain: "
+#         ip=$(nslookup "$domain" 8.8.8.8 2>/dev/null | grep "Address:" | tail -1 | awk '{print $2}' || echo "FAILED")
+# 
+#         if [ "$ip" = "$LOAD_BALANCER_IP" ]; then
+#             echo "✅ $ip (CORRECT)"
+#         else
+#             echo "❌ $ip (EXPECTED: $LOAD_BALANCER_IP)"
+#         fi
+#     done
+# 
+#     echo ""
+#     echo "🔐 SSL Certificate Status:"
+#     gcloud compute ssl-certificates list --format="table(name,managed.status,managed.domains)" | grep -E "(NAME|mcrt-|aia-)" | head -10
+# 
+#     echo ""
+#     echo "🚀 HTTP/HTTPS Connectivity Test:"
+#     for domain in "${DOMAINS[@]}"; do
+#         echo -n "  $domain (HTTP): "
+#         http_code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 "http://$domain/" 2>/dev/null || echo "000")
+# 
+#         echo -n "  $domain (HTTPS): "
+#         https_code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 "https://$domain/" 2>/dev/null || echo "000")
+# 
+#         if [ "$http_code" = "301" ] || [ "$http_code" = "302" ] || [ "$http_code" = "200" ]; then
+#             echo -n "✅ HTTP:$http_code "
+#         else
+#             echo -n "❌ HTTP:$http_code "
+#         fi
+# 
+#         if [ "$https_code" = "200" ]; then
+#             echo "✅ HTTPS:$https_code"
+#         else
+#             echo "❌ HTTPS:$https_code"
+#         fi
+#     done
+# 
+#     echo ""
+#     echo "📊 Backend Health Status:"
+#     kubectl get pods -n aia-unified-production -o custom-columns="NAME:.metadata.name,STATUS:.status.phase,RESTARTS:.status.containerStatuses[0].restartCount" | grep -E "(NAME|aia-unified|aia-customer)"
+# 
+#     echo ""
+#     echo "🔄 Load Balancer Status:"
+#     kubectl get ingress -n aia-unified-production -o wide
+# 
+#   performance_test.sh: |
+#     #!/bin/bash
+#     echo "⚡ Performance Testing Suite - $(date)"
+#     echo "===================================="
+# 
+#     DOMAINS=("013a.tech" "api.013a.tech")
+# 
+#     for domain in "${DOMAINS[@]}"; do
+#         echo "🎯 Testing $domain:"
+# 
+#         # SSL handshake time
+#         ssl_time=$(curl -s -w "%{time_connect},%{time_appconnect},%{time_total}\n" -o /dev/null "https://$domain/" 2>/dev/null || echo "FAILED,FAILED,FAILED")
+# 
+#         IFS=',' read -r connect_time ssl_handshake_time total_time <<< "$ssl_time"
+# 
+#         if [ "$ssl_handshake_time" != "FAILED" ]; then
+#             ssl_only=$(echo "$ssl_handshake_time - $connect_time" | bc -l 2>/dev/null || echo "0")
+#             echo "  🤝 SSL Handshake: ${ssl_only}s (Target: <0.050s)"
+#             echo "  🔗 Total Connect: ${total_time}s"
+# 
+#             # Check if under performance targets
+#             if (( $(echo "$ssl_only < 0.050" | bc -l) )); then
+#                 echo "  ✅ SSL Performance: EXCELLENT"
+#             else
+#                 echo "  ⚠️  SSL Performance: NEEDS OPTIMIZATION"
+#             fi
+#         else
+#             echo "  ❌ SSL Test: FAILED"
+#         fi
+# 
+#         echo ""
+#     done
+# 
+#   circuit_breaker_test.sh: |
+#     #!/bin/bash
+#     echo "🔧 Circuit Breaker Testing - $(date)"
+#     echo "================================="
+# 
+#     # Test load balancer health checks
+#     for i in {1..10}; do
+#         response=$(curl -s -w "%{http_code}" -o /dev/null "https://013a.tech/api/health" 2>/dev/null || echo "000")
+#         echo "Health Check $i: $response"
+#         sleep 1
+#     done
+# 
+#     echo ""
+#     echo "📈 Backend Pod Distribution:"
+#     kubectl get pods -n aia-unified-production -o wide | grep aia-unified-backend | awk '{print $7}' | sort | uniq -c
+# 
+# ---
+# apiVersion: batch/v1
+# kind: CronJob
+# metadata:
+#   name: ssl-validation-monitor
+#   namespace: aia-unified-production
+# spec:
+#   schedule: "*/5 * * * *"  # Every 5 minutes
+#   jobTemplate:
+#     spec:
+#       template:
+#         spec:
+#           serviceAccountName: aia-ssl-monitor
+#           containers:
+#           - name: ssl-validator
+#             image: google/cloud-sdk:slim
+#             command: ["/bin/bash", "-c"]
+#             args:
+#             - |
+#               apt-get update && apt-get install -y curl bc
+#               source /scripts/validate_ssl.sh
+#             volumeMounts:
+#             - name: validation-scripts
+#               mountPath: /scripts
+#           volumes:
+#           - name: validation-scripts
+#             configMap:
+#               name: ssl-validation-scripts
+#               defaultMode: 0755
+#           restartPolicy: OnFailure
+#           ttlSecondsAfterFinished: 300
+# 
+# ---
+# apiVersion: v1
+# kind: ServiceAccount
+# metadata:
+#   name: aia-ssl-monitor
+#   namespace: aia-unified-production
+# 
+# ---
+# apiVersion: rbac.authorization.k8s.io/v1
+# kind: Role
+# metadata:
+#   name: ssl-monitor-role
+#   namespace: aia-unified-production
+# rules:
+# - apiGroups: [""]
+#   resources: ["pods", "services", "endpoints"]
+#   verbs: ["get", "list", "watch"]
+# - apiGroups: ["networking.k8s.io"]
+#   resources: ["ingresses"]
+#   verbs: ["get", "list", "watch"]
+# - apiGroups: ["networking.gke.io"]
+#   resources: ["managedcertificates"]
+#   verbs: ["get", "list", "watch"]
+# 
+# ---
+# apiVersion: rbac.authorization.k8s.io/v1
+# kind: RoleBinding
+# metadata:
+#   name: ssl-monitor-binding
+#   namespace: aia-unified-production
+# roleRef:
+#   apiGroup: rbac.authorization.k8s.io
+#   kind: Role
+#   name: ssl-monitor-role
+# subjects:
+# - kind: ServiceAccount
+#   name: aia-ssl-monitor
+#   namespace: aia-unified-production
+# 
+# ---
+# # Performance Monitoring Job
+# apiVersion: batch/v1
+# kind: Job
+# metadata:
+#   name: ssl-performance-baseline
+#   namespace: aia-unified-production
+# spec:
+#   template:
+#     spec:
+#       serviceAccountName: aia-ssl-monitor
+#       containers:
+#       - name: performance-tester
+#         image: google/cloud-sdk:slim
+#         command: ["/bin/bash", "-c"]
+#         args:
+#         - |
+#           apt-get update && apt-get install -y curl bc
+#           source /scripts/performance_test.sh
+#           source /scripts/circuit_breaker_test.sh
+#         volumeMounts:
+#         - name: validation-scripts
+#           mountPath: /scripts
+#       volumes:
+#       - name: validation-scripts
+#         configMap:
+#           name: ssl-validation-scripts
+#           defaultMode: 0755
+#       restartPolicy: Never

@@ -1,0 +1,77 @@
+# Production Ingress for 013a.tech with SSL
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: aia-production-ingress
+  namespace: aia-production-fixed
+  annotations:
+    kubernetes.io/ingress.global-static-ip-name: aia-global-ip
+    networking.gke.io/managed-certificates: aia-production-ssl
+    kubernetes.io/ingress.class: "gce"
+    kubernetes.io/ingress.allow-http: "false"
+spec:
+  rules:
+  - host: 013a.tech
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-frontend-service
+            port:
+              number: 80
+  - host: www.013a.tech
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-frontend-service
+            port:
+              number: 80
+  - host: api.013a.tech
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-backend-service
+            port:
+              number: 80
+  - host: ml.013a.tech
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-ml-service
+            port:
+              number: 8001
+  - host: analytics.013a.tech
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-analytics-service
+            port:
+              number: 8002
+---
+# Managed SSL Certificate for 013a.tech
+apiVersion: networking.gke.io/v1
+kind: ManagedCertificate
+metadata:
+  name: aia-production-ssl
+  namespace: aia-production-fixed
+spec:
+  domains:
+    - 013a.tech
+    - www.013a.tech
+    - api.013a.tech
+    - ml.013a.tech
+    - analytics.013a.tech

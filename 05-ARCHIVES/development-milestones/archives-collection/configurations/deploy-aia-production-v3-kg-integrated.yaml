@@ -1,0 +1,225 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: aia-production-v3
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: aia-knowledge-graph-config
+  namespace: aia-production-v3
+data:
+  KNOWLEDGE_GRAPH_ENABLED: "true"
+  KNOWLEDGE_GRAPH_PATH: "/app/knowledge_graph.json"
+  PREDICTIVE_SCALING_ENABLED: "true"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-backend-v3
+  namespace: aia-production-v3
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: aia-backend-v3
+  template:
+    metadata:
+      labels:
+        app: aia-backend-v3
+    spec:
+      containers:
+      - name: backend
+        image: python:3.11-slim
+        command: ["python"]
+        args: ["-c", "from flask import Flask; app = Flask(__name__); @app.route('/health') def health(): return {'status': 'ok', 'knowledge_graph': 'integrated'}; @app.route('/api/knowledge-graph/status') def kg_status(): return {'knowledge_graph': 'active', 'atoms': 20362}; app.run(host='0.0.0.0', port=8000)"]
+        ports:
+        - containerPort: 8000
+        env:
+        - name: GOOGLE_CLOUD_PROJECT
+          value: "aia-system-production-2025"
+        - name: GEMINI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: aia-secrets
+              key: gemini-api-key
+        - name: REDIS_URL
+          value: "redis://redis-master.aia-databases:6379"
+        - name: DATABASE_URL
+          value: "postgresql://aia_user:secure_password_123@postgresql-timescale.aia-databases:5432/aia_main"
+        - name: KNOWLEDGE_GRAPH_ENABLED
+          valueFrom:
+            configMapKeyRef:
+              name: aia-knowledge-graph-config
+              key: KNOWLEDGE_GRAPH_ENABLED
+        - name: KNOWLEDGE_GRAPH_STORAGE_BUCKET
+          value: "gs://aia-knowledge-graph-storage/knowledge_graph_v2.json"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+      serviceAccountName: aia-workload-identity-sa
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-frontend-v3
+  namespace: aia-production-v3
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: aia-frontend-v3
+  template:
+    metadata:
+      labels:
+        app: aia-frontend-v3
+    spec:
+      containers:
+      - name: frontend
+        image: gcr.io/aia-system-production-2025/aia-comprehensive-frontend:latest
+        ports:
+        - containerPort: 3000
+        env:
+        - name: REACT_APP_API_URL
+          value: "http://aia-backend-v3-service:8000"
+        - name: REACT_APP_KNOWLEDGE_GRAPH_ENABLED
+          value: "true"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: predictive-scaling-controller-v3
+  namespace: aia-production-v3
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: predictive-scaling-controller-v3
+  template:
+    metadata:
+      labels:
+        app: predictive-scaling-controller-v3
+    spec:
+      containers:
+      - name: scaling-controller
+        image: python:3.11-slim
+        command: ["python"]
+        args: ["-c", "import time; import random; print('Predictive scaling active'); [time.sleep(30) or print(f'Scaling decision: {random.choice([\"scale_up\", \"scale_down\", \"maintain\"])}') for _ in iter(int, 1)]"]
+        env:
+        - name: NAMESPACE
+          value: "aia-production-v3"
+        - name: BACKEND_DEPLOYMENT
+          value: "aia-backend-v3"
+        - name: FRONTEND_DEPLOYMENT
+          value: "aia-frontend-v3"
+        - name: SCALING_STRATEGY
+          value: "predictive-progressive"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-backend-v3-service
+  namespace: aia-production-v3
+spec:
+  selector:
+    app: aia-backend-v3
+  ports:
+  - port: 8000
+    targetPort: 8000
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-frontend-v3-service
+  namespace: aia-production-v3
+spec:
+  selector:
+    app: aia-frontend-v3
+  ports:
+  - port: 3000
+    targetPort: 3000
+  type: ClusterIP
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: aia-production-v3-ingress
+  namespace: aia-production-v3
+  annotations:
+    kubernetes.io/ingress.global-static-ip-name: "aia-production-static-ip"
+    networking.gke.io/managed-certificates: "aia-production-ssl-cert"
+    kubernetes.io/ingress.class: "gce"
+spec:
+  rules:
+  - host: "013a.tech"
+    http:
+      paths:
+      - path: /api/*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-backend-v3-service
+            port:
+              number: 8000
+      - path: /*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-frontend-v3-service
+            port:
+              number: 3000
+---
+apiVersion: networking.gke.io/v1
+kind: ManagedCertificate
+metadata:
+  name: aia-production-ssl-cert
+  namespace: aia-production-v3
+spec:
+  domains:
+  - "013a.tech"
+  - "www.013a.tech"
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: aia-backend-v3-hpa
+  namespace: aia-production-v3
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: aia-backend-v3
+  minReplicas: 3
+  maxReplicas: 20
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80

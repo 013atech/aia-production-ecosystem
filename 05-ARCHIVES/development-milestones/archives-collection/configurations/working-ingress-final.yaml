@@ -1,0 +1,112 @@
+# Working Production Ingress - Simplified for guaranteed deployment
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: aia-working-production
+  namespace: aia-unified-production
+  annotations:
+    kubernetes.io/ingress.global-static-ip-name: aia-production-ip
+    ingress.gcp.kubernetes.io/managed-certificates: aia-ssl-enterprise-complete
+    kubernetes.io/ingress.allow-http: "false"
+    cloud.google.com/neg: '{"ingress": true}'
+spec:
+  rules:
+  # Main domain
+  - host: 013a.tech
+    http:
+      paths:
+      - path: /api
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-unified-backend-service
+            port:
+              number: 8000
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-unified-frontend-service
+            port:
+              number: 80
+
+  # WWW subdomain
+  - host: www.013a.tech
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-unified-frontend-service
+            port:
+              number: 80
+
+  # API subdomain
+  - host: api.013a.tech
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-unified-backend-service
+            port:
+              number: 8000
+
+  # Enterprise subdomains
+  - host: founder.013a.tech
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-unified-frontend-service
+            port:
+              number: 80
+
+  - host: ey.013a.tech
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-unified-frontend-service
+            port:
+              number: 80
+
+  - host: jpmorgan.013a.tech
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-unified-frontend-service
+            port:
+              number: 80
+
+  - host: gcp.013a.tech
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-unified-frontend-service
+            port:
+              number: 80
+
+  - host: apple.013a.tech
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-unified-frontend-service
+            port:
+              number: 80

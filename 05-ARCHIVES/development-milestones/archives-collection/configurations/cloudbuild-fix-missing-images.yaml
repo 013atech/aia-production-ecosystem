@@ -1,0 +1,240 @@
+# TEMPORARILY DISABLED FOR QUOTA COMPLIANCE
+# This deployment has been temporarily disabled to meet GCP quota requirements
+# Original content below (commented out):
+#
+# steps:
+# # Fix missing images - build all required components
+# - name: 'gcr.io/cloud-builders/docker'
+#   id: 'build-aia-backend'
+#   args:
+#   - 'build'
+#   - '-f'
+#   - 'aia/Dockerfile.production'
+#   - '-t'
+#   - 'us-central1-docker.pkg.dev/${PROJECT_ID}/aia-repo/aia-backend:${BUILD_ID}'
+#   - '-t'
+#   - 'us-central1-docker.pkg.dev/${PROJECT_ID}/aia-repo/aia-backend:latest'
+#   - '--cache-from'
+#   - 'us-central1-docker.pkg.dev/${PROJECT_ID}/aia-repo/aia-backend:latest'
+#   - '--build-arg'
+#   - 'BUILDKIT_INLINE_CACHE=1'
+#   - '.'
+#   timeout: '1200s'
+# 
+# - name: 'gcr.io/cloud-builders/docker'
+#   id: 'build-aia-frontend'
+#   args:
+#   - 'build'
+#   - '-f'
+#   - 'frontend/Dockerfile.production'
+#   - '-t'
+#   - 'us-central1-docker.pkg.dev/${PROJECT_ID}/aia-repo/aia-frontend:${BUILD_ID}'
+#   - '-t'
+#   - 'us-central1-docker.pkg.dev/${PROJECT_ID}/aia-repo/aia-frontend:latest'
+#   - '--cache-from'
+#   - 'us-central1-docker.pkg.dev/${PROJECT_ID}/aia-repo/aia-frontend:latest'
+#   - '--build-arg'
+#   - 'BUILDKIT_INLINE_CACHE=1'
+#   - 'frontend/'
+#   timeout: '1800s'
+# 
+# - name: 'gcr.io/cloud-builders/docker'
+#   id: 'build-enterprise-partners'
+#   args:
+#   - 'build'
+#   - '-f'
+#   - 'aia/Dockerfile.production'
+#   - '-t'
+#   - 'us-central1-docker.pkg.dev/${PROJECT_ID}/aia-repo/aia-enterprise-partners:${BUILD_ID}'
+#   - '-t'
+#   - 'us-central1-docker.pkg.dev/${PROJECT_ID}/aia-repo/aia-enterprise-partners:latest'
+#   - '--cache-from'
+#   - 'us-central1-docker.pkg.dev/${PROJECT_ID}/aia-repo/aia-enterprise-partners:latest'
+#   - '--build-arg'
+#   - 'SERVICE_NAME=enterprise-partners'
+#   - '--build-arg'
+#   - 'PORT=8003'
+#   - '.'
+#   timeout: '900s'
+# 
+# - name: 'gcr.io/cloud-builders/docker'
+#   id: 'build-ml-processor'
+#   args:
+#   - 'build'
+#   - '-f'
+#   - 'aia/Dockerfile.production'
+#   - '-t'
+#   - 'us-central1-docker.pkg.dev/${PROJECT_ID}/aia-repo/aia-ml-processor:${BUILD_ID}'
+#   - '-t'
+#   - 'us-central1-docker.pkg.dev/${PROJECT_ID}/aia-repo/aia-ml-processor:latest'
+#   - '--cache-from'
+#   - 'us-central1-docker.pkg.dev/${PROJECT_ID}/aia-repo/aia-ml-processor:latest'
+#   - '--build-arg'
+#   - 'SERVICE_NAME=ml-processor'
+#   - '--build-arg'
+#   - 'PORT=8004'
+#   - '.'
+#   timeout: '900s'
+# 
+# - name: 'gcr.io/cloud-builders/docker'
+#   id: 'build-payment-processor'
+#   args:
+#   - 'build'
+#   - '-f'
+#   - 'aia/Dockerfile.production'
+#   - '-t'
+#   - 'us-central1-docker.pkg.dev/${PROJECT_ID}/aia-repo/aia-payment-processor:${BUILD_ID}'
+#   - '-t'
+#   - 'us-central1-docker.pkg.dev/${PROJECT_ID}/aia-repo/aia-payment-processor:latest'
+#   - '--cache-from'
+#   - 'us-central1-docker.pkg.dev/${PROJECT_ID}/aia-repo/aia-payment-processor:latest'
+#   - '--build-arg'
+#   - 'SERVICE_NAME=payment-processor'
+#   - '--build-arg'
+#   - 'PORT=8005'
+#   - '.'
+#   timeout: '900s'
+# 
+# - name: 'gcr.io/cloud-builders/docker'
+#   id: 'build-security-service'
+#   args:
+#   - 'build'
+#   - '-f'
+#   - 'aia/Dockerfile.production'
+#   - '-t'
+#   - 'us-central1-docker.pkg.dev/${PROJECT_ID}/aia-repo/aia-security-service:${BUILD_ID}'
+#   - '-t'
+#   - 'us-central1-docker.pkg.dev/${PROJECT_ID}/aia-repo/aia-security-service:latest'
+#   - '--cache-from'
+#   - 'us-central1-docker.pkg.dev/${PROJECT_ID}/aia-repo/aia-security-service:latest'
+#   - '--build-arg'
+#   - 'SERVICE_NAME=security-service'
+#   - '--build-arg'
+#   - 'PORT=8006'
+#   - '.'
+#   timeout: '900s'
+# 
+# - name: 'gcr.io/cloud-builders/docker'
+#   id: 'build-subscription-manager'
+#   args:
+#   - 'build'
+#   - '-f'
+#   - 'aia/Dockerfile.production'
+#   - '-t'
+#   - 'us-central1-docker.pkg.dev/${PROJECT_ID}/aia-repo/aia-subscription-manager:${BUILD_ID}'
+#   - '-t'
+#   - 'us-central1-docker.pkg.dev/${PROJECT_ID}/aia-repo/aia-subscription-manager:latest'
+#   - '--cache-from'
+#   - 'us-central1-docker.pkg.dev/${PROJECT_ID}/aia-repo/aia-subscription-manager:latest'
+#   - '--build-arg'
+#   - 'SERVICE_NAME=subscription-manager'
+#   - '--build-arg'
+#   - 'PORT=8007'
+#   - '.'
+#   timeout: '900s'
+# 
+# - name: 'gcr.io/cloud-builders/docker'
+#   id: 'build-performance-monitor'
+#   args:
+#   - 'build'
+#   - '-f'
+#   - 'aia/Dockerfile.production'
+#   - '-t'
+#   - 'us-central1-docker.pkg.dev/${PROJECT_ID}/aia-repo/aia-performance-monitor:${BUILD_ID}'
+#   - '-t'
+#   - 'us-central1-docker.pkg.dev/${PROJECT_ID}/aia-repo/aia-performance-monitor:latest'
+#   - '--cache-from'
+#   - 'us-central1-docker.pkg.dev/${PROJECT_ID}/aia-repo/aia-performance-monitor:latest'
+#   - '--build-arg'
+#   - 'SERVICE_NAME=performance-monitor'
+#   - '--build-arg'
+#   - 'PORT=8008'
+#   - '.'
+#   timeout: '900s'
+# 
+# # Analytics backend for the failing analytics pods
+# - name: 'gcr.io/cloud-builders/docker'
+#   id: 'build-analytics-backend'
+#   args:
+#   - 'build'
+#   - '-f'
+#   - 'aia/Dockerfile.production'
+#   - '-t'
+#   - 'us-central1-docker.pkg.dev/${PROJECT_ID}/aia-repo/analytics-backend:${BUILD_ID}'
+#   - '-t'
+#   - 'us-central1-docker.pkg.dev/${PROJECT_ID}/aia-repo/analytics-backend:latest'
+#   - '--cache-from'
+#   - 'us-central1-docker.pkg.dev/${PROJECT_ID}/aia-repo/analytics-backend:latest'
+#   - '--build-arg'
+#   - 'SERVICE_NAME=analytics-backend'
+#   - '--build-arg'
+#   - 'PORT=8009'
+#   - '.'
+#   timeout: '900s'
+# 
+# # Push all images in parallel
+# - name: 'gcr.io/cloud-builders/docker'
+#   id: 'push-backend'
+#   args: ['push', '--all-tags', 'us-central1-docker.pkg.dev/${PROJECT_ID}/aia-repo/aia-backend']
+#   waitFor: ['build-aia-backend']
+# 
+# - name: 'gcr.io/cloud-builders/docker'
+#   id: 'push-frontend'
+#   args: ['push', '--all-tags', 'us-central1-docker.pkg.dev/${PROJECT_ID}/aia-repo/aia-frontend']
+#   waitFor: ['build-aia-frontend']
+# 
+# - name: 'gcr.io/cloud-builders/docker'
+#   id: 'push-enterprise-partners'
+#   args: ['push', '--all-tags', 'us-central1-docker.pkg.dev/${PROJECT_ID}/aia-repo/aia-enterprise-partners']
+#   waitFor: ['build-enterprise-partners']
+# 
+# - name: 'gcr.io/cloud-builders/docker'
+#   id: 'push-ml-processor'
+#   args: ['push', '--all-tags', 'us-central1-docker.pkg.dev/${PROJECT_ID}/aia-repo/aia-ml-processor']
+#   waitFor: ['build-ml-processor']
+# 
+# - name: 'gcr.io/cloud-builders/docker'
+#   id: 'push-payment-processor'
+#   args: ['push', '--all-tags', 'us-central1-docker.pkg.dev/${PROJECT_ID}/aia-repo/aia-payment-processor']
+#   waitFor: ['build-payment-processor']
+# 
+# - name: 'gcr.io/cloud-builders/docker'
+#   id: 'push-security-service'
+#   args: ['push', '--all-tags', 'us-central1-docker.pkg.dev/${PROJECT_ID}/aia-repo/aia-security-service']
+#   waitFor: ['build-security-service']
+# 
+# - name: 'gcr.io/cloud-builders/docker'
+#   id: 'push-subscription-manager'
+#   args: ['push', '--all-tags', 'us-central1-docker.pkg.dev/${PROJECT_ID}/aia-repo/aia-subscription-manager']
+#   waitFor: ['build-subscription-manager']
+# 
+# - name: 'gcr.io/cloud-builders/docker'
+#   id: 'push-performance-monitor'
+#   args: ['push', '--all-tags', 'us-central1-docker.pkg.dev/${PROJECT_ID}/aia-repo/aia-performance-monitor']
+#   waitFor: ['build-performance-monitor']
+# 
+# - name: 'gcr.io/cloud-builders/docker'
+#   id: 'push-analytics-backend'
+#   args: ['push', '--all-tags', 'us-central1-docker.pkg.dev/${PROJECT_ID}/aia-repo/analytics-backend']
+#   waitFor: ['build-analytics-backend']
+# 
+# # Build options
+# options:
+#   machineType: 'E2_HIGHCPU_32'
+#   diskSizeGb: '200'
+#   logging: CLOUD_LOGGING_ONLY
+# 
+# # Timeout for entire build
+# timeout: '7200s'
+# 
+# # Images to be built and pushed
+# images:
+# - 'us-central1-docker.pkg.dev/${PROJECT_ID}/aia-repo/aia-backend:latest'
+# - 'us-central1-docker.pkg.dev/${PROJECT_ID}/aia-repo/aia-frontend:latest'
+# - 'us-central1-docker.pkg.dev/${PROJECT_ID}/aia-repo/aia-enterprise-partners:latest'
+# - 'us-central1-docker.pkg.dev/${PROJECT_ID}/aia-repo/aia-ml-processor:latest'
+# - 'us-central1-docker.pkg.dev/${PROJECT_ID}/aia-repo/aia-payment-processor:latest'
+# - 'us-central1-docker.pkg.dev/${PROJECT_ID}/aia-repo/aia-security-service:latest'
+# - 'us-central1-docker.pkg.dev/${PROJECT_ID}/aia-repo/aia-subscription-manager:latest'
+# - 'us-central1-docker.pkg.dev/${PROJECT_ID}/aia-repo/aia-performance-monitor:latest'
+# - 'us-central1-docker.pkg.dev/${PROJECT_ID}/aia-repo/analytics-backend:latest'

@@ -1,0 +1,231 @@
+# TEMPORARILY DISABLED FOR QUOTA COMPLIANCE
+# This deployment has been temporarily disabled to meet GCP quota requirements
+# Original content below (commented out):
+#
+# # Production Monitoring Stack - Full Complexity
+# # Cryptography Agent + MLOps Specialist Coordination
+# # Consolidates all monitoring into aia-monitoring namespace
+# 
+# apiVersion: v1
+# kind: PersistentVolume
+# metadata:
+#   name: grafana-pv
+#   labels:
+#     type: local
+# spec:
+#   capacity:
+#     storage: 10Gi
+#   accessModes:
+#     - ReadWriteOnce
+#   persistentVolumeReclaimPolicy: Retain
+#   storageClassName: manual
+#   hostPath:
+#     path: /data/grafana
+# 
+# ---
+# apiVersion: v1
+# kind: PersistentVolumeClaim
+# metadata:
+#   name: grafana-pvc
+#   namespace: aia-monitoring
+# spec:
+#   accessModes:
+#     - ReadWriteOnce
+#   resources:
+#     requests:
+#       storage: 10Gi
+#   storageClassName: manual
+# 
+# ---
+# # Production Grafana with proper volumes
+# apiVersion: apps/v1
+# kind: Deployment
+# metadata:
+#   name: grafana-production
+#   namespace: aia-monitoring
+#   labels:
+#     app: grafana-production
+# spec:
+#   replicas: 1
+#   selector:
+#     matchLabels:
+#       app: grafana-production
+#   template:
+#     metadata:
+#       labels:
+#         app: grafana-production
+#     spec:
+#       securityContext:
+#         runAsUser: 472
+#         runAsGroup: 472
+#         fsGroup: 472
+#       containers:
+#       - name: grafana
+#         image: grafana/grafana:10.0.0
+#         ports:
+#         - containerPort: 3000
+#         env:
+#         - name: GF_SECURITY_ADMIN_PASSWORD
+#           value: "aia_production_grafana_2025"
+#         - name: GF_USERS_ALLOW_SIGN_UP
+#           value: "false"
+#         volumeMounts:
+#         - name: grafana-storage
+#           mountPath: /var/lib/grafana
+#         - name: grafana-config
+#           mountPath: /etc/grafana
+#         resources:
+#           requests:
+#             memory: "128Mi"
+#             cpu: "100m"
+#           limits:
+#             memory: "128Mi"
+#             cpu: "100m"
+#       volumes:
+#       - name: grafana-storage
+#         persistentVolumeClaim:
+#           claimName: grafana-pvc
+#       - name: grafana-config
+#         configMap:
+#           name: grafana-config
+# 
+# ---
+# # Grafana Configuration
+# apiVersion: v1
+# kind: ConfigMap
+# metadata:
+#   name: grafana-config
+#   namespace: aia-monitoring
+# data:
+#   grafana.ini: |
+#     [server]
+#     root_url = http://grafana.013a.tech
+#     [security]
+#     admin_password = aia_production_grafana_2025
+#     [auth]
+#     disable_login_form = false
+#     [datasources]
+#     prometheus_url = http://prometheus:9090
+# 
+# ---
+# # Production Grafana Service
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   name: grafana-production
+#   namespace: aia-monitoring
+#   labels:
+#     app: grafana-production
+# spec:
+#   ports:
+#   - port: 3000
+#     targetPort: 3000
+#     protocol: TCP
+#   selector:
+#     app: grafana-production
+#   type: NodePort
+# 
+# ---
+# # Enhanced Prometheus with proper configuration
+# apiVersion: apps/v1
+# kind: Deployment
+# metadata:
+#   name: prometheus-production
+#   namespace: aia-monitoring
+#   labels:
+#     app: prometheus-production
+# spec:
+#   replicas: 1
+#   selector:
+#     matchLabels:
+#       app: prometheus-production
+#   template:
+#     metadata:
+#       labels:
+#         app: prometheus-production
+#     spec:
+#       containers:
+#       - name: prometheus
+#         image: prom/prometheus:v2.45.0
+#         ports:
+#         - containerPort: 9090
+#         args:
+#           - '--config.file=/etc/prometheus/prometheus.yml'
+#           - '--storage.tsdb.path=/prometheus'
+#           - '--web.console.libraries=/etc/prometheus/console_libraries'
+#           - '--web.console.templates=/etc/prometheus/consoles'
+#           - '--web.enable-lifecycle'
+#           - '--storage.tsdb.retention.time=30d'
+#         volumeMounts:
+#         - name: prometheus-config
+#           mountPath: /etc/prometheus
+#         - name: prometheus-storage
+#           mountPath: /prometheus
+#         resources:
+#           requests:
+#             memory: "128Mi"
+#             cpu: "100m"
+#           limits:
+#             memory: "128Mi"
+#             cpu: "100m"
+#       volumes:
+#       - name: prometheus-config
+#         configMap:
+#           name: prometheus-config
+#       - name: prometheus-storage
+#         emptyDir: {}
+# 
+# ---
+# # Prometheus Production Configuration
+# apiVersion: v1
+# kind: ConfigMap
+# metadata:
+#   name: prometheus-config
+#   namespace: aia-monitoring
+# data:
+#   prometheus.yml: |
+#     global:
+#       scrape_interval: 15s
+#       evaluation_interval: 15s
+# 
+#     rule_files:
+#       - "*.rules.yml"
+# 
+#     scrape_configs:
+#     - job_name: 'kubernetes-apiservers'
+#       kubernetes_sd_configs:
+#       - role: endpoints
+#       scheme: https
+#       tls_config:
+#         ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+#       bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+#       relabel_configs:
+#       - source_labels: [__meta_kubernetes_namespace, __meta_kubernetes_service_name, __meta_kubernetes_endpoint_port_name]
+#         action: keep
+#         regex: default;kubernetes;https
+# 
+#     - job_name: 'aia-backend-services'
+#       static_configs:
+#       - targets: ['aia-backend-service.aia-production:8000', 'aia-ml-processor-service.aia-production:8001']
+# 
+#     - job_name: 'aia-enterprise-services'
+#       static_configs:
+#       - targets: ['aia-enterprise-backend-service.aia-live-production:8000']
+# 
+# ---
+# # Production Prometheus Service
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   name: prometheus-production
+#   namespace: aia-monitoring
+#   labels:
+#     app: prometheus-production
+# spec:
+#   ports:
+#   - port: 9090
+#     targetPort: 9090
+#     protocol: TCP
+#   selector:
+#     app: prometheus-production
+#   type: ClusterIP

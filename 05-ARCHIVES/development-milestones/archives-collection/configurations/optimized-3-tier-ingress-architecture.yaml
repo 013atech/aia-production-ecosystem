@@ -1,0 +1,408 @@
+# OPTIMIZED 3-TIER INGRESS ARCHITECTURE
+# Consolidates 11 ingress controllers → 3-tier efficient routing
+# Maintains full complexity with intelligent load distribution
+
+# TIER 1: GLOBAL EDGE LOAD BALANCER
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: aia-global-edge-ingress
+  namespace: aia-production
+  labels:
+    tier: edge
+    level: global
+    optimization: "11-to-3-consolidation"
+  annotations:
+    kubernetes.io/ingress.class: "gce"
+    kubernetes.io/ingress.global-static-ip-name: "aia-global-ip"
+    ingress.gcp.kubernetes.io/managed-certificates: "aia-ssl-certs"
+    cloud.google.com/backend-config: '{"default": "aia-backend-config"}'
+    ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+spec:
+  tls:
+  - hosts:
+    - "013a.tech"
+    - "*.013a.tech"
+    secretName: aia-tls-wildcard
+  rules:
+  # PRIMARY DOMAIN ROUTING
+  - host: "013a.tech"
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-backend-optimized-service
+            port:
+              number: 8000
+      - path: /api
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-backend-optimized-service
+            port:
+              number: 8000
+  - host: "www.013a.tech"
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-backend-optimized-service
+            port:
+              number: 8000
+  # API & ANALYTICS ROUTING
+  - host: "api.013a.tech"
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-backend-optimized-service
+            port:
+              number: 8000
+  - host: "analytics.013a.tech"
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-analytics-service
+            port:
+              number: 8001
+  - host: "ml.013a.tech"
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-ml-service
+            port:
+              number: 8002
+---
+# TIER 2: SERVICE MESH ROUTING
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: aia-service-mesh-ingress
+  namespace: aia-enterprise
+  labels:
+    tier: service-mesh
+    level: enterprise
+    optimization: domain-routing
+  annotations:
+    kubernetes.io/ingress.class: "gce"
+    ingress.gcp.kubernetes.io/managed-certificates: "aia-enterprise-ssl"
+    cloud.google.com/backend-config: '{"default": "aia-enterprise-config"}'
+spec:
+  tls:
+  - hosts:
+    - "enterprise.013a.tech"
+    - "fortune500.013a.tech"
+    - "ey.013a.tech"
+    - "jpmorgan.013a.tech"
+    - "google.013a.tech"
+    - "apple.013a.tech"
+    secretName: aia-enterprise-tls
+  rules:
+  # ENTERPRISE INTEGRATIONS
+  - host: "enterprise.013a.tech"
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-enterprise-service
+            port:
+              number: 8003
+  - host: "fortune500.013a.tech"
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-fortune500-service
+            port:
+              number: 8004
+  # PARTNER-SPECIFIC ROUTING
+  - host: "ey.013a.tech"
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-ey-integration-service
+            port:
+              number: 8005
+  - host: "jpmorgan.013a.tech"
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-jpmorgan-service
+            port:
+              number: 8006
+  - host: "google.013a.tech"
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-google-integration-service
+            port:
+              number: 8007
+  - host: "apple.013a.tech"
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-apple-vision-service
+            port:
+              number: 8008
+---
+# TIER 3: IMMERSIVE & SPECIALIZED SERVICES
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: aia-immersive-specialized-ingress
+  namespace: aia-immersive
+  labels:
+    tier: application
+    level: immersive
+    optimization: specialized-routing
+  annotations:
+    kubernetes.io/ingress.class: "gce"
+    ingress.gcp.kubernetes.io/managed-certificates: "aia-immersive-ssl"
+    cloud.google.com/backend-config: '{"default": "aia-immersive-config"}'
+spec:
+  tls:
+  - hosts:
+    - "immersive.013a.tech"
+    - "3d.013a.tech"
+    - "webxr.013a.tech"
+    - "spatial.013a.tech"
+    - "xr.013a.tech"
+    - "payments.013a.tech"
+    - "marketplace.013a.tech"
+    - "docs.013a.tech"
+    - "monitoring.013a.tech"
+    - "admin.013a.tech"
+    - "status.013a.tech"
+    - "cdn.013a.tech"
+    secretName: aia-immersive-tls
+  rules:
+  # IMMERSIVE EXPERIENCES
+  - host: "immersive.013a.tech"
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-immersive-service
+            port:
+              number: 8009
+  - host: "3d.013a.tech"
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-3d-service
+            port:
+              number: 8010
+  - host: "webxr.013a.tech"
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-webxr-service
+            port:
+              number: 8011
+  - host: "spatial.013a.tech"
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-spatial-service
+            port:
+              number: 8012
+  - host: "xr.013a.tech"
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-xr-unified-service
+            port:
+              number: 8013
+  # BUSINESS SERVICES
+  - host: "payments.013a.tech"
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-quantum-payment-service
+            port:
+              number: 8014
+  - host: "marketplace.013a.tech"
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-marketplace-service
+            port:
+              number: 8015
+  # OPERATIONAL SERVICES
+  - host: "docs.013a.tech"
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-documentation-service
+            port:
+              number: 8016
+  - host: "monitoring.013a.tech"
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-monitoring-service
+            port:
+              number: 8017
+  - host: "admin.013a.tech"
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-admin-service
+            port:
+              number: 8018
+  - host: "status.013a.tech"
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-status-service
+            port:
+              number: 8019
+  - host: "cdn.013a.tech"
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-cdn-service
+            port:
+              number: 8020
+---
+# BACKEND CONFIGURATION FOR INTELLIGENT LOAD BALANCING
+apiVersion: cloud.google.com/v1
+kind: BackendConfig
+metadata:
+  name: aia-backend-config
+  namespace: aia-production
+spec:
+  timeoutSec: 30
+  connectionDraining:
+    drainingTimeoutSec: 60
+  healthCheck:
+    checkIntervalSec: 10
+    timeoutSec: 5
+    healthyThreshold: 1
+    unhealthyThreshold: 3
+    type: HTTP
+    requestPath: /health
+    port: 8000
+  cdn:
+    enabled: true
+    cachePolicy:
+      includeHost: true
+      includeProtocol: true
+      includeQueryString: false
+  logging:
+    enable: true
+    sampleRate: 0.5
+---
+apiVersion: cloud.google.com/v1
+kind: BackendConfig
+metadata:
+  name: aia-enterprise-config
+  namespace: aia-enterprise
+spec:
+  timeoutSec: 45
+  connectionDraining:
+    drainingTimeoutSec: 90
+  healthCheck:
+    checkIntervalSec: 15
+    timeoutSec: 10
+    healthyThreshold: 2
+    unhealthyThreshold: 2
+    type: HTTP
+    requestPath: /health
+  sessionAffinity:
+    affinityType: "CLIENT_IP"
+    affinityCookieTtlSec: 3600
+  logging:
+    enable: true
+    sampleRate: 1.0
+---
+apiVersion: cloud.google.com/v1
+kind: BackendConfig
+metadata:
+  name: aia-immersive-config
+  namespace: aia-immersive
+spec:
+  timeoutSec: 60
+  connectionDraining:
+    drainingTimeoutSec: 120
+  healthCheck:
+    checkIntervalSec: 20
+    timeoutSec: 10
+    healthyThreshold: 1
+    unhealthyThreshold: 5
+    type: HTTP
+    requestPath: /health
+  cdn:
+    enabled: true
+    cachePolicy:
+      includeHost: true
+      includeProtocol: true
+      includeQueryString: true
+  logging:
+    enable: true
+    sampleRate: 0.8

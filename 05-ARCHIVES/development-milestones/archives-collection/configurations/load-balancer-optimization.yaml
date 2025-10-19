@@ -1,0 +1,123 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-production-loadbalancer-optimized
+  namespace: aia-production-v2
+  annotations:
+    cloud.google.com/backend-config: '{"default": "aia-backend-config"}'
+    cloud.google.com/load-balancer-type: "External"
+    cloud.google.com/neg: '{"ingress": true}'
+spec:
+  type: NodePort
+  sessionAffinity: ClientIP
+  sessionAffinityConfig:
+    clientIP:
+      timeoutSeconds: 10800
+  ports:
+  - name: http
+    port: 80
+    targetPort: 80
+    protocol: TCP
+  - name: https
+    port: 443
+    targetPort: 443
+    protocol: TCP
+  selector:
+    app: aia-frontend
+
+---
+apiVersion: cloud.google.com/v1
+kind: BackendConfig
+metadata:
+  name: aia-backend-config
+  namespace: aia-production-v2
+spec:
+  timeoutSec: 300
+  connectionDraining:
+    drainingTimeoutSec: 60
+  logging:
+    enable: true
+    sampleRate: 1.0
+  healthCheck:
+    checkIntervalSec: 15
+    timeoutSec: 10
+    healthyThreshold: 1
+    unhealthyThreshold: 3
+    type: HTTP
+    requestPath: /health
+    port: 80
+  cdn:
+    enabled: true
+    cachePolicy:
+      includeHost: true
+      includeProtocol: true
+      includeQueryString: false
+    negativeCaching: true
+    negativeCachingPolicy:
+      - code: 404
+        ttl: 120
+      - code: 410
+        ttl: 120
+  securityPolicy:
+    name: "cloud-armor-policy"
+  customRequestHeaders:
+    headers:
+      - "X-AIA-Version:2.0"
+      - "X-Security-Level:Quantum"
+
+---
+apiVersion: networking.gke.io/v1beta1
+kind: FrontendConfig
+metadata:
+  name: aia-frontend-config
+  namespace: aia-production-v2
+spec:
+  sslPolicy: aia-ssl-policy
+  redirectToHttps:
+    enabled: true
+    responseCodeName: MOVED_PERMANENTLY_DEFAULT
+
+---
+apiVersion: compute.cnrm.cloud.google.com/v1beta1
+kind: ComputeSecurityPolicy
+metadata:
+  name: cloud-armor-policy
+  namespace: aia-production-v2
+spec:
+  description: "Cloud Armor security policy for AIA"
+  rules:
+  - priority: 1000
+    match:
+      versionedExpr: SRC_IPS_V1
+      config:
+        srcIpRanges:
+        - "192.168.1.0/24"
+        - "10.0.0.0/8"
+        - "172.16.0.0/12"
+    action: allow
+    description: "Allow internal traffic"
+  - priority: 2000
+    match:
+      expr:
+        expression: 'origin.region_code == "US" || origin.region_code == "CA" || origin.region_code == "GB"'
+    action: allow
+    description: "Allow traffic from US, CA, GB"
+  - priority: 2147483647
+    match:
+      versionedExpr: SRC_IPS_V1
+      config:
+        srcIpRanges:
+        - "*"
+    action: deny(403)
+    description: "Default deny rule"
+
+---
+apiVersion: compute.cnrm.cloud.google.com/v1beta1
+kind: ComputeSSLPolicy
+metadata:
+  name: aia-ssl-policy
+  namespace: aia-production-v2
+spec:
+  description: "SSL policy for AIA with strong ciphers"
+  profile: MODERN
+  minTlsVersion: TLS_1_2

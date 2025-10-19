@@ -1,0 +1,212 @@
+# TEMPORARILY DISABLED FOR QUOTA COMPLIANCE
+# This deployment has been temporarily disabled to meet GCP quota requirements
+# Original content below (commented out):
+#
+# apiVersion: v1
+# kind: ServiceMonitor
+# metadata:
+#   name: founder-dashboard-monitor
+#   namespace: founder-dashboard
+#   labels:
+#     app: founder-dashboard-simple
+# spec:
+#   selector:
+#     matchLabels:
+#       app: founder-dashboard-simple
+#   endpoints:
+#   - port: http
+#     interval: 30s
+#     path: /metrics
+# 
+# ---
+# apiVersion: logging.coreos.com/v1
+# kind: ClusterLogForwarder
+# metadata:
+#   name: founder-dashboard-log-forwarder
+#   namespace: founder-dashboard
+# spec:
+#   outputs:
+#   - name: google-cloud-logging
+#     type: googleCloudLogging
+#     googleCloudLogging:
+#       projectId: aia-system-prod-1759055445
+#       logId: founder-dashboard-audit
+#   pipelines:
+#   - name: founder-dashboard-logs
+#     inputRefs:
+#     - application
+#     filterRefs:
+#     - founder-dashboard-filter
+#     outputRefs:
+#     - google-cloud-logging
+# 
+# ---
+# apiVersion: v1
+# kind: ConfigMap
+# metadata:
+#   name: founder-dashboard-alerts
+#   namespace: founder-dashboard
+# data:
+#   alerts.yaml: |
+#     groups:
+#     - name: founder-dashboard.rules
+#       rules:
+#       - alert: FounderDashboardDown
+#         expr: up{job="founder-dashboard-simple"} == 0
+#         for: 1m
+#         labels:
+#           severity: critical
+#         annotations:
+#           summary: "Founder Dashboard is down"
+#           description: "Founder Dashboard has been down for more than 1 minute"
+# 
+#       - alert: FounderDashboardHighMemory
+#         expr: container_memory_usage_bytes{pod=~"founder-dashboard-simple.*"} / container_spec_memory_limit_bytes > 0.8
+#         for: 5m
+#         labels:
+#           severity: warning
+#         annotations:
+#           summary: "Founder Dashboard high memory usage"
+#           description: "Founder Dashboard memory usage is above 80%"
+# 
+#       - alert: FounderDashboardUnauthorizedAccess
+#         expr: increase(nginx_http_requests_total{status=~"403|401"}[5m]) > 10
+#         for: 1m
+#         labels:
+#           severity: critical
+#         annotations:
+#           summary: "Multiple unauthorized access attempts"
+#           description: "{{ $value }} unauthorized access attempts in the last 5 minutes"
+# 
+# ---
+# apiVersion: batch/v1
+# kind: CronJob
+# metadata:
+#   name: founder-dashboard-backup
+#   namespace: founder-dashboard
+# spec:
+#   schedule: "0 2 * * *"  # Daily at 2 AM UTC
+#   jobTemplate:
+#     spec:
+#       template:
+#         spec:
+#           serviceAccountName: founder-dashboard-sa
+#           containers:
+#           - name: backup
+#             image: google/cloud-sdk:alpine
+#             command:
+#             - /bin/bash
+#             - -c
+#             - |
+#               echo "Starting founder dashboard backup at $(date)"
+# 
+#               # Backup configuration
+#               kubectl get configmaps -n founder-dashboard -o yaml > /tmp/founder-dashboard-configmaps.yaml
+#               kubectl get secrets -n founder-dashboard -o yaml > /tmp/founder-dashboard-secrets.yaml
+#               kubectl get deployments -n founder-dashboard -o yaml > /tmp/founder-dashboard-deployments.yaml
+# 
+#               # Upload to GCS
+#               gsutil cp /tmp/founder-dashboard-*.yaml gs://aia-system-prod-1759055445-backups/founder-dashboard/$(date +%Y%m%d)/
+# 
+#               # Log completion
+#               echo "Backup completed at $(date)"
+# 
+#               # Send notification via Cloud Logging
+#               gcloud logging write founder-dashboard-backup \
+#                 "{\"message\": \"Founder dashboard backup completed\", \"timestamp\": \"$(date -Iseconds)\", \"backup_location\": \"gs://aia-system-prod-1759055445-backups/founder-dashboard/$(date +%Y%m%d)/\"}" \
+#                 --severity=INFO
+#             env:
+#             - name: GOOGLE_APPLICATION_CREDENTIALS
+#               value: /var/secrets/google/key.json
+#             volumeMounts:
+#             - name: google-cloud-key
+#               mountPath: /var/secrets/google
+#               readOnly: true
+#           volumes:
+#           - name: google-cloud-key
+#             secret:
+#               secretName: founder-dashboard-sa-key
+#           restartPolicy: OnFailure
+# 
+# ---
+# apiVersion: v1
+# kind: ConfigMap
+# metadata:
+#   name: founder-dashboard-disaster-recovery
+#   namespace: founder-dashboard
+# data:
+#   recovery-plan.md: |
+#     # Founder Dashboard Disaster Recovery Plan
+# 
+#     ## Recovery Time Objectives
+#     - RTO: 15 minutes
+#     - RPO: 4 hours (backup frequency)
+# 
+#     ## Recovery Steps
+# 
+#     ### 1. Assess Damage
+#     ```bash
+#     kubectl get pods -n founder-dashboard
+#     kubectl get ingress -n founder-dashboard
+#     gcloud compute addresses list
+#     ```
+# 
+#     ### 2. Restore from Backup
+#     ```bash
+#     # Restore latest backup
+#     BACKUP_DATE=$(gsutil ls gs://aia-system-prod-1759055445-backups/founder-dashboard/ | tail -1)
+#     gsutil cp -r $BACKUP_DATE /tmp/recovery/
+# 
+#     # Apply configurations
+#     kubectl apply -f /tmp/recovery/founder-dashboard-*.yaml
+#     ```
+# 
+#     ### 3. Verify Recovery
+#     ```bash
+#     # Check pod health
+#     kubectl get pods -n founder-dashboard
+# 
+#     # Test connectivity
+#     curl -k https://founder.013a.tech/health
+# 
+#     # Verify SSL certificate
+#     echo | openssl s_client -connect founder.013a.tech:443 -servername founder.013a.tech 2>/dev/null | openssl x509 -noout -dates
+#     ```
+# 
+#     ### 4. Post-Recovery Actions
+#     - Notify stakeholders
+#     - Review incident logs
+#     - Update recovery procedures
+#     - Schedule post-mortem
+# 
+# ---
+# apiVersion: batch/v1
+# kind: Job
+# metadata:
+#   name: founder-dashboard-health-check
+#   namespace: founder-dashboard
+# spec:
+#   template:
+#     spec:
+#       containers:
+#       - name: health-checker
+#         image: curlimages/curl:latest
+#         command:
+#         - /bin/sh
+#         - -c
+#         - |
+#           echo "Performing comprehensive health check..."
+# 
+#           # Test internal service
+#           if curl -f http://founder-dashboard-simple-service.founder-dashboard.svc.cluster.local/health; then
+#             echo "✓ Internal service health check passed"
+#           else
+#             echo "✗ Internal service health check failed"
+#             exit 1
+#           fi
+# 
+#           # Test ingress (when SSL is ready)
+#           # curl -f -k https://founder.013a.tech/health
+# 
+#           echo "Health check completed successfully"
+#       restartPolicy: Never

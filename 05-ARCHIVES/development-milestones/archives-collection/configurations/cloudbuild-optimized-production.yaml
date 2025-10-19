@@ -1,0 +1,74 @@
+# TEMPORARILY DISABLED FOR QUOTA COMPLIANCE
+# This deployment has been temporarily disabled to meet GCP quota requirements
+# Original content below (commented out):
+#
+# steps:
+# # Step 1: Build and push AIA Backend API
+# - name: 'gcr.io/cloud-builders/docker'
+#   args: ['build', '-f', 'Dockerfile.backend', '-t', 'gcr.io/$PROJECT_ID/aia-api:latest', '-t', 'gcr.io/$PROJECT_ID/aia-api:$BUILD_ID', '.']
+#   dir: 'aia'
+# - name: 'gcr.io/cloud-builders/docker'
+#   args: ['push', 'gcr.io/$PROJECT_ID/aia-api:latest']
+# - name: 'gcr.io/cloud-builders/docker'
+#   args: ['push', 'gcr.io/$PROJECT_ID/aia-api:$BUILD_ID']
+# 
+# # Step 2: Build and push Frontend
+# - name: 'gcr.io/cloud-builders/docker'
+#   args: ['build', '-f', 'Dockerfile.frontend', '-t', 'gcr.io/$PROJECT_ID/aia-frontend:latest', '-t', 'gcr.io/$PROJECT_ID/aia-frontend:$BUILD_ID', '.']
+#   dir: 'frontend'
+# - name: 'gcr.io/cloud-builders/docker'
+#   args: ['push', 'gcr.io/$PROJECT_ID/aia-frontend:latest']
+# - name: 'gcr.io/cloud-builders/docker'
+#   args: ['push', 'gcr.io/$PROJECT_ID/aia-frontend:$BUILD_ID']
+# 
+# # Step 3: Build and push Business Intelligence Processor
+# - name: 'gcr.io/cloud-builders/docker'
+#   args: ['build', '-f', 'Dockerfile.biometric', '-t', 'gcr.io/$PROJECT_ID/aia-biometric-processor:latest', '-t', 'gcr.io/$PROJECT_ID/aia-biometric-processor:$BUILD_ID', '.']
+#   dir: 'aia'
+# - name: 'gcr.io/cloud-builders/docker'
+#   args: ['push', 'gcr.io/$PROJECT_ID/aia-biometric-processor:latest']
+# - name: 'gcr.io/cloud-builders/docker'
+#   args: ['push', 'gcr.io/$PROJECT_ID/aia-biometric-processor:$BUILD_ID']
+# 
+# # Step 4: Build and push WebSocket Server
+# - name: 'gcr.io/cloud-builders/docker'
+#   args: ['build', '-f', 'Dockerfile.websocket', '-t', 'gcr.io/$PROJECT_ID/aia-websocket-server:latest', '-t', 'gcr.io/$PROJECT_ID/aia-websocket-server:$BUILD_ID', '.']
+#   dir: 'aia'
+# - name: 'gcr.io/cloud-builders/docker'
+#   args: ['push', 'gcr.io/$PROJECT_ID/aia-websocket-server:latest']
+# - name: 'gcr.io/cloud-builders/docker'
+#   args: ['push', 'gcr.io/$PROJECT_ID/aia-websocket-server:$BUILD_ID']
+# 
+# # Step 5: Deploy to GKE
+# - name: 'gcr.io/cloud-builders/kubectl'
+#   args: ['apply', '-f', 'aia-production-optimized-complete.yaml']
+#   env:
+#   - 'CLOUDSDK_COMPUTE_ZONE=europe-west4'
+#   - 'CLOUDSDK_CONTAINER_CLUSTER=aia-production-optimal'
+# 
+# # Step 6: Wait for deployment rollout
+# - name: 'gcr.io/cloud-builders/kubectl'
+#   args: ['rollout', 'status', 'deployment/aia-backend-deployment', '-n', 'aia-production-optimized', '--timeout=600s']
+#   env:
+#   - 'CLOUDSDK_COMPUTE_ZONE=europe-west4'
+#   - 'CLOUDSDK_CONTAINER_CLUSTER=aia-production-optimal'
+# 
+# - name: 'gcr.io/cloud-builders/kubectl'
+#   args: ['rollout', 'status', 'deployment/aia-frontend-deployment', '-n', 'aia-production-optimized', '--timeout=600s']
+#   env:
+#   - 'CLOUDSDK_COMPUTE_ZONE=europe-west4'
+#   - 'CLOUDSDK_CONTAINER_CLUSTER=aia-production-optimal'
+# 
+# # Step 7: Verify deployment health
+# - name: 'gcr.io/cloud-builders/kubectl'
+#   args: ['get', 'pods', '-n', 'aia-production-optimized', '-l', 'app=aia-backend']
+#   env:
+#   - 'CLOUDSDK_COMPUTE_ZONE=europe-west4'
+#   - 'CLOUDSDK_CONTAINER_CLUSTER=aia-production-optimal'
+# 
+# timeout: 1800s
+# options:
+#   machineType: 'E2_HIGHCPU_8'
+#   logging: CLOUD_LOGGING_ONLY
+# 
+# # Removed unused substitutions

@@ -1,0 +1,135 @@
+---
+# AIA NEURAL SSL CERTIFICATE SETUP
+# Let's Encrypt with cert-manager for 013a.tech
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: cert-manager
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: cert-manager
+  namespace: cert-manager
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: cert-manager
+rules:
+- apiGroups: [""]
+  resources: ["secrets", "events", "configmaps"]
+  verbs: ["*"]
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["get", "list", "watch", "delete"]
+- apiGroups: [""]
+  resources: ["services"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["networking.k8s.io", "extensions"]
+  resources: ["ingresses"]
+  verbs: ["*"]
+- apiGroups: ["cert-manager.io"]
+  resources: ["*"]
+  verbs: ["*"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: cert-manager
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cert-manager
+subjects:
+- kind: ServiceAccount
+  name: cert-manager
+  namespace: cert-manager
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cert-manager
+  namespace: cert-manager
+  labels:
+    app: cert-manager
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cert-manager
+  template:
+    metadata:
+      labels:
+        app: cert-manager
+    spec:
+      serviceAccountName: cert-manager
+      containers:
+      - name: cert-manager
+        image: quay.io/jetstack/cert-manager-controller:v1.12.0
+        args:
+          - --v=2
+          - --cluster-resource-namespace=cert-manager
+          - --leader-election-namespace=cert-manager
+        ports:
+        - containerPort: 9402
+          name: http-metrics
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        env:
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cert-manager
+  namespace: cert-manager
+spec:
+  type: ClusterIP
+  ports:
+  - port: 9402
+    targetPort: 9402
+    protocol: TCP
+    name: http-metrics
+  selector:
+    app: cert-manager
+---
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-prod
+  namespace: cert-manager
+spec:
+  acme:
+    server: https://acme-v02.api.letsencrypt.org/directory
+    email: hello@013a.tech
+    privateKeySecretRef:
+      name: letsencrypt-prod
+    solvers:
+    - http01:
+        ingress:
+          class: gce
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: aia-neural-tls
+  namespace: aia-neural-production
+spec:
+  secretName: aia-neural-tls
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+  dnsNames:
+  - "013a.tech"
+  - "www.013a.tech"
+  - "api.013a.tech"
+  - "monitoring.013a.tech"

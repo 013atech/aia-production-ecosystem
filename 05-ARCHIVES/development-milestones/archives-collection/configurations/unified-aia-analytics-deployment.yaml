@@ -1,0 +1,407 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: aia-unified-production
+  labels:
+    environment: production
+    system: aia-analytics
+    tier: enterprise
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-unified-backend
+  namespace: aia-unified-production
+  labels:
+    app: aia-unified-backend
+    tier: backend
+    version: v2.0
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: aia-unified-backend
+  template:
+    metadata:
+      labels:
+        app: aia-unified-backend
+        tier: backend
+    spec:
+      containers:
+      - name: aia-backend
+        image: python:3.11-slim
+        ports:
+        - containerPort: 8000
+        env:
+        - name: REDIS_URL
+          value: "redis://redis:6379"
+        - name: POSTGRES_URL
+          value: "postgresql://postgres:postgres@postgres:5432/aia_db"
+        - name: GCP_PROJECT
+          value: "aia-system-prod-1759055445"
+        - name: ENVIRONMENT
+          value: "production"
+        - name: LOG_LEVEL
+          value: "INFO"
+        - name: KNOWLEDGE_GRAPH_ENABLED
+          value: "true"
+        - name: ENTERPRISE_INTEGRATIONS
+          value: "ey,jpmorgan,google,apple"
+        command: ["/bin/bash"]
+        args:
+        - -c
+        - |
+          apt-get update && apt-get install -y git curl build-essential libpq-dev
+          pip install --no-cache-dir fastapi uvicorn redis psycopg2-binary
+          pip install --no-cache-dir pandas numpy scikit-learn torch transformers
+          pip install --no-cache-dir google-cloud-storage google-cloud-secret-manager
+          pip install --no-cache-dir plotly streamlit dash websockets
+          git clone https://github.com/013atech/013a-analytics.git /app || true
+          cd /app/aia
+          pip install -r requirements.txt || pip install fastapi uvicorn redis
+          python -m uvicorn aia.main:app --host 0.0.0.0 --port 8000 --workers 1
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
+          limits:
+            memory: "3Gi"
+            cpu: "2000m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 60
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-analytics-engine
+  namespace: aia-unified-production
+  labels:
+    app: aia-analytics-engine
+    tier: analytics
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: aia-analytics-engine
+  template:
+    metadata:
+      labels:
+        app: aia-analytics-engine
+        tier: analytics
+    spec:
+      containers:
+      - name: analytics-engine
+        image: python:3.11-slim
+        ports:
+        - containerPort: 8001
+        env:
+        - name: BACKEND_URL
+          value: "http://aia-unified-backend:8000"
+        - name: REDIS_URL
+          value: "redis://redis:6379"
+        command: ["/bin/bash"]
+        args:
+        - -c
+        - |
+          apt-get update && apt-get install -y git curl build-essential
+          pip install --no-cache-dir pandas numpy scikit-learn plotly dash streamlit
+          pip install --no-cache-dir fastapi uvicorn redis requests
+          git clone https://github.com/013atech/013a-analytics.git /app || true
+          cd /app
+          python -c "
+          import dash
+          from dash import html, dcc
+          import pandas as pd
+          import plotly.express as px
+          app = dash.Dash(__name__)
+          app.layout = html.Div([
+              html.H1('013a Analytics - Enterprise Dashboard'),
+              dcc.Graph(id='sample-graph', figure=px.line(x=[1,2,3,4], y=[10,11,12,13]))
+          ])
+          app.run_server(host='0.0.0.0', port=8001, debug=False)
+          "
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-ml-processor
+  namespace: aia-unified-production
+  labels:
+    app: aia-ml-processor
+    tier: ml
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: aia-ml-processor
+  template:
+    metadata:
+      labels:
+        app: aia-ml-processor
+        tier: ml
+    spec:
+      containers:
+      - name: ml-processor
+        image: python:3.11-slim
+        ports:
+        - containerPort: 8002
+        env:
+        - name: TORCH_THREADS
+          value: "2"
+        - name: TRANSFORMERS_CACHE
+          value: "/tmp/transformers"
+        command: ["/bin/bash"]
+        args:
+        - -c
+        - |
+          apt-get update && apt-get install -y git curl build-essential
+          pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu
+          pip install --no-cache-dir transformers scikit-learn numpy pandas
+          pip install --no-cache-dir fastapi uvicorn
+          python -c "
+          from fastapi import FastAPI
+          import uvicorn
+          app = FastAPI()
+          @app.get('/ml/health')
+          def health():
+              return {'status': 'healthy', 'service': 'ml-processor'}
+          @app.post('/ml/process')
+          def process_ml(data: dict):
+              return {'result': 'ML processing complete', 'input': data}
+          uvicorn.run(app, host='0.0.0.0', port=8002)
+          "
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
+          limits:
+            memory: "4Gi"
+            cpu: "2000m"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres
+  namespace: aia-unified-production
+  labels:
+    app: postgres
+    tier: database
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+        tier: database
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:15-alpine
+        ports:
+        - containerPort: 5432
+        env:
+        - name: POSTGRES_DB
+          value: aia_db
+        - name: POSTGRES_USER
+          value: postgres
+        - name: POSTGRES_PASSWORD
+          value: postgres
+        volumeMounts:
+        - name: postgres-storage
+          mountPath: /var/lib/postgresql/data
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+      volumes:
+      - name: postgres-storage
+        emptyDir: {}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis
+  namespace: aia-unified-production
+  labels:
+    app: redis
+    tier: cache
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+        tier: cache
+    spec:
+      containers:
+      - name: redis
+        image: redis:7-alpine
+        ports:
+        - containerPort: 6379
+        command: ["redis-server", "--appendonly", "yes"]
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "50m"
+          limits:
+            memory: "512Mi"
+            cpu: "200m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-unified-backend-service
+  namespace: aia-unified-production
+spec:
+  selector:
+    app: aia-unified-backend
+  ports:
+  - port: 8000
+    targetPort: 8000
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-analytics-service
+  namespace: aia-unified-production
+spec:
+  selector:
+    app: aia-analytics-engine
+  ports:
+  - port: 8001
+    targetPort: 8001
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-ml-service
+  namespace: aia-unified-production
+spec:
+  selector:
+    app: aia-ml-processor
+  ports:
+  - port: 8002
+    targetPort: 8002
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  namespace: aia-unified-production
+spec:
+  selector:
+    app: postgres
+  ports:
+  - port: 5432
+    targetPort: 5432
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+  namespace: aia-unified-production
+spec:
+  selector:
+    app: redis
+  ports:
+  - port: 6379
+    targetPort: 6379
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-unified-loadbalancer
+  namespace: aia-unified-production
+  labels:
+    service: unified-analytics
+spec:
+  selector:
+    app: aia-unified-backend
+  ports:
+  - name: http
+    port: 80
+    targetPort: 8000
+  - name: analytics
+    port: 8001
+    targetPort: 8001
+  - name: ml
+    port: 8002
+    targetPort: 8002
+  type: LoadBalancer
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: aia-unified-ingress
+  namespace: aia-unified-production
+  annotations:
+    kubernetes.io/ingress.global-static-ip-name: "aia-unified-ip"
+    networking.gke.io/managed-certificates: "aia-unified-ssl"
+    kubernetes.io/ingress.class: "gce"
+spec:
+  rules:
+  - host: analytics.013a.tech
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-unified-backend-service
+            port:
+              number: 8000
+      - path: /analytics
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-analytics-service
+            port:
+              number: 8001
+      - path: /ml
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-ml-service
+            port:
+              number: 8002
+  - host: api.013a.tech
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-unified-backend-service
+            port:
+              number: 8000

@@ -1,0 +1,269 @@
+# Optimized Resource Allocation for Current Cluster
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-backend-deployment
+  namespace: aia-comprehensive-platform
+spec:
+  replicas: 2  # Reduced from 5
+  selector:
+    matchLabels:
+      app: aia-backend
+  template:
+    metadata:
+      labels:
+        app: aia-backend
+    spec:
+      serviceAccountName: aia-workload-identity
+      containers:
+      - name: aia-backend
+        image: gcr.io/aia-system-prod-1759055445/aia-backend:latest
+        ports:
+        - containerPort: 8000
+        env:
+        - name: ENVIRONMENT
+          value: "production"
+        - name: GCP_PROJECT_ID
+          value: "aia-system-prod-1759055445"
+        - name: REDIS_URL
+          value: "redis://aia-redis-service:6379"
+        resources:
+          requests:
+            memory: "512Mi"  # Reduced from 1Gi
+            cpu: "250m"      # Reduced from 500m
+          limits:
+            memory: "1Gi"    # Reduced from 2Gi
+            cpu: "500m"      # Reduced from 1000m
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 5
+          periodSeconds: 5
+---
+# Optimized AI Service
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-ai-deployment
+  namespace: aia-comprehensive-platform
+spec:
+  replicas: 2  # Reduced from 5
+  selector:
+    matchLabels:
+      app: aia-ai
+  template:
+    metadata:
+      labels:
+        app: aia-ai
+    spec:
+      containers:
+      - name: ai-service
+        image: gcr.io/aia-system-prod-1759055445/aia-ai:latest
+        ports:
+        - containerPort: 8080
+        env:
+        - name: VERTEX_AI_INTEGRATION
+          value: "enabled"
+        - name: AUTOML_FEATURES
+          value: "enabled"
+        - name: KNOWLEDGE_GRAPH_PROCESSING
+          value: "enabled"
+        resources:
+          requests:
+            memory: "1Gi"    # Reduced from 4Gi
+            cpu: "500m"      # Reduced from 2000m
+          limits:
+            memory: "2Gi"    # Reduced from 8Gi
+            cpu: "1000m"     # Reduced from 4000m
+---
+# Optimized Analytics Service
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-analytics-deployment
+  namespace: aia-comprehensive-platform
+spec:
+  replicas: 2  # Reduced from 3
+  selector:
+    matchLabels:
+      app: aia-analytics
+  template:
+    metadata:
+      labels:
+        app: aia-analytics
+    spec:
+      containers:
+      - name: analytics
+        image: gcr.io/aia-system-prod-1759055445/aia-analytics:latest
+        ports:
+        - containerPort: 8080
+        env:
+        - name: ANALYTICS_MODE
+          value: "enterprise"
+        - name: REAL_TIME_PROCESSING
+          value: "enabled"
+        resources:
+          requests:
+            memory: "1Gi"    # Reduced from 2Gi
+            cpu: "500m"      # Reduced from 1000m
+          limits:
+            memory: "2Gi"    # Reduced from 4Gi
+            cpu: "1000m"     # Reduced from 2000m
+---
+# Optimized Immersive Service
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-immersive-deployment
+  namespace: aia-comprehensive-platform
+spec:
+  replicas: 2  # Reduced from 4
+  selector:
+    matchLabels:
+      app: aia-immersive
+  template:
+    metadata:
+      labels:
+        app: aia-immersive
+    spec:
+      containers:
+      - name: immersive
+        image: gcr.io/aia-system-prod-1759055445/aia-immersive:latest
+        ports:
+        - containerPort: 3000
+        env:
+        - name: THREE_JS_OPTIMIZATION
+          value: "enabled"
+        - name: WEBXR_FEATURES
+          value: "enabled"
+        resources:
+          requests:
+            memory: "1Gi"    # Reduced from 2Gi
+            cpu: "500m"      # Reduced from 1000m
+          limits:
+            memory: "2Gi"    # Reduced from 4Gi
+            cpu: "1000m"     # Reduced from 2000m
+---
+# Build missing Docker images
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: aia-image-builder
+  namespace: aia-comprehensive-platform
+spec:
+  template:
+    spec:
+      serviceAccountName: aia-workload-identity
+      restartPolicy: Never
+      containers:
+      - name: image-builder
+        image: gcr.io/cloud-builders/docker
+        command:
+        - /bin/bash
+        - -c
+        - |
+          # Build basic service images using nginx base
+          cat > Dockerfile.demo <<EOF
+          FROM nginx:alpine
+          COPY --from=0 /usr/share/nginx/html /usr/share/nginx/html
+          RUN echo '<html><body><h1>AIA Demo Platform</h1><p>Enterprise AI Demo Environment</p></body></html>' > /usr/share/nginx/html/index.html
+          EXPOSE 80
+          EOF
+
+          docker build -t gcr.io/aia-system-prod-1759055445/aia-demo:latest -f Dockerfile.demo .
+          docker push gcr.io/aia-system-prod-1759055445/aia-demo:latest
+
+          cat > Dockerfile.enterprise <<EOF
+          FROM nginx:alpine
+          RUN echo '<html><body><h1>AIA Enterprise Platform</h1><p>Fortune 500 AI Solutions</p></body></html>' > /usr/share/nginx/html/index.html
+          EXPOSE 80
+          EOF
+
+          docker build -t gcr.io/aia-system-prod-1759055445/aia-enterprise:latest -f Dockerfile.enterprise .
+          docker push gcr.io/aia-system-prod-1759055445/aia-enterprise:latest
+
+          cat > Dockerfile.finance <<EOF
+          FROM nginx:alpine
+          RUN echo '<html><body><h1>AIA Finance Platform</h1><p>AI-Powered Financial Services</p></body></html>' > /usr/share/nginx/html/index.html
+          EXPOSE 80
+          EOF
+
+          docker build -t gcr.io/aia-system-prod-1759055445/aia-finance:latest -f Dockerfile.finance .
+          docker push gcr.io/aia-system-prod-1759055445/aia-finance:latest
+        volumeMounts:
+        - name: docker-sock
+          mountPath: /var/run/docker.sock
+      volumes:
+      - name: docker-sock
+        hostPath:
+          path: /var/run/docker.sock
+---
+# Optimized monitoring without secret dependency
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-monitoring-deployment
+  namespace: aia-comprehensive-platform
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: aia-monitoring
+  template:
+    metadata:
+      labels:
+        app: aia-monitoring
+    spec:
+      containers:
+      - name: monitoring
+        image: prom/prometheus:latest
+        ports:
+        - containerPort: 9090
+        args:
+        - '--config.file=/etc/prometheus/prometheus.yml'
+        - '--storage.tsdb.path=/prometheus/'
+        - '--web.console.libraries=/etc/prometheus/console_libraries'
+        - '--web.console.templates=/etc/prometheus/consoles'
+        - '--storage.tsdb.retention.time=200h'
+        - '--web.enable-lifecycle'
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "250m"
+---
+# HPA for dynamic scaling
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: aia-backend-hpa
+  namespace: aia-comprehensive-platform
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: aia-backend-deployment
+  minReplicas: 2
+  maxReplicas: 5
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80

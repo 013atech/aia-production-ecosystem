@@ -1,0 +1,270 @@
+# IMMEDIATE RESOURCE OPTIMIZATION FOR AIA SYSTEM
+# Strategy: Optimize within current quota constraints
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: analytics-backend-optimized
+  namespace: 013a-analytics-production
+spec:
+  replicas: 2  # Reduced from 3 to optimize CPU usage
+  selector:
+    matchLabels:
+      app: analytics-backend
+      version: optimized
+  template:
+    metadata:
+      labels:
+        app: analytics-backend
+        version: optimized
+    spec:
+      containers:
+      - name: backend
+        image: gcr.io/aia-system-prod-1759055445/analytics-backend:latest
+        resources:
+          requests:
+            memory: "128Mi"  # Reduced from 1Gi
+            cpu: "100m"      # Reduced from 500m
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        env:
+        - name: OPTIMIZATION_MODE
+          value: "high_performance"
+        - name: WORKER_THREADS
+          value: "4"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: analytics-data-processor-optimized
+  namespace: 013a-analytics-production
+spec:
+  replicas: 2  # Reduced from 3
+  selector:
+    matchLabels:
+      app: analytics-data-processor
+      version: optimized
+  template:
+    metadata:
+      labels:
+        app: analytics-data-processor
+        version: optimized
+    spec:
+      containers:
+      - name: data-processor
+        image: gcr.io/aia-system-prod-1759055445/analytics-data-processor:latest
+        resources:
+          requests:
+            memory: "128Mi"  # Optimized for batch processing
+            cpu: "100m"      # Reduced from 500m
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        env:
+        - name: BATCH_SIZE
+          value: "1000"
+        - name: PARALLEL_WORKERS
+          value: "4"
+        - name: MEMORY_POOL_SIZE
+          value: "512MB"
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: analytics-ml-engine-cpu-optimized
+  namespace: 013a-analytics-production
+spec:
+  replicas: 1  # Reduced from 2, using CPU-only optimization
+  selector:
+    matchLabels:
+      app: analytics-ml-engine
+      version: cpu-optimized
+  template:
+    metadata:
+      labels:
+        app: analytics-ml-engine
+        version: cpu-optimized
+    spec:
+      containers:
+      - name: ml-engine
+        image: gcr.io/aia-system-prod-1759055445/analytics-ml-engine:latest
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"      # Optimized CPU-only inference
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        env:
+        - name: INFERENCE_MODE
+          value: "cpu_optimized"
+        - name: TORCH_NUM_THREADS
+          value: "4"
+        - name: OMP_NUM_THREADS
+          value: "4"
+        - name: BATCH_INFERENCE_SIZE
+          value: "32"
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: analytics-business-intelligence-optimized
+  namespace: 013a-analytics-production
+spec:
+  replicas: 1  # Reduced from 2
+  selector:
+    matchLabels:
+      app: analytics-business-intelligence
+      version: optimized
+  template:
+    metadata:
+      labels:
+        app: analytics-business-intelligence
+        version: optimized
+    spec:
+      containers:
+      - name: bi-engine
+        image: gcr.io/aia-system-prod-1759055445/analytics-business-intelligence:latest
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"      # Reduced from 500m
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        env:
+        - name: CACHE_SIZE
+          value: "256MB"
+        - name: QUERY_TIMEOUT
+          value: "30s"
+
+---
+# High Performance Frontend with Resource Optimization
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: analytics-frontend-optimized
+  namespace: 013a-analytics-production
+spec:
+  replicas: 2  # Reduced from 3, but with better resource allocation
+  selector:
+    matchLabels:
+      app: analytics-frontend
+      version: optimized
+  template:
+    metadata:
+      labels:
+        app: analytics-frontend
+        version: optimized
+    spec:
+      containers:
+      - name: frontend
+        image: gcr.io/aia-system-prod-1759055445/analytics-frontend:latest
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"      # Slightly increased for better performance
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        env:
+        - name: NODE_ENV
+          value: "production"
+        - name: PERFORMANCE_MODE
+          value: "optimized"
+
+---
+# Horizontal Pod Autoscaler for Dynamic Scaling
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: analytics-backend-hpa-optimized
+  namespace: 013a-analytics-production
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: analytics-backend-optimized
+  minReplicas: 2
+  maxReplicas: 4  # Conservative scaling within quota
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: analytics-data-processor-hpa-optimized
+  namespace: 013a-analytics-production
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: analytics-data-processor-optimized
+  minReplicas: 1
+  maxReplicas: 3  # Conservative scaling
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 75
+
+---
+# Service configurations remain the same but with optimized selectors
+apiVersion: v1
+kind: Service
+metadata:
+  name: analytics-backend-optimized
+  namespace: 013a-analytics-production
+spec:
+  selector:
+    app: analytics-backend
+  ports:
+  - port: 80
+    targetPort: 8080
+    protocol: TCP
+  type: ClusterIP
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: analytics-frontend-optimized
+  namespace: 013a-analytics-production
+spec:
+  selector:
+    app: analytics-frontend
+  ports:
+  - port: 80
+    targetPort: 3000
+    protocol: TCP
+  type: ClusterIP

@@ -1,0 +1,84 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: sentient-canvas-unified-ingress
+  namespace: aia-working-production
+  annotations:
+    ingress.gcp.kubernetes.io/force-ssl-redirect: "true"
+    ingress.gcp.kubernetes.io/managed-certificates: "aia-ssl-cert"
+    kubernetes.io/ingress.class: "gce"
+    kubernetes.io/ingress.global-static-ip-name: "aia-global-ip"
+    nginx.ingress.kubernetes.io/cors-allow-headers: "Content-Type, Authorization, X-Requested-With"
+    nginx.ingress.kubernetes.io/cors-allow-methods: "GET, POST, PUT, DELETE, OPTIONS"
+    nginx.ingress.kubernetes.io/cors-allow-origin: "*"
+    # Backend configuration for AIA integration
+    cloud.google.com/backend-config: |
+      {
+        "default": "aia-backend-config",
+        "aia-frontend-service": "aia-frontend-config"
+      }
+spec:
+  rules:
+  # Main domain - Route to React Frontend
+  - host: 013a.tech
+    http:
+      paths:
+      - path: /api/*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-backend-fixed-service
+            port:
+              number: 80
+      - path: /ws/*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-backend-fixed-service
+            port:
+              number: 80
+      - path: /*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-frontend-service
+            port:
+              number: 80
+
+  # WWW subdomain - Route to React Frontend
+  - host: www.013a.tech
+    http:
+      paths:
+      - path: /api/*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-backend-fixed-service
+            port:
+              number: 80
+      - path: /ws/*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-backend-fixed-service
+            port:
+              number: 80
+      - path: /*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-frontend-service
+            port:
+              number: 80
+
+  # API subdomain - Route to Backend Service
+  - host: api.013a.tech
+    http:
+      paths:
+      - path: /*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-backend-fixed-service
+            port:
+              number: 80

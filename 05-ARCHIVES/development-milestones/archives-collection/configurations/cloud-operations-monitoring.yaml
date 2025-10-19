@@ -1,0 +1,153 @@
+# TEMPORARILY DISABLED FOR QUOTA COMPLIANCE
+# This deployment has been temporarily disabled to meet GCP quota requirements
+# Original content below (commented out):
+#
+# apiVersion: v1
+# kind: ServiceAccount
+# metadata:
+#   name: cloud-operations-monitor
+#   namespace: aia-production
+#   annotations:
+#     iam.gke.io/gcp-service-account: cloud-operations-monitor@aia-system-prod-1759055445.iam.gserviceaccount.com
+# ---
+# apiVersion: apps/v1
+# kind: Deployment
+# metadata:
+#   name: cloud-operations-monitor
+#   namespace: aia-production
+#   labels:
+#     app: cloud-operations-monitor
+#     tier: monitoring
+# spec:
+#   replicas: 1
+#   selector:
+#     matchLabels:
+#       app: cloud-operations-monitor
+#   template:
+#     metadata:
+#       labels:
+#         app: cloud-operations-monitor
+#         tier: monitoring
+#     spec:
+#       serviceAccountName: cloud-operations-monitor
+#       containers:
+#       - name: stackdriver-prometheus
+#         image: gke.gcr.io/prometheus-to-sd:v0.11.1
+#         command:
+#         - /monitor
+#         - --source=aia-backend:http://aia-backend-cloud-sql-service:8080/metrics
+#         - --source=aia-monitoring:http://aia-monitoring-service:9090/metrics
+#         - --stackdriver-prefix=custom.googleapis.com
+#         - --api-override=https://monitoring.googleapis.com/
+#         - --whitelisted-metrics=aia_requests_total,aia_request_duration_seconds,aia_active_connections
+#         resources:
+#           requests:
+#             memory: "128Mi"
+#             cpu: "100m"
+#           limits:
+#             memory: "128Mi"
+#             cpu: "100m"
+#       - name: log-forwarder
+#         image: gcr.io/google-containers/fluentd-gcp:3.2.0
+#         env:
+#         - name: FLUENTD_ARGS
+#           value: --no-supervisor -q
+#         - name: GOOGLE_CLOUD_PROJECT
+#           value: "aia-system-prod-1759055445"
+#         volumeMounts:
+#         - name: varlog
+#           mountPath: /var/log
+#         - name: varlibdockercontainers
+#           mountPath: /var/lib/docker/containers
+#           readOnly: true
+#         - name: config-volume
+#           mountPath: /etc/fluent/config.d
+#         resources:
+#           requests:
+#             memory: "128Mi"
+#             cpu: "100m"
+#           limits:
+#             memory: "128Mi"
+#             cpu: "100m"
+#       volumes:
+#       - name: varlog
+#         hostPath:
+#           path: /var/log
+#       - name: varlibdockercontainers
+#         hostPath:
+#           path: /var/lib/docker/containers
+#       - name: config-volume
+#         configMap:
+#           name: fluentd-gcp-config-v1.2.6
+# ---
+# apiVersion: v1
+# kind: ConfigMap
+# metadata:
+#   name: cloud-monitoring-config
+#   namespace: aia-production
+# data:
+#   alerts.yml: |
+#     groups:
+#     - name: aia-production-alerts
+#       rules:
+#       - alert: HighCPUUsage
+#         expr: rate(container_cpu_usage_seconds_total{namespace="aia-production"}[5m]) > 0.8
+#         for: 5m
+#         labels:
+#           severity: warning
+#         annotations:
+#           summary: "High CPU usage detected"
+#           description: "CPU usage is above 80% for 5 minutes"
+# 
+#       - alert: HighMemoryUsage
+#         expr: container_memory_usage_bytes{namespace="aia-production"} / container_spec_memory_limit_bytes > 0.8
+#         for: 5m
+#         labels:
+#           severity: warning
+#         annotations:
+#           summary: "High memory usage detected"
+#           description: "Memory usage is above 80% for 5 minutes"
+# 
+#       - alert: PodCrashLooping
+#         expr: rate(kube_pod_container_status_restarts_total{namespace="aia-production"}[15m]) > 0
+#         for: 5m
+#         labels:
+#           severity: critical
+#         annotations:
+#           summary: "Pod is crash looping"
+#           description: "Pod {{ $labels.pod }} is restarting frequently"
+# 
+#       - alert: APIHighLatency
+#         expr: histogram_quantile(0.99, rate(http_request_duration_seconds_bucket{namespace="aia-production"}[5m])) > 2
+#         for: 5m
+#         labels:
+#           severity: warning
+#         annotations:
+#           summary: "API high latency"
+#           description: "99th percentile latency is above 2 seconds"
+# 
+#       - alert: DatabaseConnectionFailed
+#         expr: up{job="postgres"} == 0
+#         for: 1m
+#         labels:
+#           severity: critical
+#         annotations:
+#           summary: "Database connection failed"
+#           description: "Cannot connect to PostgreSQL database"
+# ---
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   name: cloud-operations-service
+#   namespace: aia-production
+#   labels:
+#     app: cloud-operations-monitor
+# spec:
+#   selector:
+#     app: cloud-operations-monitor
+#   ports:
+#   - port: 8080
+#     targetPort: 8080
+#     protocol: TCP
+#     name: metrics
+#   type: ClusterIP

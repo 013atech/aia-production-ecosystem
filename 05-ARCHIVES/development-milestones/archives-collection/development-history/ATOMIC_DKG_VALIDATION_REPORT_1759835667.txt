@@ -1,0 +1,100 @@
+================================================================================
+🧬 ATOMIC DKG MLOPS SYSTEM - VALIDATION REPORT
+================================================================================
+
+Validation ID: mlops_validation_1759835631
+Started: 2025-10-07 13:13:51.523349
+Completed: 2025-10-07 13:14:27.571052
+Total Execution Time: 36.05 seconds
+
+Overall Status: FAIL
+Overall Score: 0.6/100
+
+📊 SUMMARY:
+  Total Tests: 21
+  ✅ Passed: 13
+  ❌ Failed: 8
+  ⚠️  Warnings: 0
+  ⏭️  Skipped: 0
+
+🧪 CORE INFRASTRUCTURE:
+  Status: FAIL
+  Tests: 1/3 passed
+  Execution Time: 10.81s
+
+    ❌ AIA Backend Health: Failed to connect to AIA backend: 
+    ❌ Service Connectivity: Only 2/6 services accessible
+    ✅ Database Connectivity: Database operations working correctly
+
+🧪 KNOWLEDGE GRAPH SYSTEM:
+  Status: FAIL
+  Tests: 1/3 passed
+  Execution Time: 0.06s
+
+    ✅ Knowledge Graph Loading: Knowledge graph loaded successfully with 2472 atoms
+    ❌ Atomic DKG Processing: Knowledge query failed with status 404
+    ❌ test_knowledge_query_performance: Test execution failed: 'NoneType' object has no attribute 'execution_time'
+
+🧪 ML PIPELINE SYSTEM:
+  Status: FAIL
+  Tests: 1/3 passed
+  Execution Time: 0.02s
+
+    ❌ ML Pipeline Creation: ML pipeline creation test failed: All connection attempts failed
+    ✅ Model Training: Model creation and forward pass successful
+    ❌ Model Deployment: Model deployment test failed: All connection attempts failed
+
+🧪 MONITORING & OBSERVABILITY:
+  Status: FAIL
+  Tests: 2/3 passed
+  Execution Time: 0.02s
+
+    ❌ Drift Monitoring: Drift monitoring test failed: All connection attempts failed
+    ✅ Performance Monitoring: Performance monitoring operational, response time: 0.012s
+    ✅ Alert System: Basic alert system (logging) operational
+
+🧪 PRODUCTION DEPLOYMENT:
+  Status: FAIL
+  Tests: 2/3 passed
+  Execution Time: 0.01s
+
+    ❌ Deployment Endpoints: Deployment endpoints test failed: All connection attempts failed
+    ✅ Load Balancing: Load balancing configuration validation passed
+    ✅ Auto Scaling: Auto-scaling configuration validation passed
+
+🧪 APPLE SILICON OPTIMIZATION:
+  Status: PASS
+  Tests: 3/3 passed
+  Execution Time: 0.05s
+
+    ✅ Apple Silicon Detection: Apple Silicon detected and MPS backend available
+    ✅ MPS Optimization: MPS optimization working correctly
+    ✅ Performance Profiling: Performance profiling operational, test computation: 0.014s
+
+🧪 PERFORMANCE & LOAD TESTING:
+  Status: PASS
+  Tests: 3/3 passed
+  Execution Time: 25.07s
+
+    ✅ Concurrent Requests: Concurrent load test passed: 10/10 successful
+    ✅ High Load Performance: High load test passed: 100.0% success rate, 752.5 RPS
+    ✅ System Stability: System stable: 6/6 checks successful
+
+📈 SYSTEM METRICS:
+
+  aia_backend_response_time: 0.01212000846862793
+  load_test:
+    success_rate: 1.0
+    avg_response_time: 0.013288593292236328
+    throughput_rps: 752.5251002935245
+
+================================================================================
+🚀 DEPLOYMENT READINESS ASSESSMENT:
+
+❌ SYSTEM NOT READY FOR PRODUCTION
+   Critical issues detected that must be resolved before deployment.
+   Review failed tests and address all issues before proceeding.
+
+================================================================================
+Generated: 2025-10-07 13:14:27.571350
+================================================================================

@@ -1,0 +1,31 @@
+# TEMPORARILY DISABLED FOR QUOTA COMPLIANCE
+# This deployment has been temporarily disabled to meet GCP quota requirements
+# Original content below (commented out):
+#
+# steps:
+# # Build Frontend
+# - name: 'gcr.io/cloud-builders/docker'
+#   dir: 'frontend'
+#   args: [
+#     'build',
+#     '-t', 'gcr.io/aia-system-prod-1759055445/aia-frontend-production:latest',
+#     '-f', 'Dockerfile',
+#     '.'
+#   ]
+#   env:
+#     - 'REACT_APP_API_BASE_URL=https://013a.tech/api'
+#     - 'REACT_APP_ENVIRONMENT=production'
+#     - 'REACT_APP_VERSION=3.0.0'
+#     - 'REACT_APP_KNOWLEDGE_GRAPH_ENABLED=true'
+#     - 'REACT_APP_3D_ENABLED=true'
+#     - 'REACT_APP_WEBXR_ENABLED=true'
+# 
+# # Push Frontend
+# - name: 'gcr.io/cloud-builders/docker'
+#   args: ['push', 'gcr.io/aia-system-prod-1759055445/aia-frontend-production:latest']
+# 
+# options:
+#   machineType: 'E2_HIGHCPU_8'
+#   logging: CLOUD_LOGGING_ONLY
+# 
+# timeout: '1200s'

@@ -1,0 +1,239 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-production-stable
+  namespace: aia-unified-production
+  labels:
+    deployment: stable
+    environment: production
+spec:
+  selector:
+    app: aia-unified-backend-optimized
+    version: stable
+  ports:
+  - port: 80
+    targetPort: 8000
+    name: http
+  type: LoadBalancer
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-production-canary
+  namespace: aia-unified-production
+  labels:
+    deployment: canary
+    environment: production
+spec:
+  selector:
+    app: aia-unified-backend-optimized
+    version: canary
+  ports:
+  - port: 80
+    targetPort: 8000
+    name: http
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-unified-backend-stable
+  namespace: aia-unified-production
+  labels:
+    app: aia-unified-backend-optimized
+    version: stable
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: aia-unified-backend-optimized
+      version: stable
+  template:
+    metadata:
+      labels:
+        app: aia-unified-backend-optimized
+        version: stable
+    spec:
+      containers:
+      - name: aia-backend
+        image: python:3.11-slim
+        ports:
+        - containerPort: 8000
+        env:
+        - name: VERSION
+          value: "stable-v2.0"
+        - name: DEPLOYMENT_TYPE
+          value: "stable"
+        - name: PYTHONUNBUFFERED
+          value: "1"
+        command: ["/bin/bash"]
+        args: ["/app/startup.sh"]
+        volumeMounts:
+        - name: startup-script
+          mountPath: /app
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 15
+          periodSeconds: 10
+      volumes:
+      - name: startup-script
+        configMap:
+          name: aia-unified-config
+          defaultMode: 0755
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: aia-production-ingress
+  namespace: aia-unified-production
+  annotations:
+    nginx.ingress.kubernetes.io/canary: "false"
+    kubernetes.io/ingress.class: "gce"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+spec:
+  rules:
+  - host: api.013a.tech
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-production-stable
+            port:
+              number: 80
+  - host: analytics.013a.tech
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-production-stable
+            port:
+              number: 80
+      - path: /knowledge
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-knowledge-graph-service
+            port:
+              number: 8003
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: aia-canary-ingress
+  namespace: aia-unified-production
+  annotations:
+    nginx.ingress.kubernetes.io/canary: "true"
+    nginx.ingress.kubernetes.io/canary-weight: "10"
+    kubernetes.io/ingress.class: "gce"
+spec:
+  rules:
+  - host: api.013a.tech
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-production-canary
+            port:
+              number: 80
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: monitoring-config
+  namespace: aia-unified-production
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 15s
+    scrape_configs:
+    - job_name: 'aia-backend'
+      static_configs:
+      - targets: ['aia-unified-backend-optimized-service:8000']
+    - job_name: 'aia-knowledge-graph'
+      static_configs:
+      - targets: ['aia-knowledge-graph-service:8003']
+    - job_name: 'kubernetes-pods'
+      kubernetes_sd_configs:
+      - role: pod
+        namespaces:
+          names:
+          - aia-unified-production
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prometheus-monitoring
+  namespace: aia-unified-production
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: prometheus
+  template:
+    metadata:
+      labels:
+        app: prometheus
+    spec:
+      containers:
+      - name: prometheus
+        image: prom/prometheus:v2.45.0
+        ports:
+        - containerPort: 9090
+        volumeMounts:
+        - name: prometheus-config
+          mountPath: /etc/prometheus
+        - name: prometheus-data
+          mountPath: /prometheus
+        command:
+        - /bin/prometheus
+        - --config.file=/etc/prometheus/prometheus.yml
+        - --storage.tsdb.path=/prometheus
+        - --web.console.libraries=/etc/prometheus/console_libraries
+        - --web.console.templates=/etc/prometheus/consoles
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "200m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+      volumes:
+      - name: prometheus-config
+        configMap:
+          name: monitoring-config
+      - name: prometheus-data
+        emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus-service
+  namespace: aia-unified-production
+spec:
+  selector:
+    app: prometheus
+  ports:
+  - port: 9090
+    targetPort: 9090
+  type: LoadBalancer

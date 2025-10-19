@@ -1,0 +1,243 @@
+# TEMPORARILY DISABLED FOR QUOTA COMPLIANCE
+# This deployment has been temporarily disabled to meet GCP quota requirements
+# Original content below (commented out):
+#
+# # ==============================================================================
+# # FULL-COMPLEXITY PRODUCTION CLOUD BUILD CONFIGURATION
+# # Builds all container images for the complete 013a-analytics platform
+# # ==============================================================================
+# steps:
+# # ==============================================================================
+# # FRONTEND BUILD
+# # ==============================================================================
+# - name: 'gcr.io/cloud-builders/docker'
+#   args: [
+#     'build',
+#     '-f', './frontend/Dockerfile.comprehensive',
+#     '-t', 'us-central1-docker.pkg.dev/$PROJECT_ID/aia-repo/aia-frontend:$BUILD_ID',
+#     '-t', 'us-central1-docker.pkg.dev/$PROJECT_ID/aia-repo/aia-frontend:latest',
+#     './frontend'
+#   ]
+#   timeout: 1200s
+#   id: 'build-frontend'
+# 
+# - name: 'gcr.io/cloud-builders/docker'
+#   args: ['push', 'us-central1-docker.pkg.dev/$PROJECT_ID/aia-repo/aia-frontend:$BUILD_ID']
+#   id: 'push-frontend-build-id'
+#   waitFor: ['build-frontend']
+# 
+# - name: 'gcr.io/cloud-builders/docker'
+#   args: ['push', 'us-central1-docker.pkg.dev/$PROJECT_ID/aia-repo/aia-frontend:latest']
+#   id: 'push-frontend-latest'
+#   waitFor: ['build-frontend']
+# 
+# # ==============================================================================
+# # BACKEND BUILD
+# # ==============================================================================
+# - name: 'gcr.io/cloud-builders/docker'
+#   args: [
+#     'build',
+#     '-f', './aia/Dockerfile',
+#     '-t', 'us-central1-docker.pkg.dev/$PROJECT_ID/aia-repo/aia-backend:$BUILD_ID',
+#     '-t', 'us-central1-docker.pkg.dev/$PROJECT_ID/aia-repo/aia-backend:latest',
+#     './aia'
+#   ]
+#   timeout: 1200s
+#   id: 'build-backend'
+# 
+# - name: 'gcr.io/cloud-builders/docker'
+#   args: ['push', 'us-central1-docker.pkg.dev/$PROJECT_ID/aia-repo/aia-backend:$BUILD_ID']
+#   id: 'push-backend-build-id'
+#   waitFor: ['build-backend']
+# 
+# - name: 'gcr.io/cloud-builders/docker'
+#   args: ['push', 'us-central1-docker.pkg.dev/$PROJECT_ID/aia-repo/aia-backend:latest']
+#   id: 'push-backend-latest'
+#   waitFor: ['build-backend']
+# 
+# # ==============================================================================
+# # ML ENGINE BUILD
+# # ==============================================================================
+# - name: 'gcr.io/cloud-builders/docker'
+#   args: [
+#     'build',
+#     '-f', './Dockerfile.ml-engine',
+#     '-t', 'us-central1-docker.pkg.dev/$PROJECT_ID/aia-repo/aia-ml-engine:$BUILD_ID',
+#     '-t', 'us-central1-docker.pkg.dev/$PROJECT_ID/aia-repo/aia-ml-engine:latest',
+#     '.'
+#   ]
+#   timeout: 1800s
+#   id: 'build-ml-engine'
+# 
+# - name: 'gcr.io/cloud-builders/docker'
+#   args: ['push', 'us-central1-docker.pkg.dev/$PROJECT_ID/aia-repo/aia-ml-engine:$BUILD_ID']
+#   id: 'push-ml-engine-build-id'
+#   waitFor: ['build-ml-engine']
+# 
+# - name: 'gcr.io/cloud-builders/docker'
+#   args: ['push', 'us-central1-docker.pkg.dev/$PROJECT_ID/aia-repo/aia-ml-engine:latest']
+#   id: 'push-ml-engine-latest'
+#   waitFor: ['build-ml-engine']
+# 
+# # ==============================================================================
+# # BUSINESS INTELLIGENCE BUILD
+# # ==============================================================================
+# - name: 'gcr.io/cloud-builders/docker'
+#   args: [
+#     'build',
+#     '-f', './Dockerfile.business-intelligence',
+#     '-t', 'us-central1-docker.pkg.dev/$PROJECT_ID/aia-repo/aia-business-intelligence:$BUILD_ID',
+#     '-t', 'us-central1-docker.pkg.dev/$PROJECT_ID/aia-repo/aia-business-intelligence:latest',
+#     '.'
+#   ]
+#   timeout: 900s
+#   id: 'build-business-intelligence'
+# 
+# - name: 'gcr.io/cloud-builders/docker'
+#   args: ['push', 'us-central1-docker.pkg.dev/$PROJECT_ID/aia-repo/aia-business-intelligence:$BUILD_ID']
+#   id: 'push-bi-build-id'
+#   waitFor: ['build-business-intelligence']
+# 
+# - name: 'gcr.io/cloud-builders/docker'
+#   args: ['push', 'us-central1-docker.pkg.dev/$PROJECT_ID/aia-repo/aia-business-intelligence:latest']
+#   id: 'push-bi-latest'
+#   waitFor: ['build-business-intelligence']
+# 
+# # ==============================================================================
+# # REVENUE INTELLIGENCE BUILD
+# # ==============================================================================
+# - name: 'gcr.io/cloud-builders/docker'
+#   args: [
+#     'build',
+#     '-f', './Dockerfile.revenue-intelligence',
+#     '-t', 'us-central1-docker.pkg.dev/$PROJECT_ID/aia-repo/aia-revenue-intelligence:$BUILD_ID',
+#     '-t', 'us-central1-docker.pkg.dev/$PROJECT_ID/aia-repo/aia-revenue-intelligence:latest',
+#     '.'
+#   ]
+#   timeout: 900s
+#   id: 'build-revenue-intelligence'
+# 
+# - name: 'gcr.io/cloud-builders/docker'
+#   args: ['push', 'us-central1-docker.pkg.dev/$PROJECT_ID/aia-repo/aia-revenue-intelligence:$BUILD_ID']
+#   id: 'push-revenue-build-id'
+#   waitFor: ['build-revenue-intelligence']
+# 
+# - name: 'gcr.io/cloud-builders/docker'
+#   args: ['push', 'us-central1-docker.pkg.dev/$PROJECT_ID/aia-repo/aia-revenue-intelligence:latest']
+#   id: 'push-revenue-latest'
+#   waitFor: ['build-revenue-intelligence']
+# 
+# # ==============================================================================
+# # PAYMENT PROCESSOR BUILD
+# # ==============================================================================
+# - name: 'gcr.io/cloud-builders/docker'
+#   args: [
+#     'build',
+#     '-f', './Dockerfile.payment-processor',
+#     '-t', 'us-central1-docker.pkg.dev/$PROJECT_ID/aia-repo/aia-payment-processor:$BUILD_ID',
+#     '-t', 'us-central1-docker.pkg.dev/$PROJECT_ID/aia-repo/aia-payment-processor:latest',
+#     '.'
+#   ]
+#   timeout: 900s
+#   id: 'build-payment-processor'
+# 
+# - name: 'gcr.io/cloud-builders/docker'
+#   args: ['push', 'us-central1-docker.pkg.dev/$PROJECT_ID/aia-repo/aia-payment-processor:$BUILD_ID']
+#   id: 'push-payment-build-id'
+#   waitFor: ['build-payment-processor']
+# 
+# - name: 'gcr.io/cloud-builders/docker'
+#   args: ['push', 'us-central1-docker.pkg.dev/$PROJECT_ID/aia-repo/aia-payment-processor:latest']
+#   id: 'push-payment-latest'
+#   waitFor: ['build-payment-processor']
+# 
+# # ==============================================================================
+# # ENTERPRISE PARTNERS BUILD
+# # ==============================================================================
+# - name: 'gcr.io/cloud-builders/docker'
+#   args: [
+#     'build',
+#     '-f', './Dockerfile.enterprise-partners',
+#     '-t', 'us-central1-docker.pkg.dev/$PROJECT_ID/aia-repo/aia-enterprise-partners:$BUILD_ID',
+#     '-t', 'us-central1-docker.pkg.dev/$PROJECT_ID/aia-repo/aia-enterprise-partners:latest',
+#     '.'
+#   ]
+#   timeout: 900s
+#   id: 'build-enterprise-partners'
+# 
+# - name: 'gcr.io/cloud-builders/docker'
+#   args: ['push', 'us-central1-docker.pkg.dev/$PROJECT_ID/aia-repo/aia-enterprise-partners:$BUILD_ID']
+#   id: 'push-enterprise-build-id'
+#   waitFor: ['build-enterprise-partners']
+# 
+# - name: 'gcr.io/cloud-builders/docker'
+#   args: ['push', 'us-central1-docker.pkg.dev/$PROJECT_ID/aia-repo/aia-enterprise-partners:latest']
+#   id: 'push-enterprise-latest'
+#   waitFor: ['build-enterprise-partners']
+# 
+# # ==============================================================================
+# # PERFORMANCE MONITOR BUILD
+# # ==============================================================================
+# - name: 'gcr.io/cloud-builders/docker'
+#   args: [
+#     'build',
+#     '-f', './Dockerfile.performance-monitor',
+#     '-t', 'us-central1-docker.pkg.dev/$PROJECT_ID/aia-repo/aia-performance-monitor:$BUILD_ID',
+#     '-t', 'us-central1-docker.pkg.dev/$PROJECT_ID/aia-repo/aia-performance-monitor:latest',
+#     '.'
+#   ]
+#   timeout: 900s
+#   id: 'build-performance-monitor'
+# 
+# - name: 'gcr.io/cloud-builders/docker'
+#   args: ['push', 'us-central1-docker.pkg.dev/$PROJECT_ID/aia-repo/aia-performance-monitor:$BUILD_ID']
+#   id: 'push-monitor-build-id'
+#   waitFor: ['build-performance-monitor']
+# 
+# - name: 'gcr.io/cloud-builders/docker'
+#   args: ['push', 'us-central1-docker.pkg.dev/$PROJECT_ID/aia-repo/aia-performance-monitor:latest']
+#   id: 'push-monitor-latest'
+#   waitFor: ['build-performance-monitor']
+# 
+# # ==============================================================================
+# # WEBSOCKET SERVICE BUILD
+# # ==============================================================================
+# - name: 'gcr.io/cloud-builders/docker'
+#   args: [
+#     'build',
+#     '-f', './Dockerfile.websocket',
+#     '-t', 'us-central1-docker.pkg.dev/$PROJECT_ID/aia-repo/aia-websocket:$BUILD_ID',
+#     '-t', 'us-central1-docker.pkg.dev/$PROJECT_ID/aia-repo/aia-websocket:latest',
+#     '.'
+#   ]
+#   timeout: 900s
+#   id: 'build-websocket'
+# 
+# - name: 'gcr.io/cloud-builders/docker'
+#   args: ['push', 'us-central1-docker.pkg.dev/$PROJECT_ID/aia-repo/aia-websocket:$BUILD_ID']
+#   id: 'push-websocket-build-id'
+#   waitFor: ['build-websocket']
+# 
+# - name: 'gcr.io/cloud-builders/docker'
+#   args: ['push', 'us-central1-docker.pkg.dev/$PROJECT_ID/aia-repo/aia-websocket:latest']
+#   id: 'push-websocket-latest'
+#   waitFor: ['build-websocket']
+# 
+# # ==============================================================================
+# # BUILD OPTIONS AND CONFIGURATION
+# # ==============================================================================
+# options:
+#   substitution_option: ALLOW_LOOSE
+#   machineType: 'E2_HIGHCPU_32'
+#   diskSizeGb: 300
+#   logging: CLOUD_LOGGING_ONLY
+# 
+# timeout: 3600s
+# 
+# substitutions:
+#   _REGION: 'us-central1'
+#   _REPOSITORY: 'aia-repo'
+# 
+# # ==============================================================================
+# # ARTIFACT REGISTRY SETUP
+# # ==============================================================================

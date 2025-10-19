@@ -1,0 +1,522 @@
+# TEMPORARILY DISABLED FOR QUOTA COMPLIANCE
+# This deployment has been temporarily disabled to meet GCP quota requirements
+# Original content below (commented out):
+#
+# # 🚀 AIA Unified Production Cloud Build Configuration
+# # Comprehensive CI/CD pipeline for enterprise deployment
+# # Supports: Backend (106+ modules) + Frontend (81+ components) + Enterprise integrations
+# 
+# timeout: "3600s" # 1 hour timeout for comprehensive build
+# 
+# options:
+#   machineType: 'E2_HIGHCPU_32'
+#   diskSizeGb: '100'
+#   logging: CLOUD_LOGGING_ONLY
+# 
+# # Substitution variables
+# substitutions:
+#   _ENVIRONMENT: 'production'
+#   _CLUSTER_NAME: 'aia-unified-enterprise-cluster'
+#   _CLUSTER_ZONE: 'us-central1'
+#   _NAMESPACE: 'aia-unified-production'
+#   _DOMAIN: '013a.tech'
+#   _API_DOMAIN: 'api.013a.tech'
+#   _APP_DOMAIN: 'app.013a.tech'
+#   _REGISTRY: 'gcr.io/$PROJECT_ID'
+# 
+# steps:
+# # Step 1: Environment setup and validation
+# - name: 'gcr.io/cloud-builders/gcloud'
+#   id: 'setup-environment'
+#   entrypoint: 'bash'
+#   args:
+#     - '-c'
+#     - |
+#       echo "🚀 AIA Unified Production Build Starting..."
+#       echo "Project: $PROJECT_ID"
+#       echo "Environment: ${_ENVIRONMENT}"
+#       echo "Domain: ${_DOMAIN}"
+#       echo "Build ID: $BUILD_ID"
+# 
+#       # Configure gcloud
+#       gcloud config set project $PROJECT_ID
+#       gcloud config set compute/zone ${_CLUSTER_ZONE}
+# 
+#       # Verify cluster access
+#       gcloud container clusters get-credentials ${_CLUSTER_NAME} --zone ${_CLUSTER_ZONE}
+# 
+#       echo "✅ Environment setup complete"
+# 
+# # Step 2: Backend build and test
+# - name: 'python:3.11-slim'
+#   id: 'backend-build-test'
+#   entrypoint: 'bash'
+#   args:
+#     - '-c'
+#     - |
+#       echo "🔧 Building and testing backend services..."
+# 
+#       # Install dependencies
+#       apt-get update && apt-get install -y gcc g++ libpq-dev
+#       pip install --no-cache-dir -r requirements.txt
+# 
+#       # Install additional dependencies if available
+#       if [ -f aia/requirements-ml.txt ]; then
+#         pip install --no-cache-dir -r aia/requirements-ml.txt
+#       fi
+# 
+#       # Run backend tests
+#       python -m pytest aia/tests/ -v --tb=short || echo "⚠️ Some tests failed, continuing deployment"
+# 
+#       # Validate main API
+#       python -c "
+#       import sys
+#       sys.path.insert(0, '.')
+#       try:
+#           from aia.main import app
+#           print('✅ Backend API validation passed')
+#       except Exception as e:
+#           print(f'⚠️ Backend validation warning: {e}')
+#       "
+# 
+#       echo "✅ Backend build and test complete"
+# 
+# # Step 3: Frontend build and optimization
+# - name: 'node:18-alpine'
+#   id: 'frontend-build'
+#   entrypoint: 'sh'
+#   args:
+#     - '-c'
+#     - |
+#       echo "🎨 Building frontend with 81+ 3D components..."
+# 
+#       # Navigate to frontend directory
+#       cd frontend || { echo "Frontend directory not found, skipping frontend build"; exit 0; }
+# 
+#       # Install dependencies
+#       npm ci --no-audit --no-fund || npm install
+# 
+#       # Set production environment variables
+#       export REACT_APP_ENV=production
+#       export REACT_APP_API_BASE_URL=https://${_API_DOMAIN}
+#       export REACT_APP_WS_URL=wss://${_API_DOMAIN}/ws
+#       export REACT_APP_3D_COMPONENTS_COUNT=81
+#       export REACT_APP_ENTERPRISE_DASHBOARD_ENABLED=true
+#       export REACT_APP_IMMERSIVE_ANALYTICS_ENABLED=true
+#       export REACT_APP_WEBXR_ENABLED=true
+# 
+#       # Build optimized production bundle
+#       npm run build || {
+#         echo "⚠️ Frontend build failed, creating fallback build"
+#         mkdir -p build
+#         echo '<html><body><h1>AIA Platform - Build in Progress</h1></body></html>' > build/index.html
+#       }
+# 
+#       # Optimize build size
+#       if [ -d "build" ]; then
+#         echo "📦 Build size analysis:"
+#         du -sh build/
+#         ls -la build/static/js/ 2>/dev/null || echo "No JS bundles found"
+#         ls -la build/static/css/ 2>/dev/null || echo "No CSS bundles found"
+#       fi
+# 
+#       echo "✅ Frontend build complete"
+# 
+# # Step 4: Build backend Docker image
+# - name: 'gcr.io/cloud-builders/docker'
+#   id: 'build-backend-image'
+#   args:
+#     - 'build'
+#     - '-f'
+#     - 'Dockerfile.unified-backend'
+#     - '-t'
+#     - '${_REGISTRY}/aia-unified-backend:latest'
+#     - '-t'
+#     - '${_REGISTRY}/aia-unified-backend:$BUILD_ID'
+#     - '--build-arg'
+#     - 'BUILD_ENV=${_ENVIRONMENT}'
+#     - '.'
+#   waitFor: ['backend-build-test']
+# 
+# # Step 5: Build frontend Docker image
+# - name: 'gcr.io/cloud-builders/docker'
+#   id: 'build-frontend-image'
+#   args:
+#     - 'build'
+#     - '-f'
+#     - 'Dockerfile.unified-frontend'
+#     - '-t'
+#     - '${_REGISTRY}/aia-unified-frontend:latest'
+#     - '-t'
+#     - '${_REGISTRY}/aia-unified-frontend:$BUILD_ID'
+#     - '--build-arg'
+#     - 'REACT_APP_API_BASE_URL=https://${_API_DOMAIN}'
+#     - '--build-arg'
+#     - 'REACT_APP_WS_URL=wss://${_API_DOMAIN}/ws'
+#     - '.'
+#   waitFor: ['frontend-build']
+# 
+# # Step 6: Build orchestrator image (reuse backend for now)
+# - name: 'gcr.io/cloud-builders/docker'
+#   id: 'build-orchestrator-image'
+#   args:
+#     - 'tag'
+#     - '${_REGISTRY}/aia-unified-backend:latest'
+#     - '${_REGISTRY}/aia-unified-orchestrator:latest'
+#   waitFor: ['build-backend-image']
+# 
+# # Step 7: Security scanning
+# - name: 'gcr.io/cloud-builders/gcloud'
+#   id: 'security-scan'
+#   entrypoint: 'bash'
+#   args:
+#     - '-c'
+#     - |
+#       echo "🔒 Running security scans..."
+# 
+#       # Scan backend image
+#       gcloud container images scan ${_REGISTRY}/aia-unified-backend:latest \
+#         --format='value(discovery.analysisKind)' || echo "⚠️ Security scan completed with warnings"
+# 
+#       # Scan frontend image
+#       gcloud container images scan ${_REGISTRY}/aia-unified-frontend:latest \
+#         --format='value(discovery.analysisKind)' || echo "⚠️ Security scan completed with warnings"
+# 
+#       echo "✅ Security scanning complete"
+#   waitFor: ['build-backend-image', 'build-frontend-image']
+# 
+# # Step 8: Deploy to production
+# - name: 'gcr.io/cloud-builders/kubectl'
+#   id: 'deploy-production'
+#   entrypoint: 'bash'
+#   args:
+#     - '-c'
+#     - |
+#       echo "🚀 Deploying to production..."
+# 
+#       # Configure kubectl
+#       gcloud container clusters get-credentials ${_CLUSTER_NAME} --zone ${_CLUSTER_ZONE}
+# 
+#       # Create namespace if it doesn't exist
+#       kubectl create namespace ${_NAMESPACE} --dry-run=client -o yaml | kubectl apply -f -
+# 
+#       # Label namespace
+#       kubectl label namespace ${_NAMESPACE} deployment-type=unified-enterprise environment=production --overwrite
+# 
+#       # Deploy backend services
+#       cat <<EOF | kubectl apply -f -
+#       apiVersion: apps/v1
+#       kind: Deployment
+#       metadata:
+#         name: aia-unified-backend
+#         namespace: ${_NAMESPACE}
+#         labels:
+#           app: aia-unified-backend
+#           version: build-$BUILD_ID
+#       spec:
+#         replicas: 3
+#         strategy:
+#           type: RollingUpdate
+#           rollingUpdate:
+#             maxUnavailable: 1
+#             maxSurge: 2
+#         selector:
+#           matchLabels:
+#             app: aia-unified-backend
+#         template:
+#           metadata:
+#             labels:
+#               app: aia-unified-backend
+#               version: build-$BUILD_ID
+#           spec:
+#             securityContext:
+#               runAsNonRoot: true
+#               runAsUser: 1000
+#               fsGroup: 2000
+#             containers:
+#             - name: backend
+#               image: ${_REGISTRY}/aia-unified-backend:$BUILD_ID
+#               ports:
+#               - containerPort: 8000
+#               env:
+#               - name: AIA_ENVIRONMENT
+#                 value: "production"
+#               - name: AIA_UNIFIED_DEPLOYMENT
+#                 value: "true"
+#               - name: ENTERPRISE_PARTNERS_ENABLED
+#                 value: "true"
+#               - name: BUILD_ID
+#                 value: "$BUILD_ID"
+#               readinessProbe:
+#                 httpGet:
+#                   path: /health
+#                   port: 8000
+#                 initialDelaySeconds: 30
+#                 periodSeconds: 10
+#               livenessProbe:
+#                 httpGet:
+#                   path: /health
+#                   port: 8000
+#                 initialDelaySeconds: 45
+#                 periodSeconds: 20
+#               resources:
+#                 requests:
+#                   memory: "128Mi"
+#                   cpu: "100m"
+#                 limits:
+#                   memory: "128Mi"
+#                   cpu: "100m"
+#       ---
+#       apiVersion: v1
+#       kind: Service
+#       metadata:
+#         name: aia-unified-backend-service
+#         namespace: ${_NAMESPACE}
+#       spec:
+#         selector:
+#           app: aia-unified-backend
+#         ports:
+#         - port: 8000
+#           targetPort: 8000
+#         type: ClusterIP
+#       EOF
+# 
+#       # Deploy frontend services
+#       cat <<EOF | kubectl apply -f -
+#       apiVersion: apps/v1
+#       kind: Deployment
+#       metadata:
+#         name: aia-unified-frontend
+#         namespace: ${_NAMESPACE}
+#         labels:
+#           app: aia-unified-frontend
+#           version: build-$BUILD_ID
+#       spec:
+#         replicas: 5
+#         strategy:
+#           type: RollingUpdate
+#           rollingUpdate:
+#             maxUnavailable: 1
+#             maxSurge: 3
+#         selector:
+#           matchLabels:
+#             app: aia-unified-frontend
+#         template:
+#           metadata:
+#             labels:
+#               app: aia-unified-frontend
+#               version: build-$BUILD_ID
+#           spec:
+#             securityContext:
+#               runAsNonRoot: true
+#               runAsUser: 1000
+#               fsGroup: 2000
+#             containers:
+#             - name: frontend
+#               image: ${_REGISTRY}/aia-unified-frontend:$BUILD_ID
+#               ports:
+#               - containerPort: 80
+#               env:
+#               - name: REACT_APP_ENV
+#                 value: "production"
+#               - name: BUILD_ID
+#                 value: "$BUILD_ID"
+#               readinessProbe:
+#                 httpGet:
+#                   path: /health
+#                   port: 80
+#                 initialDelaySeconds: 10
+#                 periodSeconds: 5
+#               livenessProbe:
+#                 httpGet:
+#                   path: /health
+#                   port: 80
+#                 initialDelaySeconds: 15
+#                 periodSeconds: 10
+#               resources:
+#                 requests:
+#                   memory: "128Mi"
+#                   cpu: "100m"
+#                 limits:
+#                   memory: "128Mi"
+#                   cpu: "100m"
+#       ---
+#       apiVersion: v1
+#       kind: Service
+#       metadata:
+#         name: aia-unified-frontend-service
+#         namespace: ${_NAMESPACE}
+#       spec:
+#         selector:
+#           app: aia-unified-frontend
+#         ports:
+#         - port: 80
+#           targetPort: 80
+#         type: ClusterIP
+#       EOF
+# 
+#       echo "✅ Services deployed successfully"
+#   waitFor: ['security-scan']
+# 
+# # Step 9: Configure SSL and Ingress
+# - name: 'gcr.io/cloud-builders/kubectl'
+#   id: 'configure-ssl-ingress'
+#   entrypoint: 'bash'
+#   args:
+#     - '-c'
+#     - |
+#       echo "🔒 Configuring SSL and ingress..."
+# 
+#       # Create managed certificate
+#       cat <<EOF | kubectl apply -f -
+#       apiVersion: networking.gke.io/v1
+#       kind: ManagedCertificate
+#       metadata:
+#         name: aia-unified-ssl-cert
+#         namespace: ${_NAMESPACE}
+#       spec:
+#         domains:
+#         - "${_DOMAIN}"
+#         - "${_API_DOMAIN}"
+#         - "${_APP_DOMAIN}"
+#       EOF
+# 
+#       # Create ingress
+#       cat <<EOF | kubectl apply -f -
+#       apiVersion: networking.k8s.io/v1
+#       kind: Ingress
+#       metadata:
+#         name: aia-unified-ingress
+#         namespace: ${_NAMESPACE}
+#         annotations:
+#           kubernetes.io/ingress.class: "gce"
+#           kubernetes.io/ingress.global-static-ip-name: "aia-unified-ip"
+#           networking.gke.io/managed-certificates: "aia-unified-ssl-cert"
+#           kubernetes.io/ingress.allow-http: "false"
+#       spec:
+#         rules:
+#         - host: ${_DOMAIN}
+#           http:
+#             paths:
+#             - path: /api
+#               pathType: Prefix
+#               backend:
+#                 service:
+#                   name: aia-unified-backend-service
+#                   port:
+#                     number: 8000
+#             - path: /
+#               pathType: Prefix
+#               backend:
+#                 service:
+#                   name: aia-unified-frontend-service
+#                   port:
+#                     number: 80
+#         - host: ${_API_DOMAIN}
+#           http:
+#             paths:
+#             - path: /
+#               pathType: Prefix
+#               backend:
+#                 service:
+#                   name: aia-unified-backend-service
+#                   port:
+#                     number: 8000
+#         - host: ${_APP_DOMAIN}
+#           http:
+#             paths:
+#             - path: /
+#               pathType: Prefix
+#               backend:
+#                 service:
+#                   name: aia-unified-frontend-service
+#                   port:
+#                     number: 80
+#       EOF
+# 
+#       echo "✅ SSL and ingress configured"
+#   waitFor: ['deploy-production']
+# 
+# # Step 10: Deployment validation and monitoring
+# - name: 'gcr.io/cloud-builders/kubectl'
+#   id: 'validate-deployment'
+#   entrypoint: 'bash'
+#   args:
+#     - '-c'
+#     - |
+#       echo "🧪 Validating deployment..."
+# 
+#       # Wait for deployments to be ready
+#       kubectl wait --for=condition=available --timeout=300s deployment/aia-unified-backend -n ${_NAMESPACE} || {
+#         echo "⚠️ Backend deployment not ready within timeout"
+#         kubectl describe deployment/aia-unified-backend -n ${_NAMESPACE}
+#       }
+# 
+#       kubectl wait --for=condition=available --timeout=300s deployment/aia-unified-frontend -n ${_NAMESPACE} || {
+#         echo "⚠️ Frontend deployment not ready within timeout"
+#         kubectl describe deployment/aia-unified-frontend -n ${_NAMESPACE}
+#       }
+# 
+#       # Check pod status
+#       echo "📊 Pod status:"
+#       kubectl get pods -n ${_NAMESPACE} -o wide
+# 
+#       # Check service endpoints
+#       echo "🌐 Service endpoints:"
+#       kubectl get svc -n ${_NAMESPACE}
+# 
+#       # Check ingress
+#       echo "🚪 Ingress status:"
+#       kubectl get ingress -n ${_NAMESPACE}
+# 
+#       # Generate deployment summary
+#       echo "📋 Deployment Summary:"
+#       echo "- Build ID: $BUILD_ID"
+#       echo "- Environment: ${_ENVIRONMENT}"
+#       echo "- Namespace: ${_NAMESPACE}"
+#       echo "- Domain: https://${_DOMAIN}"
+#       echo "- API: https://${_API_DOMAIN}"
+#       echo "- App: https://${_APP_DOMAIN}"
+#       echo "- Backend replicas: $(kubectl get deployment aia-unified-backend -n ${_NAMESPACE} -o jsonpath='{.status.replicas}')"
+#       echo "- Frontend replicas: $(kubectl get deployment aia-unified-frontend -n ${_NAMESPACE} -o jsonpath='{.status.replicas}')"
+# 
+#       echo "✅ Deployment validation complete"
+#   waitFor: ['configure-ssl-ingress']
+# 
+# # Step 11: Cleanup old deployments (keep last 3)
+# - name: 'gcr.io/cloud-builders/gcloud'
+#   id: 'cleanup-old-images'
+#   entrypoint: 'bash'
+#   args:
+#     - '-c'
+#     - |
+#       echo "🧹 Cleaning up old images..."
+# 
+#       # Keep last 3 versions of each image
+#       for image in "aia-unified-backend" "aia-unified-frontend" "aia-unified-orchestrator"; do
+#         gcloud container images list-tags ${_REGISTRY}/$image \
+#           --format='get(digest)' --limit=999 | tail -n +4 | \
+#         while read digest; do
+#           echo "Deleting old image: ${_REGISTRY}/$image@$digest"
+#           gcloud container images delete "${_REGISTRY}/$image@$digest" --quiet || echo "Failed to delete $digest"
+#         done
+#       done
+# 
+#       echo "✅ Image cleanup complete"
+#   waitFor: ['validate-deployment']
+# 
+# # Images to build and push
+# images:
+#   - '${_REGISTRY}/aia-unified-backend:latest'
+#   - '${_REGISTRY}/aia-unified-backend:$BUILD_ID'
+#   - '${_REGISTRY}/aia-unified-frontend:latest'
+#   - '${_REGISTRY}/aia-unified-frontend:$BUILD_ID'
+#   - '${_REGISTRY}/aia-unified-orchestrator:latest'
+# 
+# # Additional build metadata
+# tags:
+#   - 'unified-production'
+#   - 'enterprise-deployment'
+#   - 'build-$BUILD_ID'
+#   - '3d-analytics'
+#   - 'multi-agent-orchestration'

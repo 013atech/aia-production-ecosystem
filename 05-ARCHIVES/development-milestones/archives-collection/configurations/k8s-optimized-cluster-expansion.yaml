@@ -1,0 +1,116 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cluster-optimization-config
+  namespace: kube-system
+data:
+  optimization_strategy: |
+    # INTELLIGENT CLUSTER OPTIMIZATION STRATEGY
+    # Target: Reduce CPU overload from 102% to 65-70% optimal range
+    # Method: Redistribute workloads and implement smart scheduling
+
+    # Current State: 8 nodes × 4 CPUs = 32 CPUs (quota limit)
+    # 4 nodes at 102% CPU → redistribute to all 8 nodes
+
+    priorities:
+      - high_cpu_workloads: "analytics, ml-engine, neural-intelligence"
+      - medium_cpu_workloads: "api-services, enterprise-integrations"
+      - low_cpu_workloads: "monitoring, logging"
+
+    scheduling_rules:
+      - spread_ml_workloads: true
+      - avoid_cpu_hotspots: true
+      - enable_vertical_pod_autoscaling: true
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: intelligent-workload-scaler
+  namespace: aia-production
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: aia-backend
+  minReplicas: 3
+  maxReplicas: 12
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 65
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 70
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 60
+      policies:
+      - type: Percent
+        value: 50
+        periodSeconds: 60
+    scaleDown:
+      stabilizationWindowSeconds: 120
+      policies:
+      - type: Percent
+        value: 25
+        periodSeconds: 120
+---
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: optimized-resource-allocation
+  namespace: aia-production
+spec:
+  hard:
+    requests.cpu: "20"
+    requests.memory: "40Gi"
+    limits.cpu: "30"
+    limits.memory: "60Gi"
+    persistentvolumeclaims: "10"
+    count/deployments.apps: "20"
+    count/services: "15"
+    count/ingress.networking.k8s.io: "5"
+---
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: high-performance-workloads
+value: 1000
+globalDefault: false
+description: "Priority class for compute-intensive analytics workloads"
+---
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: standard-workloads
+value: 500
+globalDefault: true
+description: "Default priority for standard application workloads"
+---
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: compute-optimization-limits
+  namespace: aia-production
+spec:
+  limits:
+  - default:
+      cpu: "1"
+      memory: "2Gi"
+    defaultRequest:
+      cpu: "0.5"
+      memory: "1Gi"
+    type: Container
+  - max:
+      cpu: "4"
+      memory: "8Gi"
+    min:
+      cpu: "0.1"
+      memory: "128Mi"
+    type: Container

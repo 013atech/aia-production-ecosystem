@@ -1,0 +1,488 @@
+# AIA Full Microservices Architecture - Production Deployment
+# Enhanced with Cloud SQL, Redis, monitoring, and enterprise integrations
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: aia-production
+  labels:
+    app: aia-system
+    environment: production
+
+---
+# ConfigMap for application configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: aia-config
+  namespace: aia-production
+data:
+  DATABASE_HOST: "34.69.228.15"
+  REDIS_HOST: "10.40.193.91"
+  ENVIRONMENT: "production"
+  LOG_LEVEL: "INFO"
+  CORS_ORIGINS: "https://013a.tech,https://www.013a.tech"
+  API_VERSION: "v1"
+
+---
+# Secret for database credentials
+apiVersion: v1
+kind: Secret
+metadata:
+  name: aia-secrets
+  namespace: aia-production
+type: Opaque
+stringData:
+  DATABASE_PASSWORD: "your-secure-password"
+  JWT_SECRET: "your-jwt-secret"
+  STRIPE_SECRET_KEY: "[STRIPE_KEY_PLACEHOLDER]-stripe-key"
+  OPENAI_API_KEY: "your-openai-key"
+
+---
+# Frontend Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-frontend
+  namespace: aia-production
+  labels:
+    app: aia-frontend
+    tier: frontend
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: aia-frontend
+  template:
+    metadata:
+      labels:
+        app: aia-frontend
+        tier: frontend
+    spec:
+      containers:
+      - name: frontend
+        image: us-central1-docker.pkg.dev/aia-system-prod-1759055445/aia-repo/aia-frontend:latest
+        ports:
+        - containerPort: 80
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 10
+          periodSeconds: 5
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 30
+          periodSeconds: 10
+
+---
+# Backend Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-backend
+  namespace: aia-production
+  labels:
+    app: aia-backend
+    tier: backend
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: aia-backend
+  template:
+    metadata:
+      labels:
+        app: aia-backend
+        tier: backend
+    spec:
+      containers:
+      - name: backend
+        image: us-central1-docker.pkg.dev/aia-system-prod-1759055445/aia-repo/aia-backend:latest
+        ports:
+        - containerPort: 8000
+        env:
+        - name: DATABASE_URL
+          value: "postgresql://postgres:$(DATABASE_PASSWORD)@$(DATABASE_HOST):5432/aia_main"
+        - name: REDIS_URL
+          value: "redis://$(REDIS_HOST):6379"
+        - name: DATABASE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: aia-secrets
+              key: DATABASE_PASSWORD
+        - name: DATABASE_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: aia-config
+              key: DATABASE_HOST
+        - name: REDIS_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: aia-config
+              key: REDIS_HOST
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 15
+          periodSeconds: 5
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+
+---
+# ML Processor Microservice
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-ml-processor
+  namespace: aia-production
+  labels:
+    app: aia-ml-processor
+    tier: ml
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: aia-ml-processor
+  template:
+    metadata:
+      labels:
+        app: aia-ml-processor
+        tier: ml
+    spec:
+      containers:
+      - name: ml-processor
+        image: us-central1-docker.pkg.dev/aia-system-prod-1759055445/aia-repo/aia-ml-processor:latest
+        ports:
+        - containerPort: 8001
+        env:
+        - name: DATABASE_URL
+          value: "postgresql://postgres:$(DATABASE_PASSWORD)@$(DATABASE_HOST):5432/aia_analytics"
+        - name: REDIS_URL
+          value: "redis://$(REDIS_HOST):6379"
+        envFrom:
+        - configMapRef:
+            name: aia-config
+        - secretRef:
+            name: aia-secrets
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+
+---
+# Payment Processor Microservice
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-payment-processor
+  namespace: aia-production
+  labels:
+    app: aia-payment-processor
+    tier: payment
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: aia-payment-processor
+  template:
+    metadata:
+      labels:
+        app: aia-payment-processor
+        tier: payment
+    spec:
+      containers:
+      - name: payment-processor
+        image: us-central1-docker.pkg.dev/aia-system-prod-1759055445/aia-repo/aia-payment-processor:latest
+        ports:
+        - containerPort: 8002
+        env:
+        - name: DATABASE_URL
+          value: "postgresql://postgres:$(DATABASE_PASSWORD)@$(DATABASE_HOST):5432/aia_main"
+        - name: STRIPE_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: aia-secrets
+              key: STRIPE_SECRET_KEY
+        envFrom:
+        - configMapRef:
+            name: aia-config
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+
+---
+# Enterprise Partners Microservice
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-enterprise-partners
+  namespace: aia-production
+  labels:
+    app: aia-enterprise-partners
+    tier: enterprise
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: aia-enterprise-partners
+  template:
+    metadata:
+      labels:
+        app: aia-enterprise-partners
+        tier: enterprise
+    spec:
+      containers:
+      - name: enterprise-partners
+        image: us-central1-docker.pkg.dev/aia-system-prod-1759055445/aia-repo/aia-enterprise-partners:latest
+        ports:
+        - containerPort: 8003
+        env:
+        - name: DATABASE_URL
+          value: "postgresql://postgres:$(DATABASE_PASSWORD)@$(DATABASE_HOST):5432/aia_main"
+        - name: REDIS_URL
+          value: "redis://$(REDIS_HOST):6379"
+        envFrom:
+        - configMapRef:
+            name: aia-config
+        - secretRef:
+            name: aia-secrets
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+
+---
+# Security Service Microservice
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-security-service
+  namespace: aia-production
+  labels:
+    app: aia-security-service
+    tier: security
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: aia-security-service
+  template:
+    metadata:
+      labels:
+        app: aia-security-service
+        tier: security
+    spec:
+      containers:
+      - name: security-service
+        image: us-central1-docker.pkg.dev/aia-system-prod-1759055445/aia-repo/aia-security-service:latest
+        ports:
+        - containerPort: 8004
+        env:
+        - name: DATABASE_URL
+          value: "postgresql://postgres:$(DATABASE_PASSWORD)@$(DATABASE_HOST):5432/aia_security"
+        - name: REDIS_URL
+          value: "redis://$(REDIS_HOST):6379"
+        envFrom:
+        - configMapRef:
+            name: aia-config
+        - secretRef:
+            name: aia-secrets
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+
+---
+# Subscription Manager Microservice
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-subscription-manager
+  namespace: aia-production
+  labels:
+    app: aia-subscription-manager
+    tier: subscription
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: aia-subscription-manager
+  template:
+    metadata:
+      labels:
+        app: aia-subscription-manager
+        tier: subscription
+    spec:
+      containers:
+      - name: subscription-manager
+        image: us-central1-docker.pkg.dev/aia-system-prod-1759055445/aia-repo/aia-subscription-manager:latest
+        ports:
+        - containerPort: 8005
+        env:
+        - name: DATABASE_URL
+          value: "postgresql://postgres:$(DATABASE_PASSWORD)@$(DATABASE_HOST):5432/aia_main"
+        - name: STRIPE_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: aia-secrets
+              key: STRIPE_SECRET_KEY
+        envFrom:
+        - configMapRef:
+            name: aia-config
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+
+---
+# Services
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-frontend-service
+  namespace: aia-production
+spec:
+  selector:
+    app: aia-frontend
+  ports:
+  - port: 80
+    targetPort: 80
+  type: ClusterIP
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-backend-service
+  namespace: aia-production
+spec:
+  selector:
+    app: aia-backend
+  ports:
+  - port: 8000
+    targetPort: 8000
+  type: ClusterIP
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-ml-processor-service
+  namespace: aia-production
+spec:
+  selector:
+    app: aia-ml-processor
+  ports:
+  - port: 8001
+    targetPort: 8001
+  type: ClusterIP
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-payment-processor-service
+  namespace: aia-production
+spec:
+  selector:
+    app: aia-payment-processor
+  ports:
+  - port: 8002
+    targetPort: 8002
+  type: ClusterIP
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-enterprise-partners-service
+  namespace: aia-production
+spec:
+  selector:
+    app: aia-enterprise-partners
+  ports:
+  - port: 8003
+    targetPort: 8003
+  type: ClusterIP
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-security-service
+  namespace: aia-production
+spec:
+  selector:
+    app: aia-security-service
+  ports:
+  - port: 8004
+    targetPort: 8004
+  type: ClusterIP
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-subscription-manager-service
+  namespace: aia-production
+spec:
+  selector:
+    app: aia-subscription-manager
+  ports:
+  - port: 8005
+    targetPort: 8005
+  type: ClusterIP
+
+---
+# Load Balancer Service for Frontend
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-frontend-lb
+  namespace: aia-production
+spec:
+  selector:
+    app: aia-frontend
+  ports:
+  - port: 80
+    targetPort: 80
+  type: NodePort
+  loadBalancerIP: 34.120.153.135

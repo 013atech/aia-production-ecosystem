@@ -1,0 +1,24 @@
+{
+  "port": 8443,
+  "ssl_enabled": true,
+  "authentication": {
+    "oauth2_enabled": true,
+    "mfa_required": true,
+    "jwt_expiry": "1_hour",
+    "session_timeout": "30_minutes"
+  },
+  "security": {
+    "ip_whitelist": [
+      "investor_only"
+    ],
+    "rate_limiting": "strict",
+    "request_validation": "comprehensive",
+    "audit_logging": "full"
+  },
+  "access_control": {
+    "demo_mode": "sandboxed",
+    "data_access": "read_only",
+    "api_access": "limited",
+    "download_restrictions": "enabled"
+  }
+}

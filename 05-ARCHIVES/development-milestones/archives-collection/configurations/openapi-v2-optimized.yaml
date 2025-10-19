@@ -1,0 +1,527 @@
+openapi: 3.1.0
+info:
+  title: "AIA Enterprise API v2.0"
+  version: "2.0.0"
+  description: |
+    Optimized enterprise-grade API for AIA Multi-Agent System
+    Processed via AIA backend with cryptography agent coordination
+  contact:
+    name: "013a Analytics"
+    url: "https://013a.tech"
+    email: "api@013a.tech"
+  license:
+    name: "Enterprise License"
+    url: "https://013a.tech/license"
+
+servers:
+  - url: "https://api.013a.tech"
+    description: "Production API Server"
+  - url: "https://analytics.013a.tech"
+    description: "Analytics & Intelligence API"
+  - url: "https://enterprise.013a.tech"
+    description: "Enterprise Services API"
+  - url: "http://localhost:8000"
+    description: "Local Development Server"
+
+paths:
+  # TIER 1: CORE SYSTEM
+  /health:
+    get:
+      tags: ["System"]
+      summary: "System Health Check"
+      description: "Quick health status for load balancers"
+      responses:
+        '200':
+          description: "System is healthy"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: ["healthy", "degraded", "unhealthy"]
+                  timestamp:
+                    type: string
+                    format: date-time
+
+  /health/detailed:
+    get:
+      tags: ["System"]
+      summary: "Detailed Health Check"
+      description: "Comprehensive health with dependency status"
+      responses:
+        '200':
+          description: "Detailed health information"
+
+  # TIER 2: KNOWLEDGE & INTELLIGENCE
+  /api/v2/knowledge:
+    get:
+      tags: ["Knowledge"]
+      summary: "List Knowledge Atoms"
+      description: "Retrieve paginated list of knowledge atoms"
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+            maximum: 1000
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+        - name: filter
+          in: query
+          schema:
+            type: string
+          description: "Filter criteria (e.g., type:semantic)"
+      responses:
+        '200':
+          description: "List of knowledge atoms"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/KnowledgeAtom'
+                  meta:
+                    $ref: '#/components/schemas/PaginationMeta'
+
+    post:
+      tags: ["Knowledge"]
+      summary: "Create Knowledge Atom"
+      description: "Create new knowledge atom in the graph"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateKnowledgeAtom'
+      responses:
+        '201':
+          description: "Knowledge atom created successfully"
+
+  /api/v2/knowledge/query:
+    post:
+      tags: ["Knowledge"]
+      summary: "Intelligent Query Processing"
+      description: "Process complex queries through knowledge graph"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                query:
+                  type: string
+                context:
+                  type: string
+                enable_gpu_acceleration:
+                  type: boolean
+                  default: true
+      responses:
+        '200':
+          description: "Query processed successfully"
+
+  /api/v2/neural/process:
+    post:
+      tags: ["Neural Intelligence"]
+      summary: "Process AI Request"
+      description: "Submit request for neural intelligence processing"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                prompt:
+                  type: string
+                model_id:
+                  type: string
+                parameters:
+                  type: object
+      responses:
+        '200':
+          description: "AI processing completed"
+
+  # TIER 3: BUSINESS & ANALYTICS
+  /api/v2/analytics/dashboards:
+    get:
+      tags: ["Analytics"]
+      summary: "List Dashboards"
+      description: "Retrieve available analytics dashboards"
+      parameters:
+        - name: category
+          in: query
+          schema:
+            type: string
+            enum: ["enterprise", "financial", "operational", "ml"]
+      responses:
+        '200':
+          description: "List of dashboards"
+
+    post:
+      tags: ["Analytics"]
+      summary: "Create Dashboard"
+      description: "Create new analytics dashboard"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateDashboard'
+      responses:
+        '201':
+          description: "Dashboard created successfully"
+
+  /api/v2/enterprises:
+    get:
+      tags: ["Enterprise"]
+      summary: "List Enterprise Clients"
+      description: "Retrieve enterprise client list with filtering"
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: ["active", "pending", "suspended"]
+        - name: tier
+          in: query
+          schema:
+            type: string
+            enum: ["fortune500", "midmarket", "startup"]
+      responses:
+        '200':
+          description: "List of enterprise clients"
+
+    post:
+      tags: ["Enterprise"]
+      summary: "Onboard Enterprise Client"
+      description: "Create new enterprise client account"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateEnterprise'
+      responses:
+        '201':
+          description: "Enterprise onboarded successfully"
+
+  # TIER 4: USER & ACCESS MANAGEMENT
+  /api/v2/users:
+    get:
+      tags: ["Users"]
+      summary: "List Users"
+      description: "Retrieve user list with role filtering"
+      parameters:
+        - name: role
+          in: query
+          schema:
+            type: string
+            enum: ["admin", "enterprise", "analyst", "viewer"]
+        - name: active
+          in: query
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: "List of users"
+
+    post:
+      tags: ["Users"]
+      summary: "Create User"
+      description: "Create new user account"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUser'
+      responses:
+        '201':
+          description: "User created successfully"
+
+  /api/v2/users/{id}/permissions:
+    get:
+      tags: ["Users"]
+      summary: "Get User Permissions"
+      description: "Retrieve user's current permissions"
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: "User permissions"
+
+    put:
+      tags: ["Users"]
+      summary: "Update User Permissions"
+      description: "Update user's permissions and roles"
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePermissions'
+      responses:
+        '200':
+          description: "Permissions updated successfully"
+
+  # TIER 5: AUDIT & COMPLIANCE
+  /api/v2/audit/logs:
+    get:
+      tags: ["Audit"]
+      summary: "Audit Trail"
+      description: "Comprehensive audit trail with filtering"
+      parameters:
+        - name: user_id
+          in: query
+          schema:
+            type: string
+        - name: action
+          in: query
+          schema:
+            type: string
+        - name: start_date
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: end_date
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: "Audit log entries"
+
+  /api/v2/audit/compliance:
+    get:
+      tags: ["Audit"]
+      summary: "Compliance Status"
+      description: "Current compliance status for all frameworks"
+      responses:
+        '200':
+          description: "Compliance status report"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  gdpr_compliance:
+                    type: boolean
+                  sox_compliance:
+                    type: boolean
+                  hipaa_compliance:
+                    type: boolean
+                  last_audit:
+                    type: string
+                    format: date-time
+
+  # TIER 6: WEBHOOKS & INTEGRATION
+  /api/v2/webhooks:
+    get:
+      tags: ["Integration"]
+      summary: "List Webhooks"
+      description: "Retrieve configured webhooks"
+      responses:
+        '200':
+          description: "List of webhooks"
+
+    post:
+      tags: ["Integration"]
+      summary: "Create Webhook"
+      description: "Configure new webhook endpoint"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateWebhook'
+      responses:
+        '201':
+          description: "Webhook created successfully"
+
+components:
+  schemas:
+    KnowledgeAtom:
+      type: object
+      properties:
+        id:
+          type: string
+        content:
+          type: string
+        semantic_summary:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    PaginationMeta:
+      type: object
+      properties:
+        pagination:
+          type: object
+          properties:
+            limit:
+              type: integer
+            offset:
+              type: integer
+            total:
+              type: integer
+            has_more:
+              type: boolean
+        request_id:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        execution_time:
+          type: string
+
+    CreateKnowledgeAtom:
+      type: object
+      required: ["content"]
+      properties:
+        content:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        metadata:
+          type: object
+
+    CreateDashboard:
+      type: object
+      required: ["name", "category"]
+      properties:
+        name:
+          type: string
+        category:
+          type: string
+          enum: ["enterprise", "financial", "operational", "ml"]
+        description:
+          type: string
+        widgets:
+          type: array
+          items:
+            type: object
+
+    CreateEnterprise:
+      type: object
+      required: ["name", "tier"]
+      properties:
+        name:
+          type: string
+        tier:
+          type: string
+          enum: ["fortune500", "midmarket", "startup"]
+        industry:
+          type: string
+        contact_email:
+          type: string
+          format: email
+        integration_requirements:
+          type: array
+          items:
+            type: string
+
+    CreateUser:
+      type: object
+      required: ["email", "role"]
+      properties:
+        email:
+          type: string
+          format: email
+        role:
+          type: string
+          enum: ["admin", "enterprise", "analyst", "viewer"]
+        name:
+          type: string
+        department:
+          type: string
+
+    UpdatePermissions:
+      type: object
+      properties:
+        roles:
+          type: array
+          items:
+            type: string
+        permissions:
+          type: array
+          items:
+            type: string
+
+    CreateWebhook:
+      type: object
+      required: ["url", "events"]
+      properties:
+        url:
+          type: string
+          format: uri
+        events:
+          type: array
+          items:
+            type: string
+        secret:
+          type: string
+        active:
+          type: boolean
+          default: true
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    EnterpriseAuth:
+      type: apiKey
+      in: header
+      name: X-Enterprise-Key
+
+security:
+  - BearerAuth: []
+  - EnterpriseAuth: []
+
+tags:
+  - name: "System"
+    description: "Core system operations"
+  - name: "Knowledge"
+    description: "Knowledge graph operations"
+  - name: "Neural Intelligence"
+    description: "AI and neural processing"
+  - name: "Analytics"
+    description: "Business analytics and insights"
+  - name: "Enterprise"
+    description: "Enterprise client management"
+  - name: "Users"
+    description: "User and access management"
+  - name: "Audit"
+    description: "Audit and compliance"
+  - name: "Integration"
+    description: "External integrations and webhooks"

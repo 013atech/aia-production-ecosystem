@@ -1,0 +1,334 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: predictive-scaling-v3
+  namespace: aia-production-v3
+  labels:
+    app: predictive-scaling
+    version: v3
+    component: controller
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: predictive-scaling
+      version: v3
+      component: controller
+  template:
+    metadata:
+      labels:
+        app: predictive-scaling
+        version: v3
+        component: controller
+    spec:
+      serviceAccountName: aia-scaling-service-account
+      containers:
+      - name: predictive-scaling
+        image: gcr.io/a-467519/aia-api:v2.1.0
+        command:
+        - python
+        - -c
+        - |
+          import os
+          import time
+          import json
+          import redis
+          import logging
+          import requests
+          from kubernetes import client, config
+          from datetime import datetime, timedelta
+          import numpy as np
+          from sklearn.linear_model import LinearRegression
+
+          # Configure logging
+          logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+          logger = logging.getLogger(__name__)
+
+          # Configuration
+          NAMESPACE = os.getenv('NAMESPACE', 'aia-production-v3')
+          TARGET_DEPLOYMENT = os.getenv('TARGET_DEPLOYMENT', 'aia-backend-v3')
+          MIN_REPLICAS = int(os.getenv('MIN_REPLICAS', '3'))
+          MAX_REPLICAS = int(os.getenv('MAX_REPLICAS', '20'))
+          PREDICTION_INTERVAL = int(os.getenv('PREDICTION_INTERVAL', '60'))
+          CPU_TARGET_PERCENTAGE = int(os.getenv('CPU_TARGET_PERCENTAGE', '70'))
+          MEMORY_TARGET_PERCENTAGE = int(os.getenv('MEMORY_TARGET_PERCENTAGE', '80'))
+
+          # Redis connection for metrics storage
+          redis_client = redis.Redis(
+              host=os.getenv('REDIS_HOST', 'redis-service.aia-databases.svc.cluster.local'),
+              port=int(os.getenv('REDIS_PORT', '6379')),
+              password=os.getenv('REDIS_PASSWORD', ''),
+              decode_responses=True
+          )
+
+          # Initialize Kubernetes client
+          config.load_incluster_config()
+          apps_v1 = client.AppsV1Api()
+          metrics_v1 = client.CustomObjectsApi()
+
+          class PredictiveScalingController:
+              def __init__(self):
+                  self.metrics_history = []
+                  logger.info(f"Initialized Predictive Scaling Controller for {TARGET_DEPLOYMENT}")
+
+              def collect_metrics(self):
+                  try:
+                      # Get current deployment metrics
+                      deployment = apps_v1.read_namespaced_deployment(TARGET_DEPLOYMENT, NAMESPACE)
+                      current_replicas = deployment.status.replicas or MIN_REPLICAS
+
+                      # Get pod metrics (mock implementation - in real scenario use metrics API)
+                      pods = client.CoreV1Api().list_namespaced_pod(
+                          NAMESPACE,
+                          label_selector=f"app=aia-backend,version=v3"
+                      )
+
+                      cpu_usage = 45.0 + np.random.normal(0, 10)  # Mock CPU usage
+                      memory_usage = 60.0 + np.random.normal(0, 15)  # Mock memory usage
+
+                      # Time-based factors
+                      current_hour = datetime.now().hour
+                      is_peak_hour = 9 <= current_hour <= 17  # Business hours
+                      weekend_factor = 0.7 if datetime.now().weekday() >= 5 else 1.0
+
+                      # Adjust for time-based patterns
+                      if is_peak_hour:
+                          cpu_usage *= 1.3
+                          memory_usage *= 1.2
+
+                      cpu_usage *= weekend_factor
+                      memory_usage *= weekend_factor
+
+                      metrics = {
+                          'timestamp': datetime.now().isoformat(),
+                          'cpu_usage': max(0, min(100, cpu_usage)),
+                          'memory_usage': max(0, min(100, memory_usage)),
+                          'current_replicas': current_replicas,
+                          'is_peak_hour': is_peak_hour,
+                          'weekend_factor': weekend_factor
+                      }
+
+                      # Store in Redis for persistence
+                      redis_client.lpush('aia_metrics_history', json.dumps(metrics))
+                      redis_client.ltrim('aia_metrics_history', 0, 100)  # Keep last 100 entries
+
+                      logger.info(f"Collected metrics: CPU={cpu_usage:.1f}%, Memory={memory_usage:.1f}%, Replicas={current_replicas}")
+                      return metrics
+
+                  except Exception as e:
+                      logger.error(f"Error collecting metrics: {e}")
+                      return None
+
+              def predict_optimal_replicas(self, current_metrics):
+                  try:
+                      # Get historical data
+                      history = redis_client.lrange('aia_metrics_history', 0, 50)
+                      if len(history) < 10:
+                          logger.info("Insufficient historical data, using current metrics")
+                          return self.calculate_immediate_replicas(current_metrics)
+
+                      # Prepare data for ML prediction
+                      X = []
+                      y = []
+                      for entry in history:
+                          data = json.loads(entry)
+                          features = [
+                              data['cpu_usage'],
+                              data['memory_usage'],
+                              1 if data.get('is_peak_hour', False) else 0,
+                              data.get('weekend_factor', 1.0)
+                          ]
+                          X.append(features)
+                          y.append(data['current_replicas'])
+
+                      # Simple linear regression for prediction
+                      X = np.array(X[-20:])  # Use last 20 points
+                      y = np.array(y[-20:])
+
+                      if len(X) > 5:
+                          model = LinearRegression()
+                          model.fit(X, y)
+
+                          # Predict for current state
+                          current_features = np.array([[
+                              current_metrics['cpu_usage'],
+                              current_metrics['memory_usage'],
+                              1 if current_metrics['is_peak_hour'] else 0,
+                              current_metrics['weekend_factor']
+                          ]])
+
+                          predicted_replicas = model.predict(current_features)[0]
+
+                          # Apply business logic
+                          if current_metrics['cpu_usage'] > CPU_TARGET_PERCENTAGE:
+                              predicted_replicas *= 1.2
+                          if current_metrics['memory_usage'] > MEMORY_TARGET_PERCENTAGE:
+                              predicted_replicas *= 1.15
+
+                          # Ensure within bounds
+                          optimal_replicas = max(MIN_REPLICAS, min(MAX_REPLICAS, int(predicted_replicas)))
+
+                          confidence = min(1.0, len(history) / 50.0)  # Confidence based on data amount
+
+                          logger.info(f"ML Prediction: {predicted_replicas:.2f} -> {optimal_replicas} replicas (confidence: {confidence:.2f})")
+                          return optimal_replicas, confidence
+
+                  except Exception as e:
+                      logger.error(f"Error in ML prediction: {e}")
+
+                  return self.calculate_immediate_replicas(current_metrics)
+
+              def calculate_immediate_replicas(self, metrics):
+                  current_replicas = metrics['current_replicas']
+
+                  # Rule-based scaling
+                  if metrics['cpu_usage'] > CPU_TARGET_PERCENTAGE or metrics['memory_usage'] > MEMORY_TARGET_PERCENTAGE:
+                      scale_factor = max(
+                          metrics['cpu_usage'] / CPU_TARGET_PERCENTAGE,
+                          metrics['memory_usage'] / MEMORY_TARGET_PERCENTAGE
+                      )
+                      target_replicas = int(current_replicas * scale_factor * 1.1)  # 10% buffer
+                  elif metrics['cpu_usage'] < CPU_TARGET_PERCENTAGE * 0.5 and metrics['memory_usage'] < MEMORY_TARGET_PERCENTAGE * 0.5:
+                      target_replicas = max(MIN_REPLICAS, int(current_replicas * 0.8))
+                  else:
+                      target_replicas = current_replicas
+
+                  target_replicas = max(MIN_REPLICAS, min(MAX_REPLICAS, target_replicas))
+                  confidence = 0.8  # Rule-based confidence
+
+                  logger.info(f"Rule-based scaling: {current_replicas} -> {target_replicas} replicas")
+                  return target_replicas, confidence
+
+              def scale_deployment(self, target_replicas, confidence):
+                  try:
+                      current_deployment = apps_v1.read_namespaced_deployment(TARGET_DEPLOYMENT, NAMESPACE)
+                      current_replicas = current_deployment.status.replicas or MIN_REPLICAS
+
+                      if target_replicas == current_replicas:
+                          logger.info(f"No scaling needed. Current replicas: {current_replicas}")
+                          return True
+
+                      if confidence < 0.6:
+                          logger.info(f"Low confidence ({confidence:.2f}), skipping scaling")
+                          return False
+
+                      # Apply scaling
+                      current_deployment.spec.replicas = target_replicas
+                      apps_v1.patch_namespaced_deployment(
+                          name=TARGET_DEPLOYMENT,
+                          namespace=NAMESPACE,
+                          body=current_deployment
+                      )
+
+                      # Log scaling event
+                      scaling_event = {
+                          'timestamp': datetime.now().isoformat(),
+                          'from_replicas': current_replicas,
+                          'to_replicas': target_replicas,
+                          'confidence': confidence,
+                          'reason': 'predictive_scaling'
+                      }
+                      redis_client.lpush('aia_scaling_events', json.dumps(scaling_event))
+                      redis_client.ltrim('aia_scaling_events', 0, 50)
+
+                      logger.info(f"Scaled {TARGET_DEPLOYMENT} from {current_replicas} to {target_replicas} replicas (confidence: {confidence:.2f})")
+                      return True
+
+                  except Exception as e:
+                      logger.error(f"Error scaling deployment: {e}")
+                      return False
+
+              def run_control_loop(self):
+                  logger.info("Starting predictive scaling control loop")
+
+                  while True:
+                      try:
+                          # Collect current metrics
+                          metrics = self.collect_metrics()
+                          if not metrics:
+                              time.sleep(PREDICTION_INTERVAL)
+                              continue
+
+                          # Predict optimal replicas
+                          target_replicas, confidence = self.predict_optimal_replicas(metrics)
+
+                          # Apply scaling
+                          self.scale_deployment(target_replicas, confidence)
+
+                          # Store controller status
+                          status = {
+                              'last_update': datetime.now().isoformat(),
+                              'current_replicas': metrics['current_replicas'],
+                              'target_replicas': target_replicas,
+                              'confidence': confidence,
+                              'cpu_usage': metrics['cpu_usage'],
+                              'memory_usage': metrics['memory_usage']
+                          }
+                          redis_client.set('aia_scaling_status', json.dumps(status), ex=300)
+
+                      except Exception as e:
+                          logger.error(f"Error in control loop: {e}")
+
+                      time.sleep(PREDICTION_INTERVAL)
+
+          # Start the controller
+          controller = PredictiveScalingController()
+          controller.run_control_loop()
+        env:
+        - name: ENVIRONMENT
+          value: "production"
+        - name: NAMESPACE
+          value: "aia-production-v3"
+        - name: TARGET_DEPLOYMENT
+          value: "aia-backend-v3"
+        - name: MIN_REPLICAS
+          value: "3"
+        - name: MAX_REPLICAS
+          value: "20"
+        - name: PREDICTION_INTERVAL
+          valueFrom:
+            configMapKeyRef:
+              name: aia-production-config
+              key: SCALING_PREDICTION_INTERVAL
+        - name: CPU_TARGET_PERCENTAGE
+          value: "70"
+        - name: MEMORY_TARGET_PERCENTAGE
+          value: "80"
+        - name: REDIS_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: aia-production-config
+              key: REDIS_HOST
+        - name: REDIS_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: aia-production-config
+              key: REDIS_PORT
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: aia-production-secrets
+              key: REDIS_PASSWORD
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        livenessProbe:
+          exec:
+            command:
+            - python
+            - -c
+            - "import redis, os; r = redis.Redis(host=os.getenv('REDIS_HOST', 'redis-service.aia-databases.svc.cluster.local'), port=int(os.getenv('REDIS_PORT', '6379')), password=os.getenv('REDIS_PASSWORD', ''), decode_responses=True); r.ping()"
+          initialDelaySeconds: 30
+          periodSeconds: 60
+        readinessProbe:
+          exec:
+            command:
+            - python
+            - -c
+            - "import redis, os, json; r = redis.Redis(host=os.getenv('REDIS_HOST', 'redis-service.aia-databases.svc.cluster.local'), port=int(os.getenv('REDIS_PORT', '6379')), password=os.getenv('REDIS_PASSWORD', ''), decode_responses=True); status = r.get('aia_scaling_status'); exit(0 if status else 1)"
+          initialDelaySeconds: 60
+          periodSeconds: 30

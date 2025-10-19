@@ -1,0 +1,707 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: aia-enterprise-ecosystem
+  labels:
+    app.kubernetes.io/name: aia-ecosystem
+    app.kubernetes.io/version: "v3.0"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: domain-routing-config
+  namespace: aia-enterprise-ecosystem
+data:
+  domains.yaml: |
+    # Customer Acquisition Infrastructure
+    - name: get
+      subdomain: get.013a.tech
+      service: landing-conversion
+      priority: high
+    - name: demo
+      subdomain: demo.013a.tech
+      service: immersive-webxr
+      priority: high
+    - name: trial
+      subdomain: trial.013a.tech
+      service: enterprise-trial
+      priority: high
+    - name: pricing
+      subdomain: pricing.013a.tech
+      service: roi-calculator
+      priority: high
+
+    # Industry Verticals
+    - name: finance
+      subdomain: finance.013a.tech
+      service: financial-analytics
+      priority: critical
+    - name: healthcare
+      subdomain: healthcare.013a.tech
+      service: healthcare-analytics
+      priority: critical
+    - name: retail
+      subdomain: retail.013a.tech
+      service: retail-optimization
+      priority: critical
+    - name: manufacturing
+      subdomain: manufacturing.013a.tech
+      service: industrial-iot
+      priority: critical
+
+    # Partner Ecosystem
+    - name: partners
+      subdomain: partners.013a.tech
+      service: partner-portal
+      priority: high
+    - name: developers
+      subdomain: developers.013a.tech
+      service: api-marketplace
+      priority: high
+    - name: resellers
+      subdomain: resellers.013a.tech
+      service: channel-management
+      priority: medium
+    - name: integrations
+      subdomain: integrations.013a.tech
+      service: connector-marketplace
+      priority: medium
+
+    # Content & Success Platform
+    - name: insights
+      subdomain: insights.013a.tech
+      service: content-authority
+      priority: medium
+    - name: blog
+      subdomain: blog.013a.tech
+      service: content-authority
+      priority: medium
+    - name: resources
+      subdomain: resources.013a.tech
+      service: content-authority
+      priority: medium
+    - name: events
+      subdomain: events.013a.tech
+      service: content-authority
+      priority: medium
+    - name: success
+      subdomain: success.013a.tech
+      service: customer-success
+      priority: high
+    - name: support
+      subdomain: support.013a.tech
+      service: customer-success
+      priority: high
+    - name: training
+      subdomain: training.013a.tech
+      service: customer-success
+      priority: medium
+    - name: community
+      subdomain: community.013a.tech
+      service: customer-success
+      priority: medium
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-backend-enterprise
+  namespace: aia-enterprise-ecosystem
+  labels:
+    app: aia-backend
+    tier: enterprise
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: aia-backend
+  template:
+    metadata:
+      labels:
+        app: aia-backend
+        tier: enterprise
+    spec:
+      containers:
+      - name: aia-backend
+        image: gcr.io/aia-system-prod-1759055445/aia-global-backend:latest
+        ports:
+        - containerPort: 8000
+        - containerPort: 8080
+        env:
+        - name: GCP_PROJECT
+          value: "aia-system-prod-1759055445"
+        - name: ENVIRONMENT
+          value: "production"
+        - name: REDIS_URL
+          value: "redis://aia-redis:6379"
+        - name: DOMAINS_CONFIG
+          value: "45-domain-enterprise"
+        resources:
+          requests:
+            memory: "2Gi"
+            cpu: "1000m"
+          limits:
+            memory: "4Gi"
+            cpu: "2000m"
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 60
+          periodSeconds: 30
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-frontend-sentient-canvas
+  namespace: aia-enterprise-ecosystem
+  labels:
+    app: aia-frontend
+    type: sentient-canvas
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: aia-frontend
+  template:
+    metadata:
+      labels:
+        app: aia-frontend
+        type: sentient-canvas
+    spec:
+      containers:
+      - name: aia-frontend
+        image: gcr.io/aia-system-prod-1759055445/aia-global-frontend:latest
+        ports:
+        - containerPort: 3000
+        env:
+        - name: REACT_APP_API_URL
+          value: "https://enterprise.013a.tech"
+        - name: REACT_APP_ENVIRONMENT
+          value: "production"
+        - name: REACT_APP_WEBXR_ENABLED
+          value: "true"
+        - name: REACT_APP_3D_ANALYTICS
+          value: "true"
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 3000
+          initialDelaySeconds: 20
+          periodSeconds: 10
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-analytics-intelligence
+  namespace: aia-enterprise-ecosystem
+  labels:
+    app: aia-analytics
+    type: neural-intelligence
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: aia-analytics
+  template:
+    metadata:
+      labels:
+        app: aia-analytics
+        type: neural-intelligence
+    spec:
+      containers:
+      - name: analytics-engine
+        image: gcr.io/aia-system-prod-1759055445/aia-analytics:latest
+        ports:
+        - containerPort: 9000
+        env:
+        - name: KNOWLEDGE_GRAPH_ATOMS
+          value: "2472"
+        - name: ML_INFERENCE_ENABLED
+          value: "true"
+        - name: VERTEX_AI_ENABLED
+          value: "true"
+        resources:
+          requests:
+            memory: "3Gi"
+            cpu: "1500m"
+          limits:
+            memory: "6Gi"
+            cpu: "3000m"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis-cluster
+  namespace: aia-enterprise-ecosystem
+  labels:
+    app: redis
+    type: cluster
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+    spec:
+      containers:
+      - name: redis
+        image: redis:7-alpine
+        ports:
+        - containerPort: 6379
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-backend-service
+  namespace: aia-enterprise-ecosystem
+  labels:
+    app: aia-backend
+spec:
+  selector:
+    app: aia-backend
+  ports:
+  - name: http
+    port: 80
+    targetPort: 8000
+  - name: websocket
+    port: 8080
+    targetPort: 8080
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-frontend-service
+  namespace: aia-enterprise-ecosystem
+  labels:
+    app: aia-frontend
+spec:
+  selector:
+    app: aia-frontend
+  ports:
+  - port: 80
+    targetPort: 3000
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-analytics-service
+  namespace: aia-enterprise-ecosystem
+  labels:
+    app: aia-analytics
+spec:
+  selector:
+    app: aia-analytics
+  ports:
+  - port: 80
+    targetPort: 9000
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-redis
+  namespace: aia-enterprise-ecosystem
+  labels:
+    app: redis
+spec:
+  selector:
+    app: redis
+  ports:
+  - port: 6379
+    targetPort: 6379
+  type: ClusterIP
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: aia-45-domain-ingress
+  namespace: aia-enterprise-ecosystem
+  annotations:
+    kubernetes.io/ingress.class: "gce"
+    kubernetes.io/ingress.global-static-ip-name: "aia-global-ip"
+    networking.gke.io/managed-certificates: "aia-ssl-certificates"
+    networking.gke.io/v1beta1.FrontendConfig: "aia-frontend-config"
+spec:
+  rules:
+  # Customer Acquisition Infrastructure
+  - host: get.013a.tech
+    http:
+      paths:
+      - path: /*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-frontend-service
+            port:
+              number: 80
+  - host: demo.013a.tech
+    http:
+      paths:
+      - path: /*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-frontend-service
+            port:
+              number: 80
+  - host: trial.013a.tech
+    http:
+      paths:
+      - path: /*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-frontend-service
+            port:
+              number: 80
+  - host: pricing.013a.tech
+    http:
+      paths:
+      - path: /*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-frontend-service
+            port:
+              number: 80
+
+  # Industry Verticals
+  - host: finance.013a.tech
+    http:
+      paths:
+      - path: /api/*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-backend-service
+            port:
+              number: 80
+      - path: /*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-frontend-service
+            port:
+              number: 80
+  - host: healthcare.013a.tech
+    http:
+      paths:
+      - path: /api/*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-backend-service
+            port:
+              number: 80
+      - path: /*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-frontend-service
+            port:
+              number: 80
+  - host: retail.013a.tech
+    http:
+      paths:
+      - path: /api/*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-backend-service
+            port:
+              number: 80
+      - path: /*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-frontend-service
+            port:
+              number: 80
+  - host: manufacturing.013a.tech
+    http:
+      paths:
+      - path: /api/*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-backend-service
+            port:
+              number: 80
+      - path: /*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-frontend-service
+            port:
+              number: 80
+
+  # Partner Ecosystem
+  - host: partners.013a.tech
+    http:
+      paths:
+      - path: /api/*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-backend-service
+            port:
+              number: 80
+      - path: /*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-frontend-service
+            port:
+              number: 80
+  - host: developers.013a.tech
+    http:
+      paths:
+      - path: /api/*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-backend-service
+            port:
+              number: 80
+      - path: /*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-frontend-service
+            port:
+              number: 80
+  - host: resellers.013a.tech
+    http:
+      paths:
+      - path: /*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-frontend-service
+            port:
+              number: 80
+  - host: integrations.013a.tech
+    http:
+      paths:
+      - path: /*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-frontend-service
+            port:
+              number: 80
+
+  # Content & Success Platform
+  - host: insights.013a.tech
+    http:
+      paths:
+      - path: /*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-frontend-service
+            port:
+              number: 80
+  - host: blog.013a.tech
+    http:
+      paths:
+      - path: /*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-frontend-service
+            port:
+              number: 80
+  - host: resources.013a.tech
+    http:
+      paths:
+      - path: /*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-frontend-service
+            port:
+              number: 80
+  - host: events.013a.tech
+    http:
+      paths:
+      - path: /*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-frontend-service
+            port:
+              number: 80
+  - host: success.013a.tech
+    http:
+      paths:
+      - path: /*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-frontend-service
+            port:
+              number: 80
+  - host: support.013a.tech
+    http:
+      paths:
+      - path: /*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-frontend-service
+            port:
+              number: 80
+  - host: training.013a.tech
+    http:
+      paths:
+      - path: /*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-frontend-service
+            port:
+              number: 80
+  - host: community.013a.tech
+    http:
+      paths:
+      - path: /*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-frontend-service
+            port:
+              number: 80
+
+  # Main Enterprise Backend
+  - host: enterprise.013a.tech
+    http:
+      paths:
+      - path: /api/*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-backend-service
+            port:
+              number: 80
+      - path: /analytics/*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-analytics-service
+            port:
+              number: 80
+      - path: /*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-frontend-service
+            port:
+              number: 80
+
+  # Primary Domain
+  - host: 013a.tech
+    http:
+      paths:
+      - path: /api/*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-backend-service
+            port:
+              number: 80
+      - path: /*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-frontend-service
+            port:
+              number: 80
+---
+apiVersion: networking.gke.io/v1beta1
+kind: ManagedCertificate
+metadata:
+  name: aia-ssl-certificates
+  namespace: aia-enterprise-ecosystem
+spec:
+  domains:
+    - 013a.tech
+    - enterprise.013a.tech
+    - get.013a.tech
+    - demo.013a.tech
+    - trial.013a.tech
+    - pricing.013a.tech
+    - finance.013a.tech
+    - healthcare.013a.tech
+    - retail.013a.tech
+    - manufacturing.013a.tech
+    - partners.013a.tech
+    - developers.013a.tech
+    - resellers.013a.tech
+    - integrations.013a.tech
+    - insights.013a.tech
+    - blog.013a.tech
+    - resources.013a.tech
+    - events.013a.tech
+    - success.013a.tech
+    - support.013a.tech
+    - training.013a.tech
+    - community.013a.tech
+---
+apiVersion: networking.gke.io/v1beta1
+kind: FrontendConfig
+metadata:
+  name: aia-frontend-config
+  namespace: aia-enterprise-ecosystem
+spec:
+  redirectToHttps:
+    enabled: true
+  timeoutSec: 30
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-global-load-balancer
+  namespace: aia-enterprise-ecosystem
+  annotations:
+    cloud.google.com/load-balancer-type: "External"
+    networking.gke.io/load-balancer-type: "External"
+spec:
+  type: LoadBalancer
+  loadBalancerIP: "" # Will be assigned automatically
+  selector:
+    app: aia-backend
+  ports:
+  - name: http
+    port: 80
+    targetPort: 8000
+    protocol: TCP
+  - name: https
+    port: 443
+    targetPort: 8000
+    protocol: TCP

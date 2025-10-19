@@ -1,0 +1,40 @@
+{
+  "cycle_number": 6610,
+  "timestamp": "2025-10-11T15:37:30.950299",
+  "tests": {
+    "production_endpoints": {
+      "frontend": {
+        "status_code": 520,
+        "response_time": 0.381628,
+        "status": "unhealthy"
+      },
+      "api": {
+        "status": "error",
+        "error": "HTTPSConnectionPool(host='api.013a.tech', port=443): Read timed out. (read timeout=10)"
+      },
+      "health": {
+        "status_code": 520,
+        "response_time": 0.405473,
+        "status": "unhealthy"
+      }
+    },
+    "knowledge_graph": {
+      "status": "success",
+      "insights_count": 10,
+      "query_time": 0.005032
+    },
+    "gcp_infrastructure": {
+      "status": "healthy",
+      "pods_running": true,
+      "services_available": true,
+      "load_balancer": "active"
+    },
+    "monitoring": {
+      "status": "active",
+      "prometheus": "running",
+      "grafana": "accessible"
+    }
+  },
+  "cycle_duration": 11.2918860912323,
+  "status": "completed"
+}

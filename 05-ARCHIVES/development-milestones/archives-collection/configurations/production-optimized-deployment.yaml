@@ -1,0 +1,330 @@
+# PRODUCTION OPTIMIZED AIA DEPLOYMENT
+# Using available container images with optimal resource allocation
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-api-optimized
+  namespace: 013a-analytics-production
+  labels:
+    app: aia-api
+    version: optimized
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: aia-api
+      version: optimized
+  template:
+    metadata:
+      labels:
+        app: aia-api
+        version: optimized
+    spec:
+      containers:
+      - name: api
+        image: gcr.io/aia-system-prod-1759055445/aia-api:latest
+        ports:
+        - containerPort: 8080
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        env:
+        - name: OPTIMIZATION_MODE
+          value: "production"
+        - name: WORKER_THREADS
+          value: "4"
+        - name: MAX_MEMORY_USAGE
+          value: "768Mi"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-frontend-optimized
+  namespace: 013a-analytics-production
+  labels:
+    app: aia-frontend
+    version: optimized
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: aia-frontend
+      version: optimized
+  template:
+    metadata:
+      labels:
+        app: aia-frontend
+        version: optimized
+    spec:
+      containers:
+      - name: frontend
+        image: gcr.io/aia-system-prod-1759055445/aia-frontend:latest
+        ports:
+        - containerPort: 3000
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        env:
+        - name: NODE_ENV
+          value: "production"
+        - name: REACT_APP_API_URL
+          value: "http://aia-api-optimized:80"
+        - name: GENERATE_SOURCEMAP
+          value: "false"
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 3000
+          initialDelaySeconds: 30
+          periodSeconds: 15
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 3000
+          initialDelaySeconds: 10
+          periodSeconds: 5
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-websocket-optimized
+  namespace: 013a-analytics-production
+  labels:
+    app: aia-websocket
+    version: optimized
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: aia-websocket
+      version: optimized
+  template:
+    metadata:
+      labels:
+        app: aia-websocket
+        version: optimized
+    spec:
+      containers:
+      - name: websocket
+        image: gcr.io/aia-system-prod-1759055445/aia-websocket-server:latest
+        ports:
+        - containerPort: 8090
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        env:
+        - name: WEBSOCKET_POOL_SIZE
+          value: "100"
+        - name: HEARTBEAT_INTERVAL
+          value: "30000"
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-cognitive-processor-optimized
+  namespace: 013a-analytics-production
+  labels:
+    app: aia-cognitive-processor
+    version: optimized
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: aia-cognitive-processor
+      version: optimized
+  template:
+    metadata:
+      labels:
+        app: aia-cognitive-processor
+        version: optimized
+    spec:
+      containers:
+      - name: cognitive-processor
+        image: gcr.io/aia-system-prod-1759055445/aia-cognitive-processor:latest
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        env:
+        - name: ML_WORKERS
+          value: "2"
+        - name: BATCH_SIZE
+          value: "64"
+        - name: INFERENCE_OPTIMIZATION
+          value: "enabled"
+
+---
+# Services for the optimized deployments
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-api-optimized
+  namespace: 013a-analytics-production
+spec:
+  selector:
+    app: aia-api
+    version: optimized
+  ports:
+  - name: http
+    port: 80
+    targetPort: 8080
+    protocol: TCP
+  type: ClusterIP
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-frontend-optimized
+  namespace: 013a-analytics-production
+spec:
+  selector:
+    app: aia-frontend
+    version: optimized
+  ports:
+  - name: http
+    port: 80
+    targetPort: 3000
+    protocol: TCP
+  type: ClusterIP
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-websocket-optimized
+  namespace: 013a-analytics-production
+spec:
+  selector:
+    app: aia-websocket
+    version: optimized
+  ports:
+  - name: websocket
+    port: 8090
+    targetPort: 8090
+    protocol: TCP
+  type: ClusterIP
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-cognitive-processor-optimized
+  namespace: 013a-analytics-production
+spec:
+  selector:
+    app: aia-cognitive-processor
+    version: optimized
+  ports:
+  - name: http
+    port: 80
+    targetPort: 8080
+    protocol: TCP
+  type: ClusterIP
+
+---
+# Horizontal Pod Autoscalers
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: aia-api-hpa
+  namespace: 013a-analytics-production
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: aia-api-optimized
+  minReplicas: 2
+  maxReplicas: 6
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: aia-frontend-hpa
+  namespace: 013a-analytics-production
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: aia-frontend-optimized
+  minReplicas: 2
+  maxReplicas: 4
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 75
+
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: aia-cognitive-processor-hpa
+  namespace: 013a-analytics-production
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: aia-cognitive-processor-optimized
+  minReplicas: 1
+  maxReplicas: 4
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 80
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 85

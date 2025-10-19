@@ -1,0 +1,219 @@
+{
+  "validation_timestamp": "2025-10-06T03:02:41.600739",
+  "total_execution_time": 4.32155704498291,
+  "mission_areas": {
+    "1_live_deployment": {
+      "timestamp": "2025-10-06T03:02:37.279346",
+      "deployment_health": {
+        "main_domain": {
+          "status": "error",
+          "error": "Cannot connect to host 013a.tech:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]"
+        },
+        "kubernetes": {
+          "status": "healthy",
+          "total_pods": 114,
+          "running_pods": 90,
+          "health_ratio": 0.7894736842105263
+        }
+      },
+      "security_status": {},
+      "performance_metrics": {}
+    },
+    "2_production_environment": {
+      "timestamp": "2025-10-06T03:02:37.279944",
+      "configuration_health": {
+        "configmaps": {
+          "status": "healthy",
+          "total_configs": 67,
+          "aia_configs": 10
+        }
+      },
+      "environment_variables": {},
+      "secrets_status": {}
+    },
+    "3_cloud_configuration": {
+      "timestamp": "2025-10-06T03:02:38.183775",
+      "ingress_health": {
+        "status": "healthy",
+        "total_ingress": 6,
+        "details": [
+          "aia-enterprise-domains   enterprise-domains-ingress        <none>   fortune500.013a.tech,xr.013a.tech,payments.013a.tech + 1 more...                    80    114m",
+          "aia-live-production      aia-enterprise-ingress            <none>   013a.tech,www.013a.tech,api.013a.tech                                               80    115m",
+          "aia-production           aia-global-ingress                <none>   013a.tech,www.013a.tech,api.013a.tech                                               80    3h34m",
+          "aia-working-production   sentient-canvas-unified-ingress   <none>   013a.tech,www.013a.tech,api.013a.tech                              34.120.153.135   80    10h",
+          "analytics-production     analytics-global-ingress          <none>   analytics.013a.tech                                                                 80    133m",
+          "immersive-analytics      immersive-ingress                 <none>   immersive.013a.tech,3d.013a.tech                                   34.117.64.236    80    26h"
+        ]
+      },
+      "load_balancer_status": {
+        "status": "healthy",
+        "addresses": [
+          {
+            "address": "34.120.153.135",
+            "addressType": "EXTERNAL",
+            "creationTimestamp": "2025-09-29T13:45:09.939-07:00",
+            "description": "",
+            "id": "7219254653659599162",
+            "ipVersion": "IPV4",
+            "kind": "compute#address",
+            "labelFingerprint": "42WmSpB8rSM=",
+            "name": "aia-global-ip",
+            "networkTier": "PREMIUM",
+            "selfLink": "https://www.googleapis.com/compute/v1/projects/aia-system-prod-1759055445/global/addresses/aia-global-ip",
+            "status": "IN_USE",
+            "users": [
+              "https://www.googleapis.com/compute/v1/projects/aia-system-prod-1759055445/global/forwardingRules/k8s2-fr-3iqb5th0-aia-working-pro-sentient-canvas-unifi-n5x0ugo7"
+            ]
+          },
+          {
+            "address": "34.49.173.184",
+            "addressType": "EXTERNAL",
+            "creationTimestamp": "2025-10-02T16:22:49.096-07:00",
+            "description": "",
+            "id": "5631541798518306726",
+            "ipVersion": "IPV4",
+            "kind": "compute#address",
+            "labelFingerprint": "42WmSpB8rSM=",
+            "name": "aia-ultimate-ip",
+            "networkTier": "PREMIUM",
+            "selfLink": "https://www.googleapis.com/compute/v1/projects/aia-system-prod-1759055445/global/addresses/aia-ultimate-ip",
+            "status": "RESERVED"
+          },
+          {
+            "address": "34.98.95.109",
+            "addressType": "EXTERNAL",
+            "creationTimestamp": "2025-10-01T09:01:03.537-07:00",
+            "description": "",
+            "id": "6875469476829130448",
+            "ipVersion": "IPV4",
+            "kind": "compute#address",
+            "labelFingerprint": "42WmSpB8rSM=",
+            "name": "founder-dashboard-ip",
+            "networkTier": "PREMIUM",
+            "selfLink": "https://www.googleapis.com/compute/v1/projects/aia-system-prod-1759055445/global/addresses/founder-dashboard-ip",
+            "status": "RESERVED"
+          },
+          {
+            "address": "34.117.64.236",
+            "addressType": "EXTERNAL",
+            "creationTimestamp": "2025-10-04T15:37:48.959-07:00",
+            "description": "",
+            "id": "2247225672278482771",
+            "ipVersion": "IPV4",
+            "kind": "compute#address",
+            "labelFingerprint": "42WmSpB8rSM=",
+            "name": "immersive-static-ip",
+            "networkTier": "PREMIUM",
+            "selfLink": "https://www.googleapis.com/compute/v1/projects/aia-system-prod-1759055445/global/addresses/immersive-static-ip",
+            "status": "IN_USE",
+            "users": [
+              "https://www.googleapis.com/compute/v1/projects/aia-system-prod-1759055445/global/forwardingRules/k8s2-fs-3iqb5th0-immersive-analytics-immersive-ingress-mkuw0kbl"
+            ]
+          }
+        ]
+      },
+      "networking": {}
+    },
+    "4_dns_ssl_configuration": {
+      "timestamp": "2025-10-06T03:02:39.575729",
+      "dns_resolution": {
+        "status": "healthy",
+        "details": "Server:\t\t10.1.0.1\nAddress:\t10.1.0.1#53\n\nNon-authoritative answer:\nName:\t013a.tech\nAddress: 104.21.90.188\nName:\t013a.tech\nAddress: 172.67.159.200\n\n"
+      },
+      "ssl_certificate": {
+        "status": "healthy",
+        "response_code": 200,
+        "headers": {
+          "Date": "Mon, 06 Oct 2025 01:02:39 GMT",
+          "Content-Type": "application/json",
+          "Transfer-Encoding": "chunked",
+          "Connection": "keep-alive",
+          "Server": "cloudflare",
+          "Via": "1.1 google",
+          "cf-cache-status": "DYNAMIC",
+          "Nel": "{\"report_to\":\"cf-nel\",\"success_fraction\":0.0,\"max_age\":604800}",
+          "Speculation-Rules": "\"/cdn-cgi/speculation\"",
+          "Report-To": "{\"group\":\"cf-nel\",\"max_age\":604800,\"endpoints\":[{\"url\":\"https://a.nel.cloudflare.com/report/v4?s=Op55oxg%2FT0phFAEm8KyP26MVcJrMHuse3TH5DJ4K4RW5heg9fmxHFOJ2%2BbcvpKjlW7RG09ATv6vVh4HHGsuay70MLEzkis55hQ%3D%3D\"}]}",
+          "Content-Encoding": "br",
+          "CF-RAY": "98a13c0a7c5fd259-FRA",
+          "alt-svc": "h3=\":443\"; ma=86400"
+        }
+      },
+      "security_headers": {}
+    },
+    "5_e2e_testing": {
+      "timestamp": "2025-10-06T03:02:39.607757",
+      "api_endpoints": {
+        "/health": {
+          "status": "healthy",
+          "response_code": 200,
+          "response_time": 1759712559.612264
+        },
+        "/": {
+          "status": "error_404",
+          "response_code": 404,
+          "response_time": 1759712559.613295
+        },
+        "/docs": {
+          "status": "healthy",
+          "response_code": 200,
+          "response_time": 1759712559.614177
+        },
+        "/openapi.json": {
+          "status": "healthy",
+          "response_code": 200,
+          "response_time": 1759712559.61672
+        }
+      },
+      "frontend_status": {},
+      "service_connectivity": {}
+    },
+    "6_monitoring_systems": {
+      "timestamp": "2025-10-06T03:02:39.607846",
+      "prometheus_health": {
+        "status": "healthy",
+        "metrics_count": 12
+      },
+      "grafana_health": {
+        "status": "healthy",
+        "response_code": 200
+      },
+      "metrics_collection": {}
+    },
+    "7_continuous_validation": {
+      "timestamp": "2025-10-06T03:02:39.607905",
+      "cycle_configuration": {
+        "health_check_interval": 300,
+        "performance_check_interval": 900,
+        "security_scan_interval": 3600,
+        "full_validation_interval": 7200
+      },
+      "automation_status": {
+        "status": "configured",
+        "next_full_cycle": "2025-10-06T05:02:39.607908"
+      },
+      "monitoring_alerts": {}
+    },
+    "8_documentation": {
+      "timestamp": "2025-10-06T03:02:39.607920",
+      "documentation_status": {
+        "status": "generated"
+      },
+      "access_credentials": {
+        "endpoints": {
+          "main_application": "https://013a.tech",
+          "api_documentation": "https://013a.tech/docs",
+          "monitoring_grafana": "http://localhost:3000 (port-forwarded)",
+          "metrics_prometheus": "http://localhost:9090 (port-forwarded)",
+          "local_development": "http://localhost:8001"
+        }
+      },
+      "user_guides": {
+        "admin_guide": "Production system access and management guide",
+        "end_user_guide": "Application usage and feature guide"
+      }
+    }
+  },
+  "overall_health_score": 0.375,
+  "production_readiness_status": "NEEDS_ATTENTION"
+}

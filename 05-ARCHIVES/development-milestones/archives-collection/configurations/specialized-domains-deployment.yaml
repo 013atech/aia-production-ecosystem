@@ -1,0 +1,355 @@
+---
+# AIA Specialized Domain Services Deployment
+# Coordinated by Cryptography Agent + Team
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: aia-specialized-domains
+  labels:
+    app: aia-system
+    security: cryptographic-verified
+---
+# MLOps Dashboard Service for ml.013a.tech
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-mlops-dashboard
+  namespace: aia-specialized-domains
+  labels:
+    app: aia-mlops
+    domain: ml.013a.tech
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: aia-mlops
+  template:
+    metadata:
+      labels:
+        app: aia-mlops
+        security: quantum-secured
+    spec:
+      containers:
+      - name: mlops-dashboard
+        image: gcr.io/aia-system-prod-1759055445/aia-mlops:latest
+        ports:
+        - containerPort: 8001
+        env:
+        - name: DOMAIN_CONTEXT
+          value: "ml.013a.tech"
+        - name: SERVICE_TYPE
+          value: "mlops_specialist"
+        - name: CRYPTOGRAPHIC_VERIFICATION
+          value: "enabled"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-mlops-service
+  namespace: aia-specialized-domains
+spec:
+  selector:
+    app: aia-mlops
+  ports:
+  - port: 80
+    targetPort: 8001
+  type: ClusterIP
+---
+# Enterprise Monitoring Service for monitor.013a.tech
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-monitoring-dashboard
+  namespace: aia-specialized-domains
+  labels:
+    app: aia-monitoring
+    domain: monitor.013a.tech
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: aia-monitoring
+  template:
+    metadata:
+      labels:
+        app: aia-monitoring
+        security: enterprise-grade
+    spec:
+      containers:
+      - name: monitoring-dashboard
+        image: gcr.io/aia-system-prod-1759055445/aia-monitoring:latest
+        ports:
+        - containerPort: 3000
+        env:
+        - name: DOMAIN_CONTEXT
+          value: "monitor.013a.tech"
+        - name: GRAFANA_SECURITY_ADMIN_PASSWORD
+          value: "aia_secure_monitoring_2025"
+        - name: PROMETHEUS_RETENTION
+          value: "30d"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-monitoring-service
+  namespace: aia-specialized-domains
+spec:
+  selector:
+    app: aia-monitoring
+  ports:
+  - port: 80
+    targetPort: 3000
+  type: ClusterIP
+---
+# WebXR Service for xr.013a.tech
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-webxr-platform
+  namespace: aia-specialized-domains
+  labels:
+    app: aia-webxr
+    domain: xr.013a.tech
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: aia-webxr
+  template:
+    metadata:
+      labels:
+        app: aia-webxr
+        features: three-js-enhanced
+    spec:
+      containers:
+      - name: webxr-platform
+        image: gcr.io/aia-system-prod-1759055445/aia-webxr:latest
+        ports:
+        - containerPort: 3001
+        env:
+        - name: DOMAIN_CONTEXT
+          value: "xr.013a.tech"
+        - name: THREE_JS_OPTIMIZATION
+          value: "enabled"
+        - name: WEBGL_ACCELERATION
+          value: "enabled"
+        - name: SPATIAL_COMPUTING
+          value: "apple_vision_enhanced"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-webxr-service
+  namespace: aia-specialized-domains
+spec:
+  selector:
+    app: aia-webxr
+  ports:
+  - port: 80
+    targetPort: 3001
+  type: ClusterIP
+---
+# Enterprise Partners Portal for partners.013a.tech
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-partners-portal
+  namespace: aia-specialized-domains
+  labels:
+    app: aia-partners
+    domain: partners.013a.tech
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: aia-partners
+  template:
+    metadata:
+      labels:
+        app: aia-partners
+        integration: fortune-500
+    spec:
+      containers:
+      - name: partners-portal
+        image: gcr.io/aia-system-prod-1759055445/aia-partners:latest
+        ports:
+        - containerPort: 8003
+        env:
+        - name: DOMAIN_CONTEXT
+          value: "partners.013a.tech"
+        - name: EY_INTEGRATION
+          value: "enabled"
+        - name: JPMORGAN_INTEGRATION
+          value: "enabled"
+        - name: GOOGLE_CLOUD_INTEGRATION
+          value: "enabled"
+        - name: APPLE_VISION_INTEGRATION
+          value: "enabled"
+        - name: ENTERPRISE_SECURITY
+          value: "cryptographic_verified"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-partners-service
+  namespace: aia-specialized-domains
+spec:
+  selector:
+    app: aia-partners
+  ports:
+  - port: 80
+    targetPort: 8003
+  type: ClusterIP
+---
+# Documentation Portal for docs.013a.tech
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-docs-portal
+  namespace: aia-specialized-domains
+  labels:
+    app: aia-docs
+    domain: docs.013a.tech
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: aia-docs
+  template:
+    metadata:
+      labels:
+        app: aia-docs
+        purpose: developer-documentation
+    spec:
+      containers:
+      - name: docs-portal
+        image: gcr.io/aia-system-prod-1759055445/aia-docs:latest
+        ports:
+        - containerPort: 8080
+        env:
+        - name: DOMAIN_CONTEXT
+          value: "docs.013a.tech"
+        - name: API_DOCUMENTATION
+          value: "enabled"
+        - name: PYPAIA_SDK_DOCS
+          value: "enabled"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-docs-service
+  namespace: aia-specialized-domains
+spec:
+  selector:
+    app: aia-docs
+  ports:
+  - port: 80
+    targetPort: 8080
+  type: ClusterIP
+---
+# Ingress Controller for Specialized Domains
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: aia-specialized-ingress
+  namespace: aia-specialized-domains
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+spec:
+  tls:
+  - hosts:
+    - ml.013a.tech
+    - monitor.013a.tech
+    - xr.013a.tech
+    - partners.013a.tech
+    - docs.013a.tech
+    secretName: aia-specialized-domains-tls
+  rules:
+  - host: ml.013a.tech
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-mlops-service
+            port:
+              number: 80
+  - host: monitor.013a.tech
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-monitoring-service
+            port:
+              number: 80
+  - host: xr.013a.tech
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-webxr-service
+            port:
+              number: 80
+  - host: partners.013a.tech
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-partners-service
+            port:
+              number: 80
+  - host: docs.013a.tech
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-docs-service
+            port:
+              number: 80

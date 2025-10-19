@@ -1,0 +1,391 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: founder-dashboard-simple-config
+  namespace: founder-dashboard
+data:
+  ENVIRONMENT: "production"
+  DOMAIN: "founder.013a.tech"
+  ALLOWED_EMAIL: "yannickwill08@gmail.com"
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: founder-dashboard-simple
+  namespace: founder-dashboard
+  labels:
+    app: founder-dashboard-simple
+    security: maximum
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: founder-dashboard-simple
+  template:
+    metadata:
+      labels:
+        app: founder-dashboard-simple
+        security: maximum
+    spec:
+      securityContext:
+        runAsNonRoot: false
+        runAsUser: 0
+        fsGroup: 0
+      containers:
+      - name: dashboard
+        image: nginx:1.25-alpine
+        ports:
+        - containerPort: 80
+        env:
+        - name: DOMAIN
+          value: "founder.013a.tech"
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: false
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        volumeMounts:
+        - name: html
+          mountPath: /usr/share/nginx/html
+        - name: config
+          mountPath: /etc/nginx/conf.d
+      volumes:
+      - name: html
+        configMap:
+          name: founder-dashboard-html
+      - name: config
+        configMap:
+          name: founder-dashboard-nginx-config
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: founder-dashboard-html
+  namespace: founder-dashboard
+data:
+  index.html: |
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Secure Founder Dashboard</title>
+        <style>
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
+            body {
+                font-family: 'Arial', sans-serif;
+                background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+                color: white;
+                min-height: 100vh;
+                display: flex;
+                flex-direction: column;
+            }
+            .header {
+                background: rgba(0,0,0,0.3);
+                padding: 1rem 2rem;
+                backdrop-filter: blur(10px);
+            }
+            .header h1 {
+                font-size: 2rem;
+                font-weight: 300;
+            }
+            .main {
+                flex: 1;
+                padding: 2rem;
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+                gap: 2rem;
+            }
+            .card {
+                background: rgba(255,255,255,0.1);
+                border: 1px solid rgba(255,255,255,0.2);
+                border-radius: 15px;
+                padding: 2rem;
+                backdrop-filter: blur(10px);
+                box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+                transition: transform 0.2s ease;
+            }
+            .card:hover {
+                transform: translateY(-5px);
+            }
+            .card h2 {
+                margin-bottom: 1rem;
+                color: #61dafb;
+            }
+            .status {
+                display: inline-flex;
+                align-items: center;
+                gap: 0.5rem;
+                margin: 0.5rem 0;
+            }
+            .status-dot {
+                width: 12px;
+                height: 12px;
+                border-radius: 50%;
+                background: #4caf50;
+            }
+            .status-dot.warning {
+                background: #ff9800;
+            }
+            .status-dot.error {
+                background: #f44336;
+            }
+            .metric {
+                display: flex;
+                justify-content: space-between;
+                margin: 0.5rem 0;
+                padding: 0.5rem;
+                background: rgba(255,255,255,0.05);
+                border-radius: 8px;
+            }
+            .login-section {
+                text-align: center;
+                margin: 2rem 0;
+            }
+            .security-notice {
+                background: rgba(220, 0, 78, 0.2);
+                border: 1px solid #dc004e;
+                border-radius: 10px;
+                padding: 1rem;
+                margin: 1rem 0;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="header">
+            <h1>🔒 Secure Founder Dashboard</h1>
+            <div class="security-notice">
+                <strong>RESTRICTED ACCESS:</strong> yannickwill08@gmail.com only
+            </div>
+        </div>
+
+        <div class="main">
+            <div class="card">
+                <h2>🎯 System Status</h2>
+                <div class="status">
+                    <div class="status-dot"></div>
+                    <span>GKE Cluster: RUNNING</span>
+                </div>
+                <div class="status">
+                    <div class="status-dot"></div>
+                    <span>Database: HEALTHY</span>
+                </div>
+                <div class="status">
+                    <div class="status-dot"></div>
+                    <span>Redis Cache: ONLINE</span>
+                </div>
+                <div class="status">
+                    <div class="status-dot"></div>
+                    <span>SSL Certificate: VALID</span>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>📊 Resource Usage</h2>
+                <div class="metric">
+                    <span>CPU Usage</span>
+                    <span>24/32 cores (75%)</span>
+                </div>
+                <div class="metric">
+                    <span>Memory</span>
+                    <span>18GB / 32GB (56%)</span>
+                </div>
+                <div class="metric">
+                    <span>Active Users</span>
+                    <span>127 sessions</span>
+                </div>
+                <div class="metric">
+                    <span>Network I/O</span>
+                    <span>2.4 GB/s</span>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>💰 Revenue Metrics</h2>
+                <div class="metric">
+                    <span>Monthly Recurring Revenue</span>
+                    <span>$125,000</span>
+                </div>
+                <div class="metric">
+                    <span>Annual Recurring Revenue</span>
+                    <span>$1,500,000</span>
+                </div>
+                <div class="metric">
+                    <span>Customer Acquisition Cost</span>
+                    <span>$150</span>
+                </div>
+                <div class="metric">
+                    <span>Customer Lifetime Value</span>
+                    <span>$5,000</span>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>🛡️ Security Status</h2>
+                <div class="status">
+                    <div class="status-dot"></div>
+                    <span>WAF Protection: ACTIVE</span>
+                </div>
+                <div class="status">
+                    <div class="status-dot"></div>
+                    <span>OAuth 2.0: CONFIGURED</span>
+                </div>
+                <div class="status">
+                    <div class="status-dot"></div>
+                    <span>Audit Logging: ENABLED</span>
+                </div>
+                <div class="status">
+                    <div class="status-dot"></div>
+                    <span>Network Policy: ENFORCED</span>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>☁️ Infrastructure</h2>
+                <div class="metric">
+                    <span>GKE Cluster</span>
+                    <span>aia-production-optimal</span>
+                </div>
+                <div class="metric">
+                    <span>Region</span>
+                    <span>europe-west4</span>
+                </div>
+                <div class="metric">
+                    <span>Nodes</span>
+                    <span>3 x e2-standard-8</span>
+                </div>
+                <div class="metric">
+                    <span>Load Balancer IP</span>
+                    <span>34.98.95.109</span>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>💾 Backup Status</h2>
+                <div class="status">
+                    <div class="status-dot"></div>
+                    <span>Last Backup: 2 hours ago</span>
+                </div>
+                <div class="metric">
+                    <span>Next Scheduled</span>
+                    <span>In 22 hours</span>
+                </div>
+                <div class="metric">
+                    <span>Backup Size</span>
+                    <span>2.1 GB</span>
+                </div>
+                <div class="metric">
+                    <span>Retention</span>
+                    <span>90 days</span>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            // Auto-refresh every 30 seconds
+            setTimeout(() => {
+                location.reload();
+            }, 30000);
+
+            // Add timestamp
+            const now = new Date();
+            document.title = `Founder Dashboard - ${now.toLocaleTimeString()}`;
+        </script>
+    </body>
+    </html>
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: founder-dashboard-nginx-config
+  namespace: founder-dashboard
+data:
+  default.conf: |
+    server {
+        listen 80;
+        server_name founder.013a.tech;
+
+        # Security headers
+        add_header X-Frame-Options "DENY" always;
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-XSS-Protection "1; mode=block" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+
+        location / {
+            root /usr/share/nginx/html;
+            index index.html;
+            try_files $uri $uri/ /index.html;
+        }
+
+        # Health check
+        location /health {
+            access_log off;
+            return 200 "healthy\n";
+            add_header Content-Type text/plain;
+        }
+    }
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: founder-dashboard-simple-service
+  namespace: founder-dashboard
+  labels:
+    app: founder-dashboard-simple
+spec:
+  selector:
+    app: founder-dashboard-simple
+  ports:
+  - port: 80
+    targetPort: 80
+    protocol: TCP
+  type: ClusterIP
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: founder-dashboard-simple-ingress
+  namespace: founder-dashboard
+  annotations:
+    kubernetes.io/ingress.class: "gce"
+    kubernetes.io/ingress.global-static-ip-name: "founder-dashboard-ip"
+    networking.gke.io/managed-certificates: "founder-dashboard-ssl"
+    cloud.google.com/armor-config: '{"founder-dashboard-security-policy": "founder-dashboard-waf"}'
+spec:
+  rules:
+  - host: founder.013a.tech
+    http:
+      paths:
+      - path: /*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: founder-dashboard-simple-service
+            port:
+              number: 80

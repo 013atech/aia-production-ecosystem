@@ -1,0 +1,684 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: analytics-comprehensive
+  labels:
+    name: analytics-comprehensive
+    environment: production
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: analytics-comprehensive-backend
+  namespace: analytics-comprehensive
+  labels:
+    app: analytics-comprehensive-backend
+    tier: backend
+    version: v1.0
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 2
+  selector:
+    matchLabels:
+      app: analytics-comprehensive-backend
+  template:
+    metadata:
+      labels:
+        app: analytics-comprehensive-backend
+        tier: backend
+    spec:
+      containers:
+      - name: analytics-backend
+        image: us-central1-docker.pkg.dev/aia-system-prod-1759055445/aia-repo/aia-unified-backend:latest
+        ports:
+        - containerPort: 8000
+          name: http
+        env:
+        - name: ENVIRONMENT
+          value: "production"
+        - name: SERVICE_NAME
+          value: "analytics-comprehensive-backend"
+        - name: PORT
+          value: "8000"
+        - name: DATABASE_URL
+          value: "postgresql://postgres:$(DATABASE_PASSWORD)@$(DATABASE_HOST):5432/analytics_main"
+        - name: REDIS_URL
+          value: "redis://$(REDIS_HOST):6379"
+        - name: GCP_PROJECT_ID
+          value: "aia-system-prod-1759055445"
+        envFrom:
+        - configMapRef:
+            name: analytics-config
+        - secretRef:
+            name: analytics-secrets
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 30
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: analytics-ml-processor
+  namespace: analytics-comprehensive
+  labels:
+    app: analytics-ml-processor
+    tier: ml
+    version: v1.0
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app: analytics-ml-processor
+  template:
+    metadata:
+      labels:
+        app: analytics-ml-processor
+        tier: ml
+    spec:
+      containers:
+      - name: ml-processor
+        image: us-central1-docker.pkg.dev/aia-system-prod-1759055445/aia-repo/aia-ml-processor:latest
+        ports:
+        - containerPort: 8004
+          name: http
+        env:
+        - name: ENVIRONMENT
+          value: "production"
+        - name: SERVICE_NAME
+          value: "analytics-ml-processor"
+        - name: PORT
+          value: "8004"
+        - name: ML_MODEL_PATH
+          value: "/models"
+        - name: CUDA_VISIBLE_DEVICES
+          value: "0"
+        envFrom:
+        - configMapRef:
+            name: analytics-config
+        - secretRef:
+            name: analytics-secrets
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8004
+          initialDelaySeconds: 15
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8004
+          initialDelaySeconds: 45
+          periodSeconds: 30
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: analytics-enterprise-partners
+  namespace: analytics-comprehensive
+  labels:
+    app: analytics-enterprise-partners
+    tier: enterprise
+    version: v1.0
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app: analytics-enterprise-partners
+  template:
+    metadata:
+      labels:
+        app: analytics-enterprise-partners
+        tier: enterprise
+    spec:
+      containers:
+      - name: enterprise-partners
+        image: us-central1-docker.pkg.dev/aia-system-prod-1759055445/aia-repo/aia-enterprise-partners:latest
+        ports:
+        - containerPort: 8003
+          name: http
+        env:
+        - name: ENVIRONMENT
+          value: "production"
+        - name: SERVICE_NAME
+          value: "analytics-enterprise-partners"
+        - name: PORT
+          value: "8003"
+        envFrom:
+        - configMapRef:
+            name: analytics-config
+        - secretRef:
+            name: analytics-secrets
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8003
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8003
+          initialDelaySeconds: 30
+          periodSeconds: 30
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: analytics-payment-processor
+  namespace: analytics-comprehensive
+  labels:
+    app: analytics-payment-processor
+    tier: payment
+    version: v1.0
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app: analytics-payment-processor
+  template:
+    metadata:
+      labels:
+        app: analytics-payment-processor
+        tier: payment
+    spec:
+      containers:
+      - name: payment-processor
+        image: us-central1-docker.pkg.dev/aia-system-prod-1759055445/aia-repo/aia-payment-processor:latest
+        ports:
+        - containerPort: 8005
+          name: http
+        env:
+        - name: ENVIRONMENT
+          value: "production"
+        - name: SERVICE_NAME
+          value: "analytics-payment-processor"
+        - name: PORT
+          value: "8005"
+        - name: PAYMENT_GATEWAY_URL
+          value: "https://api.stripe.com"
+        envFrom:
+        - configMapRef:
+            name: analytics-config
+        - secretRef:
+            name: analytics-secrets
+        - secretRef:
+            name: payment-secrets
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8005
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8005
+          initialDelaySeconds: 30
+          periodSeconds: 30
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: analytics-security-service
+  namespace: analytics-comprehensive
+  labels:
+    app: analytics-security-service
+    tier: security
+    version: v1.0
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app: analytics-security-service
+  template:
+    metadata:
+      labels:
+        app: analytics-security-service
+        tier: security
+    spec:
+      containers:
+      - name: security-service
+        image: us-central1-docker.pkg.dev/aia-system-prod-1759055445/aia-repo/aia-security-service:latest
+        ports:
+        - containerPort: 8006
+          name: http
+        env:
+        - name: ENVIRONMENT
+          value: "production"
+        - name: SERVICE_NAME
+          value: "analytics-security-service"
+        - name: PORT
+          value: "8006"
+        - name: SECURITY_LEVEL
+          value: "HIGH"
+        envFrom:
+        - configMapRef:
+            name: analytics-config
+        - secretRef:
+            name: analytics-secrets
+        - secretRef:
+            name: security-secrets
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8006
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8006
+          initialDelaySeconds: 30
+          periodSeconds: 30
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: analytics-performance-monitor
+  namespace: analytics-comprehensive
+  labels:
+    app: analytics-performance-monitor
+    tier: monitoring
+    version: v1.0
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app: analytics-performance-monitor
+  template:
+    metadata:
+      labels:
+        app: analytics-performance-monitor
+        tier: monitoring
+    spec:
+      containers:
+      - name: performance-monitor
+        image: us-central1-docker.pkg.dev/aia-system-prod-1759055445/aia-repo/aia-performance-monitor:latest
+        ports:
+        - containerPort: 8008
+          name: http
+        - containerPort: 9090
+          name: metrics
+        env:
+        - name: ENVIRONMENT
+          value: "production"
+        - name: SERVICE_NAME
+          value: "analytics-performance-monitor"
+        - name: PORT
+          value: "8008"
+        - name: METRICS_PORT
+          value: "9090"
+        envFrom:
+        - configMapRef:
+            name: analytics-config
+        - secretRef:
+            name: analytics-secrets
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        readinessProbe:
+          httpGet:
+            path: /metrics
+            port: 9090
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8008
+          initialDelaySeconds: 30
+          periodSeconds: 30
+---
+# Services
+apiVersion: v1
+kind: Service
+metadata:
+  name: analytics-comprehensive-backend-service
+  namespace: analytics-comprehensive
+  labels:
+    app: analytics-comprehensive-backend
+spec:
+  type: ClusterIP
+  ports:
+  - port: 80
+    targetPort: 8000
+    protocol: TCP
+    name: http
+  selector:
+    app: analytics-comprehensive-backend
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: analytics-ml-processor-service
+  namespace: analytics-comprehensive
+  labels:
+    app: analytics-ml-processor
+spec:
+  type: ClusterIP
+  ports:
+  - port: 80
+    targetPort: 8004
+    protocol: TCP
+    name: http
+  selector:
+    app: analytics-ml-processor
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: analytics-enterprise-partners-service
+  namespace: analytics-comprehensive
+  labels:
+    app: analytics-enterprise-partners
+spec:
+  type: ClusterIP
+  ports:
+  - port: 80
+    targetPort: 8003
+    protocol: TCP
+    name: http
+  selector:
+    app: analytics-enterprise-partners
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: analytics-payment-processor-service
+  namespace: analytics-comprehensive
+  labels:
+    app: analytics-payment-processor
+spec:
+  type: ClusterIP
+  ports:
+  - port: 80
+    targetPort: 8005
+    protocol: TCP
+    name: http
+  selector:
+    app: analytics-payment-processor
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: analytics-security-service-service
+  namespace: analytics-comprehensive
+  labels:
+    app: analytics-security-service
+spec:
+  type: ClusterIP
+  ports:
+  - port: 80
+    targetPort: 8006
+    protocol: TCP
+    name: http
+  selector:
+    app: analytics-security-service
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: analytics-performance-monitor-service
+  namespace: analytics-comprehensive
+  labels:
+    app: analytics-performance-monitor
+spec:
+  type: ClusterIP
+  ports:
+  - port: 80
+    targetPort: 8008
+    protocol: TCP
+    name: http
+  - port: 9090
+    targetPort: 9090
+    protocol: TCP
+    name: metrics
+  selector:
+    app: analytics-performance-monitor
+---
+# Load Balancer Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: analytics-comprehensive-loadbalancer
+  namespace: analytics-comprehensive
+  labels:
+    app: analytics-comprehensive
+    tier: loadbalancer
+spec:
+  type: NodePort
+  ports:
+  - port: 80
+    targetPort: 8000
+    protocol: TCP
+    name: http
+  - port: 443
+    targetPort: 8000
+    protocol: TCP
+    name: https
+  selector:
+    app: analytics-comprehensive-backend
+---
+# ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: analytics-config
+  namespace: analytics-comprehensive
+data:
+  DATABASE_HOST: "127.0.0.1"
+  REDIS_HOST: "127.0.0.1"
+  ENVIRONMENT: "production"
+  LOG_LEVEL: "INFO"
+  METRICS_ENABLED: "true"
+  TRACING_ENABLED: "true"
+  MAX_WORKERS: "4"
+  TIMEOUT: "300"
+---
+# Secrets (placeholder - should be created separately)
+apiVersion: v1
+kind: Secret
+metadata:
+  name: analytics-secrets
+  namespace: analytics-comprehensive
+type: Opaque
+stringData:
+  DATABASE_PASSWORD: "changeme"
+  REDIS_PASSWORD: "changeme"
+  JWT_SECRET: "changeme"
+  API_KEY: "changeme"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: payment-secrets
+  namespace: analytics-comprehensive
+type: Opaque
+stringData:
+  STRIPE_SECRET_KEY: "[STRIPE_KEY_PLACEHOLDER]"
+  STRIPE_PUBLISHABLE_KEY: "pk_test_changeme"
+  PAYPAL_CLIENT_ID: "changeme"
+  PAYPAL_CLIENT_SECRET: "changeme"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: security-secrets
+  namespace: analytics-comprehensive
+type: Opaque
+stringData:
+  ENCRYPTION_KEY: "changeme"
+  SIGNING_KEY: "changeme"
+  OAUTH_CLIENT_SECRET: "changeme"
+---
+# Ingress
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: analytics-comprehensive-ingress
+  namespace: analytics-comprehensive
+  annotations:
+    kubernetes.io/ingress.class: "gce"
+    kubernetes.io/ingress.global-static-ip-name: "analytics-comprehensive-ip"
+    ingress.gcp.kubernetes.io/managed-certificates: "analytics-comprehensive-ssl-cert"
+    ingress.gcp.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/cors-allow-origin: "*"
+    nginx.ingress.kubernetes.io/cors-allow-methods: "GET, POST, PUT, DELETE, OPTIONS"
+    nginx.ingress.kubernetes.io/cors-allow-headers: "Content-Type, Authorization, X-Requested-With"
+spec:
+  rules:
+  - host: analytics.013a.tech
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: analytics-comprehensive-backend-service
+            port:
+              number: 80
+  - host: ml.013a.tech
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: analytics-ml-processor-service
+            port:
+              number: 80
+  - host: enterprise.013a.tech
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: analytics-enterprise-partners-service
+            port:
+              number: 80
+  - host: payments.013a.tech
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: analytics-payment-processor-service
+            port:
+              number: 80
+---
+# HorizontalPodAutoscaler
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: analytics-comprehensive-backend-hpa
+  namespace: analytics-comprehensive
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: analytics-comprehensive-backend
+  minReplicas: 3
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: analytics-ml-processor-hpa
+  namespace: analytics-comprehensive
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: analytics-ml-processor
+  minReplicas: 2
+  maxReplicas: 8
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 75
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 85

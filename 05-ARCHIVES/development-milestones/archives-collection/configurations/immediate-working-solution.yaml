@@ -1,0 +1,67 @@
+# IMMEDIATE WORKING SOLUTION - GET 013a.tech OPERATIONAL
+# Simplified configuration to get SSL working
+
+# Simple LoadBalancer Service for immediate access
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-public-backend
+  namespace: aia-unified-production
+spec:
+  type: NodePort
+  selector:
+    app: aia-unified-backend
+  ports:
+  - port: 80
+    targetPort: 8000
+    name: http
+
+---
+# Simple LoadBalancer Service for frontend
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-public-frontend
+  namespace: aia-unified-production
+spec:
+  type: NodePort
+  selector:
+    app: aia-unified-frontend
+  ports:
+  - port: 80
+    targetPort: 80
+    name: http
+
+---
+# Simplified Ingress - Enable HTTP first
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: aia-working-ingress
+  namespace: aia-unified-production
+  annotations:
+    kubernetes.io/ingress.allow-http: "true"
+    kubernetes.io/ingress.global-static-ip-name: aia-production-ip
+    ingress.gcp.kubernetes.io/managed-certificates: aia-unified-ssl-certificate
+spec:
+  rules:
+  - host: 013a.tech
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-unified-frontend-service
+            port:
+              number: 80
+  - host: api.013a.tech
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-unified-backend-service
+            port:
+              number: 8000

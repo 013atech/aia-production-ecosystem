@@ -1,0 +1,39 @@
+{
+  "cycle_number": 31,
+  "timestamp": "2025-10-05T23:22:59.198529",
+  "tests": {
+    "production_endpoints": {
+      "frontend": {
+        "status_code": 200,
+        "response_time": 0.178481,
+        "status": "healthy"
+      },
+      "api": {
+        "status": "error",
+        "error": "HTTPSConnectionPool(host='api.013a.tech', port=443): Read timed out. (read timeout=10)"
+      },
+      "health": {
+        "status_code": 200,
+        "response_time": 0.16549,
+        "status": "healthy"
+      }
+    },
+    "knowledge_graph": {
+      "status": "error",
+      "error": "HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /knowledge-graph/query (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x10306f410>: Failed to establish a new connection: [Errno 61] Connection refused'))"
+    },
+    "gcp_infrastructure": {
+      "status": "healthy",
+      "pods_running": true,
+      "services_available": true,
+      "load_balancer": "active"
+    },
+    "monitoring": {
+      "status": "active",
+      "prometheus": "running",
+      "grafana": "accessible"
+    }
+  },
+  "cycle_duration": 10.504884243011475,
+  "status": "completed"
+}

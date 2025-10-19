@@ -1,0 +1,904 @@
+# AIA HOLISTIC PRODUCTION ORCHESTRATION
+# =====================================
+# Zero-downtime consolidation from 7 namespaces to 3 optimized namespaces
+# Maintains 120fps 3D rendering, Chrome DevTools MCP integration, and enterprise partner interfaces
+
+# ==============================================
+# NAMESPACE 1: AIA-PRODUCTION (Primary Business Logic)
+# ==============================================
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: aia-production
+  labels:
+    app.kubernetes.io/name: aia-system
+    app.kubernetes.io/version: v6.0.0-unified
+    environment: production
+    security-level: enterprise
+    orchestration-tier: primary
+
+---
+# ==============================================
+# NAMESPACE 2: AIA-MONITORING (Observability & Analytics)
+# ==============================================
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: aia-monitoring
+  labels:
+    app.kubernetes.io/name: aia-monitoring
+    app.kubernetes.io/version: v6.0.0-unified
+    environment: production
+    security-level: enterprise
+    orchestration-tier: observability
+
+---
+# ==============================================
+# NAMESPACE 3: AIA-ENTERPRISE (Partner Interfaces)
+# ==============================================
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: aia-enterprise
+  labels:
+    app.kubernetes.io/name: aia-enterprise
+    app.kubernetes.io/version: v6.0.0-unified
+    environment: production
+    security-level: enterprise
+    orchestration-tier: partners
+
+---
+# ==============================================
+# UNIFIED SERVICE ACCOUNT WITH WORKLOAD IDENTITY
+# ==============================================
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: aia-unified-workload-identity
+  namespace: aia-production
+  annotations:
+    iam.gke.io/gcp-service-account: aia-prod@aia-system-prod-1759055445.iam.gserviceaccount.com
+
+---
+# ==============================================
+# SECRET MANAGER INTEGRATION
+# ==============================================
+apiVersion: secrets-store.csi.x-k8s.io/v1
+kind: SecretProviderClass
+metadata:
+  name: aia-unified-secrets-provider
+  namespace: aia-production
+spec:
+  provider: gcp
+  parameters:
+    secrets: |
+      - resourceName: "projects/aia-system-prod-1759055445/secrets/aia-jwt-secret/versions/latest"
+        path: "jwt-secret"
+      - resourceName: "projects/aia-system-prod-1759055445/secrets/aia-api-key/versions/latest"
+        path: "api-key"
+      - resourceName: "projects/aia-system-prod-1759055445/secrets/aia-crypto-key/versions/latest"
+        path: "crypto-key"
+      - resourceName: "projects/aia-system-prod-1759055445/secrets/aia-postgres-password/versions/latest"
+        path: "postgres-password"
+      - resourceName: "projects/aia-system-prod-1759055445/secrets/aia-chrome-devtools-key/versions/latest"
+        path: "chrome-devtools-key"
+      - resourceName: "projects/aia-system-prod-1759055445/secrets/aia-enterprise-keys/versions/latest"
+        path: "enterprise-keys"
+
+---
+# ==============================================
+# UNIFIED POSTGRESQL DATABASE
+# ==============================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: aia-unified-postgres-config
+  namespace: aia-production
+data:
+  POSTGRES_DB: "aia_unified_production"
+  POSTGRES_USER: "aia_unified_user"
+  PGDATA: "/var/lib/postgresql/data/pgdata"
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: aia-unified-postgres-init
+  namespace: aia-production
+data:
+  01-unified-extensions.sql: |
+    CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+    CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+    CREATE EXTENSION IF NOT EXISTS "pg_trgm";
+    CREATE EXTENSION IF NOT EXISTS "btree_gin";
+    CREATE EXTENSION IF NOT EXISTS "hstore";
+    CREATE EXTENSION IF NOT EXISTS "vector";
+    CREATE EXTENSION IF NOT EXISTS "pgml";
+
+  02-unified-schema.sql: |
+    -- Core unified user management
+    CREATE TABLE IF NOT EXISTS unified_users (
+      id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+      email VARCHAR(255) UNIQUE NOT NULL,
+      password_hash VARCHAR(255) NOT NULL,
+      created_at TIMESTAMP DEFAULT NOW(),
+      updated_at TIMESTAMP DEFAULT NOW(),
+      is_active BOOLEAN DEFAULT true,
+      is_verified BOOLEAN DEFAULT false,
+      subscription_tier VARCHAR(50) DEFAULT 'free',
+      security_level VARCHAR(20) DEFAULT 'enterprise',
+      partner_access JSONB DEFAULT '{}',
+      chrome_devtools_permissions JSONB DEFAULT '{}'
+    );
+
+    -- Multi-agent orchestration tracking
+    CREATE TABLE IF NOT EXISTS agent_orchestration (
+      id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+      agent_id VARCHAR(100) NOT NULL,
+      orchestration_step VARCHAR(100) NOT NULL,
+      execution_time_ms INTEGER NOT NULL,
+      success_rate DECIMAL(5,4) DEFAULT 1.0,
+      resource_usage JSONB,
+      security_score DECIMAL(3,2) DEFAULT 1.0,
+      chrome_devtools_metrics JSONB DEFAULT '{}',
+      partner_integration_status JSONB DEFAULT '{}',
+      timestamp TIMESTAMP DEFAULT NOW(),
+      metadata JSONB DEFAULT '{}'
+    );
+
+    -- 3D rendering performance tracking
+    CREATE TABLE IF NOT EXISTS rendering_performance (
+      id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+      user_id UUID REFERENCES unified_users(id),
+      session_id VARCHAR(255) NOT NULL,
+      fps_average DECIMAL(5,2) DEFAULT 0.0,
+      gpu_utilization DECIMAL(3,2) DEFAULT 0.0,
+      memory_usage_mb INTEGER DEFAULT 0,
+      webxr_supported BOOLEAN DEFAULT false,
+      chrome_devtools_analysis JSONB DEFAULT '{}',
+      timestamp TIMESTAMP DEFAULT NOW()
+    );
+
+    -- Enterprise partner analytics
+    CREATE TABLE IF NOT EXISTS partner_analytics (
+      id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+      partner_name VARCHAR(100) NOT NULL,
+      pipeline_value DECIMAL(15,2) DEFAULT 0.0,
+      interaction_metrics JSONB DEFAULT '{}',
+      success_metrics JSONB DEFAULT '{}',
+      security_audit_trail JSONB DEFAULT '{}',
+      timestamp TIMESTAMP DEFAULT NOW()
+    );
+
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: aia-unified-postgresql
+  namespace: aia-production
+spec:
+  serviceName: aia-unified-postgresql-headless
+  replicas: 3
+  selector:
+    matchLabels:
+      app: aia-unified-postgresql
+  template:
+    metadata:
+      labels:
+        app: aia-unified-postgresql
+    spec:
+      serviceAccountName: aia-unified-workload-identity
+      containers:
+      - name: postgresql
+        image: pgvector/pgvector:pg15
+        env:
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: aia-postgres-secret
+              key: password
+        envFrom:
+        - configMapRef:
+            name: aia-unified-postgres-config
+        ports:
+        - containerPort: 5432
+          name: postgresql
+        volumeMounts:
+        - name: postgresql-storage
+          mountPath: /var/lib/postgresql/data
+        - name: init-scripts
+          mountPath: /docker-entrypoint-initdb.d
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+      volumes:
+      - name: init-scripts
+        configMap:
+          name: aia-unified-postgres-init
+  volumeClaimTemplates:
+  - metadata:
+      name: postgresql-storage
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      resources:
+        requests:
+          storage: 100Gi
+
+---
+# ==============================================
+# UNIFIED BACKEND WITH MULTI-AGENT ORCHESTRATION
+# ==============================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-unified-backend
+  namespace: aia-production
+spec:
+  replicas: 5
+  selector:
+    matchLabels:
+      app: aia-unified-backend
+  template:
+    metadata:
+      labels:
+        app: aia-unified-backend
+    spec:
+      serviceAccountName: aia-unified-workload-identity
+      containers:
+      - name: aia-backend
+        image: gcr.io/aia-system-prod-1759055445/aia-unified-backend:latest
+        ports:
+        - containerPort: 8000
+          name: http
+        - containerPort: 8001
+          name: agents
+        - containerPort: 8080
+          name: health
+        env:
+        - name: DATABASE_URL
+          value: "postgresql://aia_unified_user@aia-unified-postgresql:5432/aia_unified_production"
+        - name: REDIS_URL
+          value: "redis://aia-unified-redis:6379"
+        - name: ORCHESTRATION_MODE
+          value: "HOLISTIC_UNIFIED"
+        - name: CHROME_DEVTOOLS_INTEGRATION
+          value: "true"
+        - name: ENTERPRISE_PARTNERS_ENABLED
+          value: "true"
+        - name: GPU_OPTIMIZATION
+          value: "true"
+        - name: STAKEHOLDER_HAPPINESS_OPTIMIZATION
+          value: "true"
+        volumeMounts:
+        - name: secrets-store
+          mountPath: /secrets
+          readOnly: true
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 60
+          periodSeconds: 30
+      volumes:
+      - name: secrets-store
+        csi:
+          driver: secrets-store.csi.k8s.io
+          readOnly: true
+          volumeAttributes:
+            secretProviderClass: aia-unified-secrets-provider
+
+---
+# ==============================================
+# UNIFIED FRONTEND WITH 3D REACT + CHROME DEVTOOLS MCP
+# ==============================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-unified-frontend
+  namespace: aia-production
+spec:
+  replicas: 4
+  selector:
+    matchLabels:
+      app: aia-unified-frontend
+  template:
+    metadata:
+      labels:
+        app: aia-unified-frontend
+    spec:
+      serviceAccountName: aia-unified-workload-identity
+      containers:
+      - name: aia-frontend
+        image: gcr.io/aia-system-prod-1759055445/aia-unified-frontend:latest
+        ports:
+        - containerPort: 3000
+          name: http
+        - containerPort: 3001
+          name: devtools
+        env:
+        - name: REACT_APP_API_URL
+          value: "https://013a.tech/api"
+        - name: REACT_APP_WEBSOCKET_URL
+          value: "wss://013a.tech/ws"
+        - name: REACT_APP_3D_OPTIMIZATION
+          value: "120fps"
+        - name: REACT_APP_CHROME_DEVTOOLS_MCP
+          value: "enabled"
+        - name: REACT_APP_ENTERPRISE_MODE
+          value: "true"
+        - name: REACT_APP_WEBXR_ENABLED
+          value: "true"
+        - name: NODE_ENV
+          value: "production"
+        volumeMounts:
+        - name: secrets-store
+          mountPath: /secrets
+          readOnly: true
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 3000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 3000
+          initialDelaySeconds: 60
+          periodSeconds: 30
+      volumes:
+      - name: secrets-store
+        csi:
+          driver: secrets-store.csi.k8s.io
+          readOnly: true
+          volumeAttributes:
+            secretProviderClass: aia-unified-secrets-provider
+
+---
+# ==============================================
+# CHROME DEVTOOLS MCP INTEGRATION SERVICE
+# ==============================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-chrome-devtools-mcp
+  namespace: aia-production
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: aia-chrome-devtools-mcp
+  template:
+    metadata:
+      labels:
+        app: aia-chrome-devtools-mcp
+    spec:
+      serviceAccountName: aia-unified-workload-identity
+      containers:
+      - name: chrome-devtools-mcp
+        image: gcr.io/aia-system-prod-1759055445/aia-chrome-devtools-mcp:latest
+        ports:
+        - containerPort: 9222
+          name: devtools
+        - containerPort: 8082
+          name: mcp-api
+        env:
+        - name: MCP_INTEGRATION_MODE
+          value: "PRODUCTION"
+        - name: CHROME_HEADLESS
+          value: "true"
+        - name: PERFORMANCE_MONITORING
+          value: "true"
+        - name: NETWORK_ANALYSIS
+          value: "true"
+        - name: SECURITY_TESTING
+          value: "true"
+        - name: ACCESSIBILITY_VALIDATION
+          value: "true"
+        volumeMounts:
+        - name: secrets-store
+          mountPath: /secrets
+          readOnly: true
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+      volumes:
+      - name: secrets-store
+        csi:
+          driver: secrets-store.csi.k8s.io
+          readOnly: true
+          volumeAttributes:
+            secretProviderClass: aia-unified-secrets-provider
+
+---
+# ==============================================
+# ENTERPRISE PARTNER INTERFACES
+# ==============================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-enterprise-partners
+  namespace: aia-enterprise
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: aia-enterprise-partners
+  template:
+    metadata:
+      labels:
+        app: aia-enterprise-partners
+    spec:
+      containers:
+      - name: enterprise-partners
+        image: gcr.io/aia-system-prod-1759055445/aia-enterprise-partners:latest
+        ports:
+        - containerPort: 8090
+          name: ey-interface
+        - containerPort: 8091
+          name: jpmorgan
+        - containerPort: 8092
+          name: google-cloud
+        - containerPort: 8093
+          name: apple
+        env:
+        - name: ENTERPRISE_MODE
+          value: "true"
+        - name: PIPELINE_VALUE_TARGET
+          value: "25000000"
+        - name: PARTNER_SECURITY_LEVEL
+          value: "enterprise"
+        - name: REAL_TIME_ANALYTICS
+          value: "true"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+
+---
+# ==============================================
+# UNIFIED SERVICES
+# ==============================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-unified-backend-service
+  namespace: aia-production
+spec:
+  selector:
+    app: aia-unified-backend
+  ports:
+  - port: 8000
+    targetPort: 8000
+    protocol: TCP
+    name: http
+  - port: 8001
+    targetPort: 8001
+    protocol: TCP
+    name: agents
+  - port: 8080
+    targetPort: 8080
+    protocol: TCP
+    name: health
+  type: ClusterIP
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-unified-frontend-service
+  namespace: aia-production
+spec:
+  selector:
+    app: aia-unified-frontend
+  ports:
+  - port: 3000
+    targetPort: 3000
+    protocol: TCP
+    name: http
+  - port: 3001
+    targetPort: 3001
+    protocol: TCP
+    name: devtools
+  type: ClusterIP
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-chrome-devtools-mcp-service
+  namespace: aia-production
+spec:
+  selector:
+    app: aia-chrome-devtools-mcp
+  ports:
+  - port: 9222
+    targetPort: 9222
+    protocol: TCP
+    name: devtools
+  - port: 8082
+    targetPort: 8082
+    protocol: TCP
+    name: mcp-api
+  type: ClusterIP
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-enterprise-partners-service
+  namespace: aia-enterprise
+spec:
+  selector:
+    app: aia-enterprise-partners
+  ports:
+  - port: 8090
+    targetPort: 8090
+    protocol: TCP
+    name: ey-interface
+  - port: 8091
+    targetPort: 8091
+    protocol: TCP
+    name: jpmorgan
+  - port: 8092
+    targetPort: 8092
+    protocol: TCP
+    name: google-cloud
+  - port: 8093
+    targetPort: 8093
+    protocol: TCP
+    name: apple
+  type: NodePort
+
+---
+# ==============================================
+# UNIFIED LOAD BALANCER WITH SSL
+# ==============================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-unified-load-balancer
+  namespace: aia-production
+  annotations:
+    cloud.google.com/load-balancer-type: "External"
+    networking.gke.io/managed-certificates: "aia-ssl-cert"
+spec:
+  type: NodePort
+  selector:
+    app: aia-unified-frontend
+  ports:
+  - port: 80
+    targetPort: 3000
+    protocol: TCP
+    name: http
+  - port: 443
+    targetPort: 3000
+    protocol: TCP
+    name: https
+
+---
+# ==============================================
+# SSL CERTIFICATE MANAGEMENT
+# ==============================================
+apiVersion: networking.gke.io/v1
+kind: ManagedCertificate
+metadata:
+  name: aia-ssl-cert
+  namespace: aia-production
+spec:
+  domains:
+  - "013a.tech"
+  - "www.013a.tech"
+  - "api.013a.tech"
+  - "partners.013a.tech"
+
+---
+# ==============================================
+# UNIFIED INGRESS WITH ENTERPRISE ROUTING
+# ==============================================
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: aia-unified-ingress
+  namespace: aia-production
+  annotations:
+    kubernetes.io/ingress.global-static-ip-name: "aia-unified-ip"
+    networking.gke.io/managed-certificates: "aia-ssl-cert"
+    kubernetes.io/ingress.class: "gce"
+    kubernetes.io/ingress.allow-http: "true"
+spec:
+  rules:
+  - host: "013a.tech"
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-unified-frontend-service
+            port:
+              number: 3000
+      - path: /api
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-unified-backend-service
+            port:
+              number: 8000
+      - path: /chrome-devtools
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-chrome-devtools-mcp-service
+            port:
+              number: 8082
+  - host: "www.013a.tech"
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-unified-frontend-service
+            port:
+              number: 3000
+  - host: "partners.013a.tech"
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-enterprise-partners-service
+            port:
+              number: 8090
+
+---
+# ==============================================
+# HORIZONTAL POD AUTOSCALING
+# ==============================================
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: aia-unified-backend-hpa
+  namespace: aia-production
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: aia-unified-backend
+  minReplicas: 5
+  maxReplicas: 20
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: aia-unified-frontend-hpa
+  namespace: aia-production
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: aia-unified-frontend
+  minReplicas: 4
+  maxReplicas: 15
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+
+---
+# ==============================================
+# NETWORK POLICIES FOR SECURITY
+# ==============================================
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: aia-unified-network-policy
+  namespace: aia-production
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: aia-monitoring
+    - namespaceSelector:
+        matchLabels:
+          name: aia-enterprise
+    - podSelector: {}
+  egress:
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: aia-monitoring
+    - namespaceSelector:
+        matchLabels:
+          name: aia-enterprise
+    - podSelector: {}
+  - to: []
+    ports:
+    - protocol: TCP
+      port: 443
+    - protocol: TCP
+      port: 53
+    - protocol: UDP
+      port: 53
+
+---
+# ==============================================
+# REDIS FOR CACHING AND SESSION MANAGEMENT
+# ==============================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-unified-redis
+  namespace: aia-production
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: aia-unified-redis
+  template:
+    metadata:
+      labels:
+        app: aia-unified-redis
+    spec:
+      containers:
+      - name: redis
+        image: redis:7-alpine
+        ports:
+        - containerPort: 6379
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        volumeMounts:
+        - name: redis-storage
+          mountPath: /data
+      volumes:
+      - name: redis-storage
+        emptyDir: {}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-unified-redis
+  namespace: aia-production
+spec:
+  selector:
+    app: aia-unified-redis
+  ports:
+  - port: 6379
+    targetPort: 6379
+  type: ClusterIP
+
+---
+# ==============================================
+# MONITORING AND OBSERVABILITY (AIA-MONITORING NAMESPACE)
+# ==============================================
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: aia-monitoring-sa
+  namespace: aia-monitoring
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-unified-monitoring
+  namespace: aia-monitoring
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: aia-unified-monitoring
+  template:
+    metadata:
+      labels:
+        app: aia-unified-monitoring
+    spec:
+      serviceAccountName: aia-monitoring-sa
+      containers:
+      - name: monitoring
+        image: gcr.io/aia-system-prod-1759055445/aia-unified-monitoring:latest
+        ports:
+        - containerPort: 8084
+          name: monitoring
+        env:
+        - name: MONITORING_MODE
+          value: "UNIFIED"
+        - name: CHROME_DEVTOOLS_METRICS
+          value: "true"
+        - name: ENTERPRISE_ANALYTICS
+          value: "true"
+        - name: REAL_TIME_DASHBOARDS
+          value: "true"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+
+---
+# ==============================================
+# CONFIGURATION FOR ZERO-DOWNTIME MIGRATION
+# ==============================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: aia-migration-config
+  namespace: aia-production
+data:
+  MIGRATION_STRATEGY: "BLUE_GREEN"
+  ZERO_DOWNTIME_MODE: "true"
+  HEALTH_CHECK_INTERVAL: "30s"
+  ROLLBACK_ENABLED: "true"
+  STAKEHOLDER_NOTIFICATION: "true"
+  CHROME_DEVTOOLS_VALIDATION: "true"
+  ENTERPRISE_PARTNER_VALIDATION: "true"
+  PERFORMANCE_BASELINE_FPS: "120"

@@ -1,0 +1,217 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: aia-postgres-dev
+    environment:
+      POSTGRES_DB: aia_development
+      POSTGRES_USER: aia_dev
+      POSTGRES_PASSWORD: aia_dev_password_2025
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./dev-scripts/db-init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aia_dev -d aia_development"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - aia-network
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: aia-redis-dev
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes --requirepass redis_dev_password_2025
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - aia-network
+
+  # Mock External Services
+  mock-services:
+    build:
+      context: ./dev-services
+      dockerfile: Dockerfile.mock
+    container_name: aia-mock-services-dev
+    ports:
+      - "9000:9000"
+    environment:
+      - MOCK_OPENAI_API=true
+      - MOCK_ANTHROPIC_API=true
+      - MOCK_VERTEX_AI=true
+      - MOCK_STRIPE=true
+    volumes:
+      - ./dev-services:/app
+    networks:
+      - aia-network
+
+  # AIA Backend
+  backend:
+    build:
+      context: ./aia
+      dockerfile: Dockerfile.dev
+    container_name: aia-backend-dev
+    ports:
+      - "8000:8000"
+    environment:
+      - ENVIRONMENT=development
+      - DEBUG=true
+      - DATABASE_URL=postgresql://aia_dev:aia_dev_password_2025@postgres:5432/aia_development
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=redis_dev_password_2025
+      - OPENAI_API_KEY=mock_openai_key
+      - ANTHROPIC_API_KEY=mock_anthropic_key
+      - GOOGLE_CLOUD_PROJECT=aia-development
+      - AIA_VERTEX_AI_ENABLED=false
+      - STRIPE_SECRET_KEY=mock_stripe_key
+      - MOCK_SERVICES_URL=http://mock-services:9000
+      - AIA_KNOWLEDGE_GRAPH_PATH=/app/knowledge_graph.json
+      - CORS_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
+      - LOG_LEVEL=DEBUG
+    volumes:
+      - ./aia:/app
+      - ./aia_knowledge_graph_v2_1759313796.json:/app/knowledge_graph.json:ro
+      - /app/node_modules
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      mock-services:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    restart: unless-stopped
+    networks:
+      - aia-network
+    command: >
+      sh -c "
+        python -m pip install --no-cache-dir -r requirements.txt &&
+        python -m alembic upgrade head &&
+        uvicorn main:app --host 0.0.0.0 --port 8000 --reload --log-level debug
+      "
+
+  # React Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    container_name: aia-frontend-dev
+    ports:
+      - "3000:3000"
+    environment:
+      - REACT_APP_API_URL=http://localhost:8000
+      - REACT_APP_WEBSOCKET_URL=ws://localhost:8000
+      - REACT_APP_ENVIRONMENT=development
+      - REACT_APP_MOCK_MODE=true
+      - REACT_APP_STRIPE_PUBLISHABLE_KEY=mock_stripe_pk
+      - CHOKIDAR_USEPOLLING=true
+      - WATCHPACK_POLLING=true
+      - FAST_REFRESH=true
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - aia-network
+    stdin_open: true
+    tty: true
+    command: >
+      sh -c "
+        npm start
+      "
+
+  # Development Database Admin (pgAdmin)
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: aia-pgadmin-dev
+    environment:
+      PGADMIN_DEFAULT_EMAIL: dev@013a.tech
+      PGADMIN_DEFAULT_PASSWORD: pgadmin_dev_2025
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    networks:
+      - aia-network
+
+  # Redis Admin (RedisInsight)
+  redisinsight:
+    image: redislabs/redisinsight:latest
+    container_name: aia-redisinsight-dev
+    ports:
+      - "8001:8001"
+    volumes:
+      - redisinsight_data:/db
+    networks:
+      - aia-network
+
+  # MLOps Development Environment
+  mlops-dev:
+    build:
+      context: ./aia
+      dockerfile: Dockerfile.mlops-dev
+    container_name: aia-mlops-dev
+    ports:
+      - "8888:8888"  # Jupyter
+      - "6006:6006"  # TensorBoard
+    environment:
+      - JUPYTER_ENABLE_LAB=yes
+      - JUPYTER_TOKEN=mlops_dev_token_2025
+    volumes:
+      - ./aia:/workspace
+      - mlops_models:/workspace/models
+      - mlops_data:/workspace/data
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - aia-network
+    command: >
+      sh -c "
+        pip install jupyter jupyterlab tensorboard &&
+        jupyter lab --ip=0.0.0.0 --port=8888 --no-browser --allow-root --NotebookApp.token='mlops_dev_token_2025'
+      "
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  pgadmin_data:
+    driver: local
+  redisinsight_data:
+    driver: local
+  mlops_models:
+    driver: local
+  mlops_data:
+    driver: local
+
+networks:
+  aia-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

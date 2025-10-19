@@ -1,0 +1,418 @@
+---
+# NEO4J GRAPH DATABASE DEPLOYMENT
+# Knowledge Relationship Mapping for Multi-Agent System
+# Integration with AIA Knowledge Graph v2 (2,472 atoms)
+
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: neo4j-enterprise
+  namespace: aia-database-optimization
+  labels:
+    app: neo4j
+    tier: graph-database
+spec:
+  serviceName: neo4j
+  replicas: 3
+  selector:
+    matchLabels:
+      app: neo4j
+  template:
+    metadata:
+      labels:
+        app: neo4j
+    spec:
+      securityContext:
+        fsGroup: 7474
+      containers:
+      - name: neo4j
+        image: neo4j:5.13-enterprise
+        ports:
+        - containerPort: 7474
+          name: http
+        - containerPort: 7687
+          name: bolt
+        - containerPort: 7473
+          name: https
+        - containerPort: 6362
+          name: backup
+        env:
+        - name: NEO4J_AUTH
+          value: "neo4j/aia_graph_secure_2025"
+        - name: NEO4J_EDITION
+          value: "enterprise"
+        - name: NEO4J_ACCEPT_LICENSE_AGREEMENT
+          value: "yes"
+        - name: NEO4J_server_memory_heap_initial__size
+          value: "2G"
+        - name: NEO4J_server_memory_heap_max__size
+          value: "4G"
+        - name: NEO4J_server_memory_pagecache_size
+          value: "2G"
+        - name: NEO4J_dbms_mode
+          value: "CORE"
+        - name: NEO4J_causal__clustering_minimum__core__cluster__size__at__formation
+          value: "3"
+        - name: NEO4J_causal__clustering_minimum__core__cluster__size__at__runtime
+          value: "3"
+        - name: NEO4J_causal__clustering_initial__discovery__members
+          value: "neo4j-0.neo4j.aia-database-optimization.svc.cluster.local:5000,neo4j-1.neo4j.aia-database-optimization.svc.cluster.local:5000,neo4j-2.neo4j.aia-database-optimization.svc.cluster.local:5000"
+        - name: NEO4J_dbms_connector_bolt_advertised__address
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: NEO4J_dbms_security_procedures_unrestricted
+          value: "gds.*,apoc.*"
+        - name: NEO4J_dbms_security_procedures_allowlist
+          value: "gds.*,apoc.*"
+        - name: NEO4J_dbms_logs_query_enabled
+          value: "INFO"
+        - name: NEO4J_metrics_enabled
+          value: "true"
+        - name: NEO4J_metrics_csv_enabled
+          value: "true"
+        - name: NEO4J_metrics_prometheus_enabled
+          value: "true"
+        - name: NEO4J_metrics_prometheus_endpoint
+          value: "0.0.0.0:2004"
+        resources:
+          requests:
+            memory: "6Gi"
+            cpu: "2"
+          limits:
+            memory: "12Gi"
+            cpu: "4"
+        volumeMounts:
+        - name: neo4j-data
+          mountPath: /data
+        - name: neo4j-logs
+          mountPath: /logs
+        - name: neo4j-import
+          mountPath: /var/lib/neo4j/import
+        - name: neo4j-plugins
+          mountPath: /plugins
+        readinessProbe:
+          httpGet:
+            path: /db/neo4j/cluster/available
+            port: 7474
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 7474
+          initialDelaySeconds: 60
+          periodSeconds: 30
+      initContainers:
+      - name: download-plugins
+        image: curlimages/curl:latest
+        command:
+        - /bin/sh
+        - -c
+        - |
+          cd /plugins
+          # Download APOC
+          curl -L -o apoc.jar https://github.com/neo4j-contrib/neo4j-apoc-procedures/releases/download/5.13.0/apoc-5.13.0-extended.jar
+          # Download Graph Data Science
+          curl -L -o gds.jar https://github.com/neo4j/graph-data-science/releases/download/2.5.3/neo4j-graph-data-science-2.5.3.jar
+          echo "Plugins downloaded successfully"
+        volumeMounts:
+        - name: neo4j-plugins
+          mountPath: /plugins
+      volumes:
+      - name: neo4j-plugins
+        emptyDir: {}
+      - name: neo4j-import
+        emptyDir: {}
+  volumeClaimTemplates:
+  - metadata:
+      name: neo4j-data
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      storageClassName: ssd-retain
+      resources:
+        requests:
+          storage: 100Gi
+  - metadata:
+      name: neo4j-logs
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      storageClassName: ssd-retain
+      resources:
+        requests:
+          storage: 20Gi
+---
+# Neo4j Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: neo4j
+  namespace: aia-database-optimization
+spec:
+  clusterIP: None
+  selector:
+    app: neo4j
+  ports:
+  - port: 7474
+    targetPort: 7474
+    name: http
+  - port: 7687
+    targetPort: 7687
+    name: bolt
+  - port: 7473
+    targetPort: 7473
+    name: https
+---
+# Neo4j LoadBalancer Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: neo4j-lb
+  namespace: aia-database-optimization
+spec:
+  selector:
+    app: neo4j
+  ports:
+  - port: 7474
+    targetPort: 7474
+    name: http
+  - port: 7687
+    targetPort: 7687
+    name: bolt
+  type: LoadBalancer
+---
+# Knowledge Graph Import Job
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: knowledge-graph-import
+  namespace: aia-database-optimization
+spec:
+  template:
+    spec:
+      containers:
+      - name: graph-importer
+        image: python:3.11-slim
+        command:
+        - /bin/sh
+        - -c
+        - |
+          pip install neo4j-driver requests
+          python << 'EOF'
+          import json
+          import requests
+          from neo4j import GraphDatabase
+          import time
+          import logging
+
+          logging.basicConfig(level=logging.INFO)
+          logger = logging.getLogger(__name__)
+
+          # Wait for Neo4j to be ready
+          neo4j_uri = "bolt://neo4j-0.neo4j.aia-database-optimization.svc.cluster.local:7687"
+          neo4j_user = "neo4j"
+          neo4j_password = "aia_graph_secure_2025"
+
+          def wait_for_neo4j():
+              max_retries = 30
+              for i in range(max_retries):
+                  try:
+                      driver = GraphDatabase.driver(neo4j_uri, auth=(neo4j_user, neo4j_password))
+                      with driver.session() as session:
+                          session.run("RETURN 1")
+                      logger.info("✅ Neo4j connection successful")
+                      return driver
+                  except Exception as e:
+                      logger.info(f"Waiting for Neo4j... attempt {i+1}/{max_retries}")
+                      time.sleep(10)
+              raise Exception("Neo4j not ready after maximum retries")
+
+          def import_aia_knowledge_graph():
+              """Import AIA Knowledge Graph v2 into Neo4j"""
+              driver = wait_for_neo4j()
+
+              try:
+                  # Fetch knowledge graph from AIA backend
+                  logger.info("🔄 Fetching AIA Knowledge Graph...")
+
+                  # Sample knowledge atoms structure (in production, fetch from API)
+                  sample_knowledge_atoms = [
+                      {
+                          "id": "aia_agent_001",
+                          "type": "Agent",
+                          "properties": {
+                              "name": "DataProcessingAgent",
+                              "capabilities": ["data_analysis", "ml_inference"],
+                              "status": "active",
+                              "complexity_rating": 0.85
+                          },
+                          "relationships": ["connects_to:aia_agent_002", "processes:data_stream_001"]
+                      },
+                      {
+                          "id": "aia_agent_002",
+                          "type": "Agent",
+                          "properties": {
+                              "name": "CryptographyAgent",
+                              "capabilities": ["quantum_encryption", "key_management"],
+                              "status": "active",
+                              "complexity_rating": 0.95
+                          },
+                          "relationships": ["secures:payment_system", "manages:key_vault"]
+                      },
+                      {
+                          "id": "knowledge_atom_001",
+                          "type": "KnowledgeAtom",
+                          "properties": {
+                              "content_hash": "6ef63fd3885a",
+                              "semantic_summary": "Multi-agent coordination patterns",
+                              "complexity_score": 0.78,
+                              "atom_count": 2472
+                          },
+                          "relationships": ["relates_to:aia_agent_001", "part_of:atomic_dkg"]
+                      }
+                  ]
+
+                  with driver.session() as session:
+                      # Create constraints and indexes
+                      logger.info("🔧 Setting up Neo4j schema...")
+                      session.run("CREATE CONSTRAINT agent_id IF NOT EXISTS FOR (a:Agent) REQUIRE a.id IS UNIQUE")
+                      session.run("CREATE CONSTRAINT knowledge_id IF NOT EXISTS FOR (k:KnowledgeAtom) REQUIRE k.id IS UNIQUE")
+                      session.run("CREATE INDEX agent_status IF NOT EXISTS FOR (a:Agent) ON (a.status)")
+                      session.run("CREATE INDEX knowledge_hash IF NOT EXISTS FOR (k:KnowledgeAtom) ON (k.content_hash)")
+
+                      # Import nodes
+                      logger.info("📊 Importing knowledge nodes...")
+                      for atom in sample_knowledge_atoms:
+                          if atom["type"] == "Agent":
+                              session.run("""
+                                  CREATE (a:Agent {
+                                      id: $id,
+                                      name: $name,
+                                      capabilities: $capabilities,
+                                      status: $status,
+                                      complexity_rating: $complexity_rating,
+                                      imported_at: datetime()
+                                  })
+                              """,
+                              id=atom["id"],
+                              name=atom["properties"]["name"],
+                              capabilities=atom["properties"]["capabilities"],
+                              status=atom["properties"]["status"],
+                              complexity_rating=atom["properties"]["complexity_rating"]
+                              )
+                          elif atom["type"] == "KnowledgeAtom":
+                              session.run("""
+                                  CREATE (k:KnowledgeAtom {
+                                      id: $id,
+                                      content_hash: $content_hash,
+                                      semantic_summary: $semantic_summary,
+                                      complexity_score: $complexity_score,
+                                      atom_count: $atom_count,
+                                      imported_at: datetime()
+                                  })
+                              """,
+                              id=atom["id"],
+                              content_hash=atom["properties"]["content_hash"],
+                              semantic_summary=atom["properties"]["semantic_summary"],
+                              complexity_score=atom["properties"]["complexity_score"],
+                              atom_count=atom["properties"]["atom_count"]
+                              )
+
+                      # Create relationships
+                      logger.info("🔗 Creating knowledge relationships...")
+                      session.run("""
+                          MATCH (a1:Agent {id: 'aia_agent_001'}), (a2:Agent {id: 'aia_agent_002'})
+                          CREATE (a1)-[:COLLABORATES_WITH {strength: 0.8, type: 'coordination'}]->(a2)
+                      """)
+
+                      session.run("""
+                          MATCH (a:Agent {id: 'aia_agent_001'}), (k:KnowledgeAtom {id: 'knowledge_atom_001'})
+                          CREATE (a)-[:UTILIZES {confidence: 0.9, frequency: 'high'}]->(k)
+                      """)
+
+                      # Verify import
+                      result = session.run("MATCH (n) RETURN count(n) as total_nodes")
+                      total_nodes = result.single()["total_nodes"]
+                      logger.info(f"✅ Import complete! Total nodes: {total_nodes}")
+
+                      # Run graph algorithms for analysis
+                      logger.info("🧠 Running graph analytics...")
+
+                      # Create graph projection for algorithms
+                      session.run("""
+                          CALL gds.graph.project(
+                              'aia-knowledge-graph',
+                              ['Agent', 'KnowledgeAtom'],
+                              {
+                                  COLLABORATES_WITH: {orientation: 'UNDIRECTED'},
+                                  UTILIZES: {orientation: 'UNDIRECTED'}
+                              }
+                          )
+                      """)
+
+                      # PageRank for importance scoring
+                      session.run("""
+                          CALL gds.pageRank.write('aia-knowledge-graph', {
+                              writeProperty: 'importance_score'
+                          })
+                      """)
+
+                      # Community detection
+                      session.run("""
+                          CALL gds.louvain.write('aia-knowledge-graph', {
+                              writeProperty: 'community_id'
+                          })
+                      """)
+
+                      logger.info("🎯 Knowledge graph import and analysis complete!")
+
+              except Exception as e:
+                  logger.error(f"❌ Import failed: {e}")
+                  raise
+              finally:
+                  driver.close()
+
+          if __name__ == "__main__":
+              import_aia_knowledge_graph()
+          EOF
+        volumeMounts:
+        - name: import-data
+          mountPath: /data
+      volumes:
+      - name: import-data
+        emptyDir: {}
+      restartPolicy: OnFailure
+---
+# Neo4j Monitoring Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: neo4j-metrics
+  namespace: aia-database-optimization
+  labels:
+    app: neo4j-metrics
+spec:
+  selector:
+    app: neo4j
+  ports:
+  - port: 2004
+    targetPort: 2004
+    name: metrics
+  type: ClusterIP
+---
+# ServiceMonitor for Prometheus Integration
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: neo4j-metrics
+  namespace: aia-database-optimization
+  labels:
+    app: neo4j
+spec:
+  selector:
+    matchLabels:
+      app: neo4j-metrics
+  endpoints:
+  - port: metrics
+    interval: 30s
+    path: /metrics

@@ -1,0 +1,107 @@
+# TEMPORARILY DISABLED FOR QUOTA COMPLIANCE
+# This deployment has been temporarily disabled to meet GCP quota requirements
+# Original content below (commented out):
+#
+# # Working backend deployment with proper Python syntax
+# apiVersion: apps/v1
+# kind: Deployment
+# metadata:
+#   name: aia-backend
+#   namespace: aia-production
+# spec:
+#   replicas: 2
+#   selector:
+#     matchLabels:
+#       app: aia-backend
+#   template:
+#     metadata:
+#       labels:
+#         app: aia-backend
+#         tier: backend
+#     spec:
+#       containers:
+#       - name: backend
+#         image: python:3.12-slim
+#         ports:
+#         - containerPort: 8000
+#         command: ["/bin/bash", "-c"]
+#         args:
+#         - |
+#           pip install fastapi uvicorn[standard] psycopg2-binary redis &&
+#           mkdir -p /app &&
+#           cat > /app/main.py << 'EOF'
+#           from fastapi import FastAPI
+#           import os
+# 
+#           app = FastAPI(title="AIA Backend Service", version="3.0")
+# 
+#           @app.get("/health")
+#           def health():
+#               return {
+#                   "status": "ok",
+#                   "service": "aia-backend",
+#                   "version": "3.0",
+#                   "database_host": os.getenv("DATABASE_HOST", "34.69.228.15"),
+#                   "redis_host": os.getenv("REDIS_HOST", "10.40.193.91"),
+#                   "microservices_ready": True
+#               }
+# 
+#           @app.get("/")
+#           def root():
+#               return {
+#                   "message": "AIA Backend Service",
+#                   "status": "running",
+#                   "version": "3.0",
+#                   "microservices_ready": True,
+#                   "enterprise_features": ["Fortune500Analytics", "AppleVision", "GoogleCloud", "JPMorgan", "EYGlobal"]
+#               }
+# 
+#           @app.get("/api/status")
+#           def api_status():
+#               return {
+#                   "api": "active",
+#                   "database_connected": True,
+#                   "redis_connected": True,
+#                   "services": {
+#                       "analytics": "ready",
+#                       "ml_processor": "ready",
+#                       "payment_processor": "ready",
+#                       "enterprise_partners": "ready",
+#                       "security_service": "ready"
+#                   }
+#               }
+#           EOF
+#           cd /app &&
+#           uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+#         env:
+#         - name: DATABASE_HOST
+#           valueFrom:
+#             configMapKeyRef:
+#               name: aia-config
+#               key: DATABASE_HOST
+#         - name: REDIS_HOST
+#           valueFrom:
+#             configMapKeyRef:
+#               name: aia-config
+#               key: REDIS_HOST
+#         resources:
+#           requests:
+#             memory: "128Mi"
+#             cpu: "100m"
+#           limits:
+#             memory: "128Mi"
+#             cpu: "100m"
+#         readinessProbe:
+#           httpGet:
+#             path: /health
+#             port: 8000
+#           initialDelaySeconds: 60
+#           periodSeconds: 5
+#           timeoutSeconds: 10
+#         livenessProbe:
+#           httpGet:
+#             path: /health
+#             port: 8000
+#           initialDelaySeconds: 120
+#           periodSeconds: 10
+#           timeoutSeconds: 10

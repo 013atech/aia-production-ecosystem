@@ -1,0 +1,428 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: aia-emergency-recovery
+  labels:
+    app: aia-analytics
+    version: emergency-recovery
+    environment: production
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: aia-config
+  namespace: aia-emergency-recovery
+data:
+  ENVIRONMENT: "production"
+  LOG_LEVEL: "info"
+  REDIS_HOST: "redis-service"
+  GOOGLE_CLOUD_PROJECT: "aia-system-prod-1759055445"
+  AIA_VERTEX_AI_ENABLED: "false"
+  AIA_CIRCUIT_BREAKER_FAILURE_THRESHOLD: "3"
+  AIA_CIRCUIT_BREAKER_RECOVERY_TIMEOUT: "30"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis-cluster
+  namespace: aia-emergency-recovery
+  labels:
+    app: redis-cluster
+    component: cache
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis-cluster
+  template:
+    metadata:
+      labels:
+        app: redis-cluster
+        component: cache
+    spec:
+      containers:
+      - name: redis
+        image: redis:7-alpine
+        ports:
+        - containerPort: 6379
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+          limits:
+            cpu: "100m"
+            memory: "128Mi"
+        readinessProbe:
+          exec:
+            command:
+            - redis-cli
+            - ping
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        livenessProbe:
+          exec:
+            command:
+            - redis-cli
+            - ping
+          initialDelaySeconds: 30
+          periodSeconds: 30
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-service
+  namespace: aia-emergency-recovery
+spec:
+  selector:
+    app: redis-cluster
+  ports:
+  - port: 6379
+    targetPort: 6379
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-api-recovery
+  namespace: aia-emergency-recovery
+  labels:
+    app: aia-api
+    version: recovery
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: aia-api
+      version: recovery
+  template:
+    metadata:
+      labels:
+        app: aia-api
+        version: recovery
+    spec:
+      containers:
+      - name: aia-api
+        image: gcr.io/aia-system-prod-1759055445/aia-api:latest
+        ports:
+        - containerPort: 8000
+        env:
+        - name: PORT
+          value: "8000"
+        - name: REDIS_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: aia-config
+              key: REDIS_HOST
+        - name: ENVIRONMENT
+          valueFrom:
+            configMapKeyRef:
+              name: aia-config
+              key: ENVIRONMENT
+        - name: LOG_LEVEL
+          valueFrom:
+            configMapKeyRef:
+              name: aia-config
+              key: LOG_LEVEL
+        - name: GOOGLE_CLOUD_PROJECT
+          valueFrom:
+            configMapKeyRef:
+              name: aia-config
+              key: GOOGLE_CLOUD_PROJECT
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+          limits:
+            cpu: "100m"
+            memory: "128Mi"
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-api-service
+  namespace: aia-emergency-recovery
+  labels:
+    app: aia-api
+    version: recovery
+spec:
+  selector:
+    app: aia-api
+    version: recovery
+  ports:
+  - port: 80
+    targetPort: 8000
+    protocol: TCP
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-frontend-recovery
+  namespace: aia-emergency-recovery
+  labels:
+    app: aia-frontend
+    version: recovery
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: aia-frontend
+      version: recovery
+  template:
+    metadata:
+      labels:
+        app: aia-frontend
+        version: recovery
+    spec:
+      containers:
+      - name: aia-frontend
+        image: gcr.io/aia-system-prod-1759055445/aia-frontend:latest
+        ports:
+        - containerPort: 80
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+          limits:
+            cpu: "100m"
+            memory: "128Mi"
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 30
+          periodSeconds: 30
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-frontend-service
+  namespace: aia-emergency-recovery
+  labels:
+    app: aia-frontend
+    version: recovery
+spec:
+  selector:
+    app: aia-frontend
+    version: recovery
+  ports:
+  - port: 80
+    targetPort: 80
+    protocol: TCP
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-loadbalancer-recovery
+  namespace: aia-emergency-recovery
+  labels:
+    app: aia-frontend
+    version: recovery
+    tier: loadbalancer
+spec:
+  selector:
+    app: aia-frontend
+    version: recovery
+  ports:
+  - port: 80
+    targetPort: 80
+    protocol: TCP
+  type: NodePort
+  loadBalancerSourceRanges:
+  - 0.0.0.0/0
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: aia-recovery-ingress
+  namespace: aia-emergency-recovery
+  labels:
+    app: aia-analytics
+    version: recovery
+  annotations:
+    kubernetes.io/ingress.class: "gce"
+    kubernetes.io/ingress.global-static-ip-name: "aia-production-ip"
+    networking.gke.io/managed-certificates: "aia-recovery-ssl-cert"
+    kubernetes.io/ingress.allow-http: "true"
+spec:
+  rules:
+  - host: 013a.tech
+    http:
+      paths:
+      - path: /api/*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-api-service
+            port:
+              number: 80
+      - path: /*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-frontend-service
+            port:
+              number: 80
+  - host: www.013a.tech
+    http:
+      paths:
+      - path: /api/*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-api-service
+            port:
+              number: 80
+      - path: /*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-frontend-service
+            port:
+              number: 80
+---
+apiVersion: networking.gke.io/v1
+kind: ManagedCertificate
+metadata:
+  name: aia-recovery-ssl-cert
+  namespace: aia-emergency-recovery
+spec:
+  domains:
+    - 013a.tech
+    - www.013a.tech
+---
+apiVersion: networking.gke.io/v1
+kind: BackendConfig
+metadata:
+  name: aia-backend-config
+  namespace: aia-emergency-recovery
+spec:
+  timeoutSec: 30
+  connectionDraining:
+    drainingTimeoutSec: 60
+  healthCheck:
+    checkIntervalSec: 10
+    timeoutSec: 5
+    healthyThreshold: 1
+    unhealthyThreshold: 3
+    type: HTTP
+    requestPath: /health
+    port: 8000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-api-backend-service
+  namespace: aia-emergency-recovery
+  labels:
+    app: aia-api
+    version: recovery
+  annotations:
+    cloud.google.com/backend-config: '{"default": "aia-backend-config"}'
+spec:
+  selector:
+    app: aia-api
+    version: recovery
+  ports:
+  - port: 8000
+    targetPort: 8000
+    protocol: TCP
+  type: NodePort
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: aia-recovery-network-policy
+  namespace: aia-emergency-recovery
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from: []
+    ports:
+    - protocol: TCP
+      port: 80
+    - protocol: TCP
+      port: 8000
+    - protocol: TCP
+      port: 6379
+  egress:
+  - to: []
+    ports:
+    - protocol: TCP
+      port: 80
+    - protocol: TCP
+      port: 443
+    - protocol: TCP
+      port: 6379
+    - protocol: UDP
+      port: 53
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: aia-api-hpa
+  namespace: aia-emergency-recovery
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: aia-api-recovery
+  minReplicas: 2
+  maxReplicas: 4
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: aia-frontend-hpa
+  namespace: aia-emergency-recovery
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: aia-frontend-recovery
+  minReplicas: 2
+  maxReplicas: 4
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70

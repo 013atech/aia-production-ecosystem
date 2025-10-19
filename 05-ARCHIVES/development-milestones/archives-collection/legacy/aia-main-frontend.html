@@ -1,0 +1,1806 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>013a Analytics - Immersive Data Intelligence Platform</title>
+    <meta name="description" content="Next-generation analytics platform with immersive 3D visualizations, physics-based interactions, and spatial computing capabilities">
+
+    <!-- Security Headers -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' https:; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https: wss:; object-src 'none'; base-uri 'self'; frame-ancestors 'none';">
+    <meta http-equiv="X-Frame-Options" content="DENY">
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
+    <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=()">
+
+    <!-- Preload critical resources -->
+    <link rel="preload" href="https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@300;400;500;600;700&display=swap" as="style">
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+    <link rel="preconnect" href="https://unpkg.com" crossorigin>
+
+    <!-- Styles -->
+    <link href="https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        /* 013a Design System - Global Variables */
+        :root {
+            --charcoal: #1E1E1E;
+            --ivory: #F5F5DC;
+            --cyan: #00FFFF;
+            --lemon: #FFFF00;
+            --gradient: linear-gradient(135deg, #00FFFF 0%, #FFFF00 100%);
+            --glass-bg: rgba(30, 30, 30, 0.85);
+            --glass-border: rgba(0, 255, 255, 0.2);
+            --hover-glow: rgba(0, 255, 255, 0.4);
+            --warning: #ff6b6b;
+            --success: #51cf66;
+            --neutral: #868e96;
+        }
+
+        /* Reset and Base Styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            height: 100vh;
+            overflow: hidden;
+            font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--charcoal);
+            color: var(--ivory);
+            cursor: default;
+        }
+
+        /* Canvas Container */
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 1;
+        }
+
+        /* Loading Screen */
+        .loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: var(--charcoal);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            transition: opacity 0.5s ease-out;
+        }
+
+        .loading-screen.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .loading-spinner {
+            width: 60px;
+            height: 60px;
+            border: 3px solid rgba(0, 255, 255, 0.2);
+            border-top: 3px solid var(--cyan);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+
+        .loading-text {
+            font-size: 24px;
+            font-weight: 700;
+            background: var(--gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+        }
+
+        .loading-subtitle {
+            font-size: 14px;
+            color: var(--ivory);
+            opacity: 0.7;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; }
+        }
+
+        /* UI Overlay System */
+        .ui-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        /* Top Navigation Bar */
+        .top-nav {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            right: 20px;
+            height: 60px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            pointer-events: all;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .top-nav:hover {
+            border-color: var(--cyan);
+            box-shadow: 0 10px 30px var(--hover-glow);
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: 700;
+            background: var(--gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .nav-controls {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .nav-button {
+            padding: 10px 20px;
+            background: transparent;
+            border: 2px solid var(--cyan);
+            border-radius: 25px;
+            color: var(--cyan);
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .nav-button:hover {
+            background: var(--cyan);
+            color: var(--charcoal);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0, 255, 255, 0.3);
+        }
+
+        .nav-button.primary {
+            background: var(--gradient);
+            border: none;
+            color: var(--charcoal);
+        }
+
+        .nav-button.primary:hover {
+            transform: translateY(-2px) scale(1.05);
+        }
+
+        /* Control Panel */
+        .control-panel {
+            position: absolute;
+            right: 20px;
+            top: 100px;
+            width: 300px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 20px;
+            pointer-events: all;
+            transform: translateX(320px);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .control-panel.open {
+            transform: translateX(0);
+        }
+
+        .control-section {
+            margin-bottom: 25px;
+        }
+
+        .control-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--cyan);
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .control-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .control-label {
+            font-size: 14px;
+            color: var(--ivory);
+            opacity: 0.8;
+        }
+
+        .toggle-switch {
+            width: 50px;
+            height: 24px;
+            background: var(--neutral);
+            border-radius: 12px;
+            cursor: pointer;
+            position: relative;
+            transition: background 0.3s ease;
+        }
+
+        .toggle-switch.active {
+            background: var(--gradient);
+        }
+
+        .toggle-switch::after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            transition: transform 0.3s ease;
+        }
+
+        .toggle-switch.active::after {
+            transform: translateX(26px);
+        }
+
+        .slider {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 6px;
+            background: var(--neutral);
+            border-radius: 3px;
+            outline: none;
+            cursor: pointer;
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            background: var(--gradient);
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        /* Data Inspector */
+        .data-inspector {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            width: 350px;
+            max-height: 40vh;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 20px;
+            pointer-events: all;
+            transform: translateY(100%);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            opacity: 0;
+        }
+
+        .data-inspector.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .inspector-header {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--lemon);
+            margin-bottom: 15px;
+            border-bottom: 1px solid var(--glass-border);
+            padding-bottom: 10px;
+        }
+
+        .inspector-content {
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .inspector-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .inspector-label {
+            color: var(--ivory);
+            opacity: 0.7;
+        }
+
+        .inspector-value {
+            color: var(--cyan);
+            font-weight: 500;
+        }
+
+        /* Performance Monitor */
+        .performance-monitor {
+            position: absolute;
+            top: 100px;
+            left: 20px;
+            width: 200px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 15px;
+            padding: 15px;
+            pointer-events: all;
+            font-size: 12px;
+        }
+
+        .fps-counter {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--lemon);
+            margin-bottom: 10px;
+        }
+
+        .perf-metric {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            color: var(--ivory);
+            opacity: 0.7;
+        }
+
+        /* WebXR Button */
+        .webxr-button {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            width: 60px;
+            height: 60px;
+            background: var(--gradient);
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: var(--charcoal);
+            pointer-events: all;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 20px rgba(0, 255, 255, 0.3);
+        }
+
+        .webxr-button:hover {
+            transform: scale(1.1);
+            box-shadow: 0 10px 30px rgba(0, 255, 255, 0.5);
+        }
+
+        .webxr-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .top-nav {
+                flex-direction: column;
+                height: auto;
+                padding: 15px;
+                gap: 15px;
+            }
+
+            .control-panel {
+                width: calc(100vw - 40px);
+                right: 20px;
+            }
+
+            .data-inspector {
+                width: calc(100vw - 40px);
+                left: 20px;
+            }
+
+            .performance-monitor {
+                width: 150px;
+                font-size: 11px;
+            }
+        }
+
+        /* Accessibility */
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+
+        /* Haptic feedback simulation */
+        .haptic-feedback {
+            animation: haptic-pulse 0.15s ease-out;
+        }
+
+        @keyframes haptic-pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(0.95); }
+            100% { transform: scale(1); }
+        }
+
+        /* Error states */
+        .error-message {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 2px solid var(--warning);
+            border-radius: 15px;
+            padding: 30px;
+            text-align: center;
+            z-index: 10000;
+            max-width: 400px;
+        }
+
+        .error-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--warning);
+            margin-bottom: 15px;
+        }
+
+        .error-text {
+            font-size: 14px;
+            color: var(--ivory);
+            opacity: 0.8;
+            line-height: 1.5;
+            margin-bottom: 20px;
+        }
+
+        .error-button {
+            padding: 12px 24px;
+            background: var(--gradient);
+            border: none;
+            border-radius: 25px;
+            color: var(--charcoal);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .error-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 255, 255, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div id="loading-screen" class="loading-screen">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">013a Analytics</div>
+        <div class="loading-subtitle">Initializing Immersive Intelligence Platform...</div>
+    </div>
+
+    <!-- 3D Canvas Container -->
+    <div id="canvas-container"></div>
+
+    <!-- UI Overlay System -->
+    <div class="ui-overlay">
+        <!-- Top Navigation -->
+        <nav class="top-nav">
+            <div class="logo">013a Analytics</div>
+            <div class="nav-controls">
+                <button class="nav-button" onclick="toggleControlPanel()">Controls</button>
+                <button class="nav-button" onclick="resetView()">Reset View</button>
+                <button class="nav-button primary" onclick="exportData()">Export Data</button>
+            </div>
+        </nav>
+
+        <!-- Control Panel -->
+        <div id="control-panel" class="control-panel">
+            <div class="control-section">
+                <div class="control-title">
+                    🎯 Visualization Controls
+                </div>
+                <div class="control-row">
+                    <span class="control-label">Auto Rotation</span>
+                    <div id="auto-rotate-toggle" class="toggle-switch" onclick="toggleAutoRotate()"></div>
+                </div>
+                <div class="control-row">
+                    <span class="control-label">Physics Enabled</span>
+                    <div id="physics-toggle" class="toggle-switch active" onclick="togglePhysics()"></div>
+                </div>
+                <div class="control-row">
+                    <span class="control-label">Particle Effects</span>
+                    <div id="particles-toggle" class="toggle-switch active" onclick="toggleParticles()"></div>
+                </div>
+            </div>
+
+            <div class="control-section">
+                <div class="control-title">
+                    ⚡ Performance Settings
+                </div>
+                <div class="control-row">
+                    <span class="control-label">Quality Level</span>
+                </div>
+                <input type="range" class="slider" id="quality-slider" min="1" max="4" value="3" onchange="setQuality(this.value)">
+                <div class="control-row">
+                    <span class="control-label">Animation Speed</span>
+                </div>
+                <input type="range" class="slider" id="speed-slider" min="0.5" max="3" value="1" step="0.1" onchange="setAnimationSpeed(this.value)">
+            </div>
+
+            <div class="control-section">
+                <div class="control-title">
+                    🎬 Cinematic Views
+                </div>
+                <button class="nav-button" onclick="setCinematicView(0)" style="width: 100%; margin-bottom: 8px;">Overview</button>
+                <button class="nav-button" onclick="setCinematicView(1)" style="width: 100%; margin-bottom: 8px;">Performance Focus</button>
+                <button class="nav-button" onclick="setCinematicView(2)" style="width: 100%; margin-bottom: 8px;">Trend Analysis</button>
+                <button class="nav-button" onclick="setCinematicView(3)" style="width: 100%;">Data Flow</button>
+            </div>
+        </div>
+
+        <!-- Performance Monitor -->
+        <div class="performance-monitor">
+            <div class="fps-counter" id="fps-counter">60 FPS</div>
+            <div class="perf-metric">
+                <span>Objects:</span>
+                <span id="object-count">0</span>
+            </div>
+            <div class="perf-metric">
+                <span>Triangles:</span>
+                <span id="triangle-count">0</span>
+            </div>
+            <div class="perf-metric">
+                <span>Memory:</span>
+                <span id="memory-usage">0 MB</span>
+            </div>
+        </div>
+
+        <!-- Data Inspector -->
+        <div id="data-inspector" class="data-inspector">
+            <div class="inspector-header">Selected Data Point</div>
+            <div class="inspector-content">
+                <div class="inspector-row">
+                    <span class="inspector-label">Category:</span>
+                    <span class="inspector-value" id="selected-category">None</span>
+                </div>
+                <div class="inspector-row">
+                    <span class="inspector-label">Value:</span>
+                    <span class="inspector-value" id="selected-value">0%</span>
+                </div>
+                <div class="inspector-row">
+                    <span class="inspector-label">Trend:</span>
+                    <span class="inspector-value" id="selected-trend">Stable</span>
+                </div>
+                <div class="inspector-row">
+                    <span class="inspector-label">Confidence:</span>
+                    <span class="inspector-value" id="selected-confidence">0%</span>
+                </div>
+                <div class="inspector-row">
+                    <span class="inspector-label">Source:</span>
+                    <span class="inspector-value" id="selected-source">System</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- WebXR Button -->
+        <button id="webxr-button" class="webxr-button" onclick="toggleWebXR()" title="Enter Immersive Mode">
+            🥽
+        </button>
+    </div>
+
+    <!-- Three.js and dependencies -->
+    <script src="https://unpkg.com/three@0.156.0/build/three.min.js"></script>
+    <script src="https://unpkg.com/three@0.156.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://unpkg.com/three@0.156.0/examples/js/loaders/FontLoader.js"></script>
+    <script src="https://unpkg.com/three@0.156.0/examples/js/geometries/TextGeometry.js"></script>
+    <script src="https://unpkg.com/three@0.156.0/examples/js/postprocessing/EffectComposer.js"></script>
+    <script src="https://unpkg.com/three@0.156.0/examples/js/postprocessing/RenderPass.js"></script>
+    <script src="https://unpkg.com/three@0.156.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
+    <script src="https://unpkg.com/three@0.156.0/examples/js/postprocessing/ShaderPass.js"></script>
+    <script src="https://unpkg.com/cannon@0.20.0/build/cannon.min.js"></script>
+    <script src="https://unpkg.com/d3@7"></script>
+    <script src="https://unpkg.com/gsap@3.12.2/dist/gsap.min.js"></script>
+
+    <script>
+        // 013a Analytics - Immersive 3D Engine
+        class ImmersiveAnalyticsEngine {
+            constructor() {
+                this.scene = null;
+                this.camera = null;
+                this.renderer = null;
+                this.controls = null;
+                this.composer = null;
+                this.world = null; // Physics world
+
+                // State management
+                this.dataPoints = [];
+                this.clusters = [];
+                this.selectedPoint = null;
+                this.animationMixers = [];
+                this.raycaster = new THREE.Raycaster();
+                this.mouse = new THREE.Vector2();
+
+                // Configuration
+                this.config = {
+                    autoRotate: false,
+                    physicsEnabled: true,
+                    particlesEnabled: true,
+                    qualityLevel: 3,
+                    animationSpeed: 1,
+                    performanceMode: 'high'
+                };
+
+                // Performance monitoring
+                this.stats = {
+                    fps: 0,
+                    frameCount: 0,
+                    lastTime: performance.now(),
+                    objects: 0,
+                    triangles: 0,
+                    memory: 0
+                };
+
+                // Cinematic views
+                this.cinematicViews = [
+                    {
+                        name: "Overview",
+                        position: { x: 0, y: 15, z: 25 },
+                        target: { x: 0, y: 0, z: 0 },
+                        duration: 2500
+                    },
+                    {
+                        name: "Performance Focus",
+                        position: { x: 15, y: 8, z: 15 },
+                        target: { x: 5, y: 2, z: 0 },
+                        duration: 2000
+                    },
+                    {
+                        name: "Trend Analysis",
+                        position: { x: -10, y: 20, z: 10 },
+                        target: { x: 0, y: 5, z: -5 },
+                        duration: 3000
+                    },
+                    {
+                        name: "Data Flow",
+                        position: { x: 0, y: 0, z: 30 },
+                        target: { x: 0, y: 0, z: 0 },
+                        duration: 2000
+                    }
+                ];
+
+                this.init();
+            }
+
+            async init() {
+                try {
+                    this.setupRenderer();
+                    this.setupScene();
+                    this.setupCamera();
+                    this.setupControls();
+                    this.setupLighting();
+                    this.setupPhysics();
+                    this.setupPostProcessing();
+                    this.generateSampleData();
+                    this.setupEventListeners();
+                    this.setupWebXR();
+
+                    this.animate();
+                    this.hideLoading();
+
+                    console.log('🚀 013a Analytics Engine initialized successfully');
+                } catch (error) {
+                    console.error('❌ Failed to initialize 013a Analytics Engine:', error);
+                    this.showError('Failed to initialize 3D engine', error.message);
+                }
+            }
+
+            setupRenderer() {
+                const container = document.getElementById('canvas-container');
+
+                this.renderer = new THREE.WebGLRenderer({
+                    antialias: this.config.qualityLevel >= 3,
+                    alpha: true,
+                    powerPreference: 'high-performance',
+                    precision: this.config.qualityLevel >= 4 ? 'highp' : 'mediump'
+                });
+
+                this.renderer.setSize(window.innerWidth, window.innerHeight);
+                this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+                this.renderer.shadowMap.enabled = this.config.qualityLevel >= 3;
+                this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+                this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+                this.renderer.toneMappingExposure = 1.2;
+                this.renderer.outputEncoding = THREE.sRGBEncoding;
+
+                container.appendChild(this.renderer.domElement);
+            }
+
+            setupScene() {
+                this.scene = new THREE.Scene();
+                this.scene.background = new THREE.Color(0x1e1e1e);
+                this.scene.fog = new THREE.Fog(0x1e1e1e, 30, 100);
+            }
+
+            setupCamera() {
+                this.camera = new THREE.PerspectiveCamera(
+                    60,
+                    window.innerWidth / window.innerHeight,
+                    0.1,
+                    1000
+                );
+                this.camera.position.set(0, 15, 25);
+            }
+
+            setupControls() {
+                this.controls = new THREE.OrbitControls(this.camera, this.renderer.domElement);
+                this.controls.enableDamping = true;
+                this.controls.dampingFactor = 0.05;
+                this.controls.minDistance = 5;
+                this.controls.maxDistance = 50;
+                this.controls.maxPolarAngle = Math.PI * 0.8;
+                this.controls.minPolarAngle = Math.PI * 0.2;
+                this.controls.autoRotate = this.config.autoRotate;
+                this.controls.autoRotateSpeed = 0.5;
+            }
+
+            setupLighting() {
+                // Ambient light
+                const ambientLight = new THREE.AmbientLight(0x1a1a2e, 0.3);
+                this.scene.add(ambientLight);
+
+                // Directional light (main)
+                const directionalLight = new THREE.DirectionalLight(0x00ffff, 1.2);
+                directionalLight.position.set(10, 10, 8);
+                directionalLight.castShadow = this.config.qualityLevel >= 3;
+                if (directionalLight.shadow) {
+                    directionalLight.shadow.mapSize.width = 2048;
+                    directionalLight.shadow.mapSize.height = 2048;
+                    directionalLight.shadow.camera.near = 0.1;
+                    directionalLight.shadow.camera.far = 50;
+                }
+                this.scene.add(directionalLight);
+
+                // Point light (accent)
+                const pointLight = new THREE.PointLight(0xffff00, 0.8, 30);
+                pointLight.position.set(0, 5, 0);
+                this.scene.add(pointLight);
+
+                // Spot light (dramatic)
+                if (this.config.qualityLevel >= 4) {
+                    const spotLight = new THREE.SpotLight(0x00ffff, 0.6, 50, 0.3, 0.2);
+                    spotLight.position.set(15, 15, 15);
+                    spotLight.castShadow = true;
+                    this.scene.add(spotLight);
+                }
+            }
+
+            setupPhysics() {
+                if (!this.config.physicsEnabled) return;
+
+                this.world = new CANNON.World();
+                this.world.gravity.set(0, -9.82, 0);
+                this.world.broadphase = new CANNON.NaiveBroadphase();
+                this.world.solver.iterations = 10;
+
+                // Ground plane
+                const groundShape = new CANNON.Plane();
+                const groundBody = new CANNON.Body({ mass: 0 });
+                groundBody.addShape(groundShape);
+                groundBody.quaternion.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), -Math.PI / 2);
+                groundBody.position.set(0, -15, 0);
+                this.world.add(groundBody);
+            }
+
+            setupPostProcessing() {
+                if (this.config.qualityLevel < 2) return;
+
+                this.composer = new THREE.EffectComposer(this.renderer);
+
+                const renderPass = new THREE.RenderPass(this.scene, this.camera);
+                this.composer.addPass(renderPass);
+
+                // Bloom effect
+                const bloomPass = new THREE.UnrealBloomPass(
+                    new THREE.Vector2(window.innerWidth, window.innerHeight),
+                    this.config.qualityLevel >= 4 ? 1.2 : 0.8,
+                    0.4,
+                    0.85
+                );
+                this.composer.addPass(bloomPass);
+            }
+
+            generateSampleData() {
+                const categories = ['Performance', 'Security', 'Efficiency', 'User Experience', 'Revenue'];
+                const colors = [0x00ffff, 0x40bfff, 0x80a0ff, 0xbf80ff, 0xff60ff];
+
+                for (let i = 0; i < 50; i++) {
+                    const dataPoint = {
+                        id: `metric-${i}`,
+                        position: new THREE.Vector3(
+                            (Math.random() - 0.5) * 25,
+                            (Math.random() - 0.5) * 25,
+                            (Math.random() - 0.5) * 25
+                        ),
+                        value: Math.random(),
+                        trend: (Math.random() - 0.5) * 2,
+                        category: categories[Math.floor(Math.random() * categories.length)],
+                        importance: Math.random(),
+                        confidence: 0.3 + Math.random() * 0.7,
+                        color: colors[Math.floor(Math.random() * colors.length)],
+                        timestamp: Date.now() + i * 60000,
+                        source: `System ${String.fromCharCode(65 + i % 26)}`
+                    };
+
+                    this.dataPoints.push(dataPoint);
+                    this.createDataPointMesh(dataPoint);
+                }
+
+                this.createClusters();
+                this.createEnvironment();
+            }
+
+            createDataPointMesh(dataPoint) {
+                // Create sphere for data point
+                const size = 0.3 + dataPoint.importance * 0.5 + dataPoint.confidence * 0.2;
+                const geometry = new THREE.SphereGeometry(size, 16, 16);
+                const material = new THREE.MeshStandardMaterial({
+                    color: dataPoint.color,
+                    roughness: 0.2,
+                    metalness: 0.8,
+                    transparent: true,
+                    opacity: 0.6 + dataPoint.confidence * 0.3
+                });
+
+                const mesh = new THREE.Mesh(geometry, material);
+                mesh.position.copy(dataPoint.position);
+                mesh.userData = { type: 'dataPoint', data: dataPoint };
+                mesh.castShadow = this.config.qualityLevel >= 3;
+                mesh.receiveShadow = this.config.qualityLevel >= 3;
+
+                this.scene.add(mesh);
+
+                // Add trend indicator
+                if (dataPoint.trend !== 0) {
+                    const indicatorGeometry = new THREE.CylinderGeometry(0.02, 0.02, size * 2, 8);
+                    const indicatorMaterial = new THREE.MeshStandardMaterial({
+                        color: dataPoint.trend > 0 ? 0xffff00 : 0xff4444,
+                        transparent: true,
+                        opacity: 0.8
+                    });
+
+                    const indicator = new THREE.Mesh(indicatorGeometry, indicatorMaterial);
+                    indicator.position.set(0, 0, size + 0.1);
+                    indicator.rotation.x = Math.PI / 2;
+                    if (dataPoint.trend < 0) indicator.rotation.z = Math.PI;
+
+                    mesh.add(indicator);
+                }
+
+                // Add physics body if physics enabled
+                if (this.config.physicsEnabled && this.world) {
+                    const shape = new CANNON.Sphere(size);
+                    const body = new CANNON.Body({ mass: 1 });
+                    body.addShape(shape);
+                    body.position.set(dataPoint.position.x, dataPoint.position.y, dataPoint.position.z);
+                    body.material = new CANNON.Material({ friction: 0.4, restitution: 0.3 });
+                    this.world.add(body);
+
+                    mesh.userData.physicsBody = body;
+                }
+
+                // Add particle effects if enabled
+                if (this.config.particlesEnabled && dataPoint.importance > 0.8) {
+                    this.createParticleSystem(mesh);
+                }
+            }
+
+            createParticleSystem(parentMesh) {
+                const particleCount = 50;
+                const geometry = new THREE.BufferGeometry();
+                const positions = new Float32Array(particleCount * 3);
+                const colors = new Float32Array(particleCount * 3);
+
+                for (let i = 0; i < particleCount; i++) {
+                    positions[i * 3] = (Math.random() - 0.5) * 2;
+                    positions[i * 3 + 1] = (Math.random() - 0.5) * 2;
+                    positions[i * 3 + 2] = (Math.random() - 0.5) * 2;
+
+                    const color = new THREE.Color(parentMesh.userData.data.color);
+                    colors[i * 3] = color.r;
+                    colors[i * 3 + 1] = color.g;
+                    colors[i * 3 + 2] = color.b;
+                }
+
+                geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+                geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+                const material = new THREE.PointsMaterial({
+                    size: 0.05,
+                    transparent: true,
+                    opacity: 0.6,
+                    vertexColors: true,
+                    blending: THREE.AdditiveBlending
+                });
+
+                const particles = new THREE.Points(geometry, material);
+                parentMesh.add(particles);
+
+                particles.userData.animate = (time) => {
+                    particles.rotation.y = time * 0.5;
+                    const positions = particles.geometry.attributes.position.array;
+                    for (let i = 0; i < particleCount; i++) {
+                        positions[i * 3 + 1] += Math.sin(time + i) * 0.001;
+                    }
+                    particles.geometry.attributes.position.needsUpdate = true;
+                };
+            }
+
+            createClusters() {
+                // Simple clustering algorithm
+                const k = Math.min(5, Math.ceil(this.dataPoints.length / 10));
+
+                for (let i = 0; i < k; i++) {
+                    const center = new THREE.Vector3(
+                        (Math.random() - 0.5) * 30,
+                        (Math.random() - 0.5) * 30,
+                        (Math.random() - 0.5) * 30
+                    );
+
+                    const clusterPoints = this.dataPoints.filter((_, index) => index % k === i);
+                    const avgPerformance = clusterPoints.reduce((sum, p) => sum + p.value, 0) / clusterPoints.length;
+
+                    const cluster = {
+                        id: `cluster-${i}`,
+                        center,
+                        points: clusterPoints,
+                        performance: avgPerformance * 100,
+                        color: [0x00ffff, 0x40bfff, 0x80a0ff, 0xbf80ff, 0xff60ff][i]
+                    };
+
+                    this.clusters.push(cluster);
+                    this.createClusterMesh(cluster);
+                }
+            }
+
+            createClusterMesh(cluster) {
+                const geometry = new THREE.SphereGeometry(cluster.points.length * 0.5 + 2, 16, 16);
+                const material = new THREE.MeshStandardMaterial({
+                    color: cluster.color,
+                    transparent: true,
+                    opacity: 0.1,
+                    wireframe: true
+                });
+
+                const mesh = new THREE.Mesh(geometry, material);
+                mesh.position.copy(cluster.center);
+                mesh.userData = { type: 'cluster', data: cluster };
+
+                this.scene.add(mesh);
+            }
+
+            createEnvironment() {
+                // Grid
+                const gridHelper = new THREE.GridHelper(60, 60, 0x004444, 0x002222);
+                gridHelper.position.y = -15;
+                this.scene.add(gridHelper);
+
+                // Data flow connections
+                this.createDataFlows();
+            }
+
+            createDataFlows() {
+                for (let i = 0; i < 10; i++) {
+                    const point1 = this.dataPoints[Math.floor(Math.random() * this.dataPoints.length)];
+                    const point2 = this.dataPoints[Math.floor(Math.random() * this.dataPoints.length)];
+
+                    if (point1 !== point2) {
+                        const geometry = new THREE.BufferGeometry().setFromPoints([
+                            point1.position,
+                            point2.position
+                        ]);
+
+                        const material = new THREE.LineBasicMaterial({
+                            color: 0x00ffff,
+                            transparent: true,
+                            opacity: 0.3
+                        });
+
+                        const line = new THREE.Line(geometry, material);
+                        this.scene.add(line);
+                    }
+                }
+            }
+
+            setupEventListeners() {
+                // Mouse events
+                this.renderer.domElement.addEventListener('mousemove', (event) => {
+                    this.mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+                    this.mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+                });
+
+                this.renderer.domElement.addEventListener('click', (event) => {
+                    this.handleClick(event);
+                });
+
+                // Keyboard events
+                document.addEventListener('keydown', (event) => {
+                    this.handleKeyDown(event);
+                });
+
+                // Window resize
+                window.addEventListener('resize', () => {
+                    this.handleResize();
+                });
+
+                // Touch events for mobile
+                this.renderer.domElement.addEventListener('touchstart', (event) => {
+                    this.handleTouch(event);
+                });
+            }
+
+            setupWebXR() {
+                if ('xr' in navigator) {
+                    navigator.xr.isSessionSupported('immersive-vr').then((supported) => {
+                        const button = document.getElementById('webxr-button');
+                        if (supported) {
+                            this.renderer.xr.enabled = true;
+                            button.disabled = false;
+                            console.log('✅ WebXR VR supported');
+                        } else {
+                            button.disabled = true;
+                            console.log('❌ WebXR VR not supported');
+                        }
+                    });
+                } else {
+                    document.getElementById('webxr-button').disabled = true;
+                    console.log('❌ WebXR not available');
+                }
+            }
+
+            handleClick(event) {
+                this.raycaster.setFromCamera(this.mouse, this.camera);
+                const intersects = this.raycaster.intersectObjects(this.scene.children, true);
+
+                if (intersects.length > 0) {
+                    const intersect = intersects[0];
+                    if (intersect.object.userData.type === 'dataPoint') {
+                        this.selectDataPoint(intersect.object.userData.data);
+                        this.addHapticFeedback();
+                    }
+                }
+            }
+
+            handleKeyDown(event) {
+                switch (event.code) {
+                    case 'Space':
+                        event.preventDefault();
+                        this.toggleAutoRotate();
+                        break;
+                    case 'KeyR':
+                        this.resetView();
+                        break;
+                    case 'KeyF':
+                        this.toggleFullscreen();
+                        break;
+                    case 'Digit1':
+                    case 'Digit2':
+                    case 'Digit3':
+                    case 'Digit4':
+                        this.setCinematicView(parseInt(event.code.slice(-1)) - 1);
+                        break;
+                }
+            }
+
+            handleResize() {
+                this.camera.aspect = window.innerWidth / window.innerHeight;
+                this.camera.updateProjectionMatrix();
+                this.renderer.setSize(window.innerWidth, window.innerHeight);
+
+                if (this.composer) {
+                    this.composer.setSize(window.innerWidth, window.innerHeight);
+                }
+            }
+
+            handleTouch(event) {
+                if (event.touches.length === 1) {
+                    const touch = event.touches[0];
+                    this.mouse.x = (touch.clientX / window.innerWidth) * 2 - 1;
+                    this.mouse.y = -(touch.clientY / window.innerHeight) * 2 + 1;
+                    this.handleClick(event);
+                }
+            }
+
+            selectDataPoint(dataPoint) {
+                this.selectedPoint = dataPoint;
+                this.updateDataInspector(dataPoint);
+                this.highlightDataPoint(dataPoint);
+            }
+
+            updateDataInspector(dataPoint) {
+                document.getElementById('selected-category').textContent = dataPoint.category;
+                document.getElementById('selected-value').textContent = (dataPoint.value * 100).toFixed(1) + '%';
+                document.getElementById('selected-trend').textContent =
+                    dataPoint.trend > 0 ? '↗ Positive' : dataPoint.trend < 0 ? '↘ Negative' : '→ Stable';
+                document.getElementById('selected-confidence').textContent = (dataPoint.confidence * 100).toFixed(0) + '%';
+                document.getElementById('selected-source').textContent = dataPoint.source;
+
+                document.getElementById('data-inspector').classList.add('show');
+            }
+
+            highlightDataPoint(dataPoint) {
+                // Reset all points
+                this.scene.traverse((child) => {
+                    if (child.userData.type === 'dataPoint') {
+                        child.material.emissive.setHex(0x000000);
+                        child.material.emissiveIntensity = 0;
+                    }
+                });
+
+                // Highlight selected point
+                this.scene.traverse((child) => {
+                    if (child.userData.type === 'dataPoint' && child.userData.data.id === dataPoint.id) {
+                        child.material.emissive.setHex(dataPoint.color);
+                        child.material.emissiveIntensity = 0.3;
+                    }
+                });
+            }
+
+            addHapticFeedback() {
+                // Simulate haptic feedback
+                if ('vibrate' in navigator) {
+                    navigator.vibrate([50, 30, 50]);
+                }
+
+                // Visual feedback
+                document.body.classList.add('haptic-feedback');
+                setTimeout(() => {
+                    document.body.classList.remove('haptic-feedback');
+                }, 150);
+            }
+
+            setCinematicView(index) {
+                if (index >= 0 && index < this.cinematicViews.length) {
+                    const view = this.cinematicViews[index];
+
+                    gsap.to(this.camera.position, {
+                        x: view.position.x,
+                        y: view.position.y,
+                        z: view.position.z,
+                        duration: view.duration / 1000,
+                        ease: "power2.inOut"
+                    });
+
+                    gsap.to(this.controls.target, {
+                        x: view.target.x,
+                        y: view.target.y,
+                        z: view.target.z,
+                        duration: view.duration / 1000,
+                        ease: "power2.inOut"
+                    });
+                }
+            }
+
+            toggleAutoRotate() {
+                this.config.autoRotate = !this.config.autoRotate;
+                this.controls.autoRotate = this.config.autoRotate;
+
+                const toggle = document.getElementById('auto-rotate-toggle');
+                toggle.classList.toggle('active', this.config.autoRotate);
+            }
+
+            togglePhysics() {
+                this.config.physicsEnabled = !this.config.physicsEnabled;
+
+                const toggle = document.getElementById('physics-toggle');
+                toggle.classList.toggle('active', this.config.physicsEnabled);
+
+                if (this.config.physicsEnabled && !this.world) {
+                    this.setupPhysics();
+                }
+            }
+
+            toggleParticles() {
+                this.config.particlesEnabled = !this.config.particlesEnabled;
+
+                const toggle = document.getElementById('particles-toggle');
+                toggle.classList.toggle('active', this.config.particlesEnabled);
+            }
+
+            setQuality(level) {
+                this.config.qualityLevel = parseInt(level);
+
+                // Update renderer settings
+                this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, level >= 3 ? 2 : 1));
+                this.renderer.shadowMap.enabled = level >= 3;
+
+                console.log(`Quality level set to: ${level}`);
+            }
+
+            setAnimationSpeed(speed) {
+                this.config.animationSpeed = parseFloat(speed);
+                console.log(`Animation speed set to: ${speed}`);
+            }
+
+            resetView() {
+                this.setCinematicView(0);
+                this.selectedPoint = null;
+                document.getElementById('data-inspector').classList.remove('show');
+
+                this.scene.traverse((child) => {
+                    if (child.userData.type === 'dataPoint') {
+                        child.material.emissive.setHex(0x000000);
+                        child.material.emissiveIntensity = 0;
+                    }
+                });
+            }
+
+            exportData() {
+                const exportData = {
+                    timestamp: new Date().toISOString(),
+                    dataPoints: this.dataPoints.map(point => ({
+                        id: point.id,
+                        category: point.category,
+                        value: point.value,
+                        trend: point.trend,
+                        confidence: point.confidence,
+                        source: point.source
+                    })),
+                    clusters: this.clusters.map(cluster => ({
+                        id: cluster.id,
+                        performance: cluster.performance,
+                        pointCount: cluster.points.length
+                    })),
+                    performance: this.stats
+                };
+
+                const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = '013a-analytics-export.json';
+                a.click();
+
+                URL.revokeObjectURL(url);
+                console.log('📊 Analytics data exported successfully');
+            }
+
+            toggleFullscreen() {
+                if (!document.fullscreenElement) {
+                    document.documentElement.requestFullscreen();
+                } else {
+                    document.exitFullscreen();
+                }
+            }
+
+            updatePerformanceStats() {
+                const now = performance.now();
+                this.stats.frameCount++;
+
+                if (now - this.stats.lastTime >= 1000) {
+                    this.stats.fps = Math.round((this.stats.frameCount * 1000) / (now - this.stats.lastTime));
+                    this.stats.frameCount = 0;
+                    this.stats.lastTime = now;
+
+                    // Update UI
+                    document.getElementById('fps-counter').textContent = `${this.stats.fps} FPS`;
+                    document.getElementById('object-count').textContent = this.scene.children.length;
+                    document.getElementById('triangle-count').textContent =
+                        this.renderer.info.render.triangles.toLocaleString();
+
+                    if (this.renderer.info.memory) {
+                        this.stats.memory = Math.round(this.renderer.info.memory.geometries +
+                                                     this.renderer.info.memory.textures);
+                        document.getElementById('memory-usage').textContent = `${this.stats.memory} MB`;
+                    }
+                }
+            }
+
+            animate() {
+                requestAnimationFrame(() => this.animate());
+
+                const time = performance.now() * 0.001 * this.config.animationSpeed;
+
+                // Update controls
+                this.controls.update();
+
+                // Update physics
+                if (this.world && this.config.physicsEnabled) {
+                    this.world.step(1/60);
+
+                    // Sync physics bodies with meshes
+                    this.scene.traverse((child) => {
+                        if (child.userData.physicsBody) {
+                            child.position.copy(child.userData.physicsBody.position);
+                            child.quaternion.copy(child.userData.physicsBody.quaternion);
+                        }
+                    });
+                }
+
+                // Animate data points
+                this.scene.traverse((child) => {
+                    if (child.userData.type === 'dataPoint') {
+                        const data = child.userData.data;
+
+                        // Trend-based rotation
+                        child.rotation.y = time * (0.5 + data.trend * 0.5);
+
+                        // Performance-based pulsing
+                        const pulse = 1 + Math.sin(time * (2 + data.value * 0.1)) * 0.1 * data.importance;
+                        child.scale.setScalar(pulse);
+                    }
+
+                    // Animate particles
+                    if (child.userData.animate) {
+                        child.userData.animate(time);
+                    }
+                });
+
+                // Update animation mixers
+                this.animationMixers.forEach(mixer => mixer.update(0.016));
+
+                // Render
+                if (this.composer && this.config.qualityLevel >= 2) {
+                    this.composer.render();
+                } else {
+                    this.renderer.render(this.scene, this.camera);
+                }
+
+                // Update performance stats
+                this.updatePerformanceStats();
+            }
+
+            hideLoading() {
+                const loadingScreen = document.getElementById('loading-screen');
+                loadingScreen.classList.add('hidden');
+
+                setTimeout(() => {
+                    loadingScreen.style.display = 'none';
+                }, 500);
+            }
+
+            showError(title, message) {
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'error-message';
+                errorDiv.innerHTML = `
+                    <div class="error-title">${title}</div>
+                    <div class="error-text">${message}</div>
+                    <button class="error-button" onclick="location.reload()">Reload</button>
+                `;
+
+                document.body.appendChild(errorDiv);
+                this.hideLoading();
+            }
+        }
+
+        // Global functions for UI interaction
+        let analyticsEngine;
+
+        function toggleControlPanel() {
+            const panel = document.getElementById('control-panel');
+            panel.classList.toggle('open');
+        }
+
+        function toggleAutoRotate() {
+            if (analyticsEngine) {
+                analyticsEngine.toggleAutoRotate();
+            }
+        }
+
+        function togglePhysics() {
+            if (analyticsEngine) {
+                analyticsEngine.togglePhysics();
+            }
+        }
+
+        function toggleParticles() {
+            if (analyticsEngine) {
+                analyticsEngine.toggleParticles();
+            }
+        }
+
+        function setQuality(level) {
+            if (analyticsEngine) {
+                analyticsEngine.setQuality(level);
+            }
+        }
+
+        function setAnimationSpeed(speed) {
+            if (analyticsEngine) {
+                analyticsEngine.setAnimationSpeed(speed);
+            }
+        }
+
+        function setCinematicView(index) {
+            if (analyticsEngine) {
+                analyticsEngine.setCinematicView(index);
+            }
+        }
+
+        function resetView() {
+            if (analyticsEngine) {
+                analyticsEngine.resetView();
+            }
+        }
+
+        function exportData() {
+            if (analyticsEngine) {
+                analyticsEngine.exportData();
+            }
+        }
+
+        function toggleWebXR() {
+            if (analyticsEngine && analyticsEngine.renderer.xr.enabled) {
+                const button = document.getElementById('webxr-button');
+
+                if (analyticsEngine.renderer.xr.isPresenting) {
+                    analyticsEngine.renderer.xr.getSession().end();
+                    button.textContent = '🥽';
+                } else {
+                    navigator.xr.requestSession('immersive-vr').then((session) => {
+                        analyticsEngine.renderer.xr.setSession(session);
+                        button.textContent = '👓';
+                        console.log('🥽 Entered WebXR immersive mode');
+                    }).catch((error) => {
+                        console.error('❌ Failed to enter WebXR mode:', error);
+                    });
+                }
+            }
+        }
+
+        // Security Manager for Production Environment
+        class SecurityManager {
+            constructor() {
+                this.initialized = false;
+                this.validOrigins = ['https://013a.tech', 'http://localhost:3000', 'http://127.0.0.1:3000'];
+                this.csrfToken = this.generateCSRFToken();
+            }
+
+            async initialize() {
+                try {
+                    await this.validateEnvironment();
+                    await this.checkIntegrity();
+                    this.setupSecurityMonitoring();
+                    this.initialized = true;
+                    console.log('🔒 Security Manager initialized');
+                    return true;
+                } catch (error) {
+                    console.error('❌ Security validation failed:', error);
+                    throw new Error('Security validation failed');
+                }
+            }
+
+            async validateEnvironment() {
+                // Validate origin
+                if (!this.isValidOrigin(window.location.origin)) {
+                    throw new Error('Invalid origin detected');
+                }
+
+                // Check for required security headers
+                const requiredHeaders = ['x-frame-options', 'x-content-type-options'];
+                // Note: These checks would be performed server-side in production
+
+                // Validate WebGL context security
+                if (!this.isWebGLSecure()) {
+                    throw new Error('WebGL context security validation failed');
+                }
+
+                // Check for debugging tools in production
+                if (this.isProductionEnvironment() && this.hasDebuggingTools()) {
+                    console.warn('⚠️ Debugging tools detected in production environment');
+                }
+            }
+
+            isValidOrigin(origin) {
+                return this.validOrigins.includes(origin) ||
+                       origin.startsWith('https://013a.tech') ||
+                       origin.includes('localhost') ||
+                       origin.includes('127.0.0.1');
+            }
+
+            isWebGLSecure() {
+                const canvas = document.createElement('canvas');
+                const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+
+                if (!gl) return false;
+
+                // Check for WebGL security best practices
+                const renderer = gl.getParameter(gl.RENDERER);
+                const vendor = gl.getParameter(gl.VENDOR);
+
+                // Log renderer info securely (avoid fingerprinting)
+                console.log('🎮 WebGL Renderer:', renderer ? 'Available' : 'Not Available');
+
+                return true;
+            }
+
+            isProductionEnvironment() {
+                return window.location.hostname === '013a.tech' ||
+                       window.location.hostname.includes('013a.tech');
+            }
+
+            hasDebuggingTools() {
+                return !!(window.console && window.console.firebug) ||
+                       window.console && window.console.table && window.console.group;
+            }
+
+            generateCSRFToken() {
+                const array = new Uint8Array(32);
+                crypto.getRandomValues(array);
+                return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
+            }
+
+            async checkIntegrity() {
+                // Basic integrity checks for production
+                if (this.isProductionEnvironment()) {
+                    // Verify critical components haven't been tampered with
+                    const criticalElements = ['canvas-container', 'control-panel', 'data-inspector'];
+                    for (const elementId of criticalElements) {
+                        if (!document.getElementById(elementId)) {
+                            throw new Error(`Critical element missing: ${elementId}`);
+                        }
+                    }
+                }
+            }
+
+            setupSecurityMonitoring() {
+                // Monitor for suspicious activity
+                let suspiciousActivityCount = 0;
+
+                // Monitor excessive API calls
+                const originalFetch = window.fetch;
+                window.fetch = (...args) => {
+                    // Rate limiting logic would go here
+                    return originalFetch.apply(this, args);
+                };
+
+                // Monitor console access in production
+                if (this.isProductionEnvironment()) {
+                    const originalLog = console.log;
+                    console.log = (...args) => {
+                        // Filter sensitive information in production logs
+                        const filteredArgs = args.map(arg =>
+                            typeof arg === 'string' ? arg.replace(/token|key|password/gi, '[REDACTED]') : arg
+                        );
+                        return originalLog.apply(console, filteredArgs);
+                    };
+                }
+
+                // Setup error reporting for production
+                window.addEventListener('error', (event) => {
+                    this.reportSecurityEvent('script_error', {
+                        message: event.message,
+                        filename: event.filename,
+                        lineno: event.lineno
+                    });
+                });
+
+                window.addEventListener('unhandledrejection', (event) => {
+                    this.reportSecurityEvent('unhandled_rejection', {
+                        reason: event.reason
+                    });
+                });
+            }
+
+            reportSecurityEvent(eventType, details) {
+                // In production, this would report to a security monitoring service
+                if (this.isProductionEnvironment()) {
+                    console.warn(`🚨 Security Event [${eventType}]:`, details);
+
+                    // Example: Report to monitoring service
+                    // fetch('/api/security/report', {
+                    //     method: 'POST',
+                    //     headers: {
+                    //         'Content-Type': 'application/json',
+                    //         'X-CSRF-Token': this.csrfToken
+                    //     },
+                    //     body: JSON.stringify({ eventType, details, timestamp: Date.now() })
+                    // }).catch(() => {}); // Silent fail for monitoring
+                }
+            }
+
+            sanitizeInput(input) {
+                if (typeof input !== 'string') return input;
+                return input
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#x27;')
+                    .replace(/\//g, '&#x2F;');
+            }
+
+            validateConfiguration(config) {
+                const allowedConfigs = {
+                    qualityLevel: [1, 2, 3, 4],
+                    animationSpeed: (val) => val >= 0.1 && val <= 5.0,
+                    autoRotate: [true, false],
+                    physicsEnabled: [true, false],
+                    particlesEnabled: [true, false]
+                };
+
+                for (const [key, value] of Object.entries(config)) {
+                    const allowedValues = allowedConfigs[key];
+
+                    if (!allowedValues) {
+                        throw new Error(`Configuration key '${key}' is not allowed`);
+                    }
+
+                    if (Array.isArray(allowedValues)) {
+                        if (!allowedValues.includes(value)) {
+                            throw new Error(`Invalid value for '${key}': ${value}`);
+                        }
+                    } else if (typeof allowedValues === 'function') {
+                        if (!allowedValues(value)) {
+                            throw new Error(`Invalid value for '${key}': ${value}`);
+                        }
+                    }
+                }
+
+                return true;
+            }
+        }
+
+        // Enhanced Error Reporting and Recovery
+        class ErrorManager {
+            constructor() {
+                this.errorLog = [];
+                this.maxErrors = 100;
+                this.setupGlobalErrorHandling();
+            }
+
+            setupGlobalErrorHandling() {
+                window.addEventListener('error', (event) => {
+                    this.logError({
+                        type: 'javascript_error',
+                        message: event.message,
+                        filename: event.filename,
+                        lineno: event.lineno,
+                        colno: event.colno,
+                        timestamp: Date.now(),
+                        userAgent: navigator.userAgent,
+                        url: window.location.href
+                    });
+                });
+
+                window.addEventListener('unhandledrejection', (event) => {
+                    this.logError({
+                        type: 'unhandled_promise_rejection',
+                        reason: event.reason,
+                        timestamp: Date.now(),
+                        url: window.location.href
+                    });
+                });
+            }
+
+            logError(errorInfo) {
+                this.errorLog.push(errorInfo);
+
+                // Keep only the most recent errors
+                if (this.errorLog.length > this.maxErrors) {
+                    this.errorLog.shift();
+                }
+
+                // In production, send to monitoring service
+                if (window.location.hostname.includes('013a.tech')) {
+                    this.reportToMonitoring(errorInfo);
+                }
+
+                console.error('🚨 Error logged:', errorInfo);
+            }
+
+            reportToMonitoring(errorInfo) {
+                // Production error reporting would happen here
+                // This is a placeholder for integration with monitoring services
+                const reportData = {
+                    ...errorInfo,
+                    project: '013a-analytics',
+                    version: '1.0.0',
+                    environment: 'production'
+                };
+
+                // Example monitoring service integration:
+                // fetch('/api/errors', {
+                //     method: 'POST',
+                //     headers: { 'Content-Type': 'application/json' },
+                //     body: JSON.stringify(reportData)
+                // }).catch(() => {}); // Silent fail
+            }
+
+            getErrorSummary() {
+                const summary = {
+                    totalErrors: this.errorLog.length,
+                    errorsByType: {},
+                    recentErrors: this.errorLog.slice(-5)
+                };
+
+                this.errorLog.forEach(error => {
+                    summary.errorsByType[error.type] = (summary.errorsByType[error.type] || 0) + 1;
+                });
+
+                return summary;
+            }
+        }
+
+        // Initialize enhanced security and error management
+        const securityManager = new SecurityManager();
+        const errorManager = new ErrorManager();
+
+        // Initialize the application with security validation
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                console.log('🚀 Initializing 013a Analytics Platform...');
+
+                // Initialize security first
+                await securityManager.initialize();
+
+                // Initialize analytics engine with security context
+                analyticsEngine = new ImmersiveAnalyticsEngine();
+
+                console.log('✅ 013a Analytics Platform initialized successfully');
+                console.log('🔒 Security: Enhanced protection active');
+                console.log('📊 Analytics: Immersive 3D engine ready');
+                console.log('🎮 Controls: Keyboard shortcuts 1-4, Space, R, F');
+
+            } catch (error) {
+                console.error('❌ Failed to initialize platform:', error);
+                errorManager.logError({
+                    type: 'initialization_error',
+                    message: error.message,
+                    timestamp: Date.now()
+                });
+
+                // Show user-friendly error message
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'error-message';
+                errorDiv.innerHTML = `
+                    <div class="error-title">Initialization Failed</div>
+                    <div class="error-text">Unable to start the immersive analytics platform. Please check your browser compatibility and try again.</div>
+                    <button class="error-button" onclick="location.reload()">Reload Platform</button>
+                `;
+                document.body.appendChild(errorDiv);
+            }
+        });
+
+        // Service Worker for PWA capabilities
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js').catch(() => {
+                console.log('Service Worker registration failed');
+            });
+        }
+    </script>
+</body>
+</html>

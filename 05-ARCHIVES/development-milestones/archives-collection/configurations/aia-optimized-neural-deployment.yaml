@@ -1,0 +1,836 @@
+---
+# AIA OPTIMIZED NEURAL DEPLOYMENT
+# Full complexity with optimized resource allocation
+# Maintains all features while fitting quota constraints
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: aia-optimized-neural
+  labels:
+    environment: production
+    complexity: full-optimized
+    tier: neural-intelligence
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: aia-neural-config-optimized
+  namespace: aia-optimized-neural
+data:
+  # Neural Intelligence Configuration
+  NEURAL_ORCHESTRATION_ENABLED: "true"
+  U_DKG_COORDINATION: "true"
+  COGNITIVE_ADAPTATION: "true"
+  ECONOMIC_OPTIMIZATION: "true"
+
+  # Database Configuration
+  DATABASE_URL: "postgresql://aia_user:aia_pass@postgres-optimized:5432/aia_neural_db"
+  REDIS_URL: "redis://redis-optimized:6379/0"
+
+  # API Configuration
+  API_VERSION: "v2.5"
+  ENVIRONMENT: "production"
+  CORS_ORIGINS: "*"
+
+  # Feature Flags - Full Complexity Enabled
+  ENABLE_3D_ANALYTICS: "true"
+  ENABLE_ENTERPRISE_FEATURES: "true"
+  ENABLE_FORTUNE_500_INTEGRATIONS: "true"
+  ENABLE_QUANTUM_SECURITY: "true"
+  ENABLE_REAL_TIME_COLLABORATION: "true"
+  ENABLE_IMMERSIVE_VISUALIZATION: "true"
+
+  # Optimized Performance Configuration
+  MAX_WORKERS: "8"
+  MEMORY_OPTIMIZATION: "aggressive"
+  GPU_ACCELERATION: "false"
+  CPU_OPTIMIZATION: "true"
+
+  # Monitoring Configuration
+  METRICS_ENABLED: "true"
+  PROMETHEUS_PORT: "9090"
+  GRAFANA_ENABLED: "true"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: aia-neural-secrets-optimized
+  namespace: aia-optimized-neural
+type: Opaque
+stringData:
+  # Database credentials
+  POSTGRES_PASSWORD: "aia_neural_secure_2025"
+  POSTGRES_USER: "aia_user"
+  POSTGRES_DB: "aia_neural_db"
+
+  # Redis credentials
+  REDIS_PASSWORD: "aia_redis_secure_2025"
+
+  # API Keys and tokens (placeholder - replace with actual values)
+  OPENAI_API_KEY: "placeholder"
+  HF_TOKEN: "placeholder"
+  XAI_API_KEY: "placeholder"
+
+  # Stripe Payment Configuration
+  STRIPE_SECRET_KEY: "placeholder"
+  STRIPE_WEBHOOK_SECRET: "placeholder"
+
+  # JWT Secret
+  JWT_SECRET_KEY: "aia_jwt_neural_secret_2025_ultra_secure"
+---
+# PostgreSQL Database - Optimized
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres-optimized
+  namespace: aia-optimized-neural
+  labels:
+    app: postgres-optimized
+    tier: database
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres-optimized
+  template:
+    metadata:
+      labels:
+        app: postgres-optimized
+        tier: database
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:15
+        ports:
+        - containerPort: 5432
+        env:
+        - name: POSTGRES_DB
+          valueFrom:
+            secretKeyRef:
+              name: aia-neural-secrets-optimized
+              key: POSTGRES_DB
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: aia-neural-secrets-optimized
+              key: POSTGRES_USER
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: aia-neural-secrets-optimized
+              key: POSTGRES_PASSWORD
+        volumeMounts:
+        - name: postgres-storage
+          mountPath: /var/lib/postgresql/data
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+      volumes:
+      - name: postgres-storage
+        persistentVolumeClaim:
+          claimName: postgres-optimized-pvc
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-optimized-pvc
+  namespace: aia-optimized-neural
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-optimized
+  namespace: aia-optimized-neural
+spec:
+  selector:
+    app: postgres-optimized
+  ports:
+  - port: 5432
+    targetPort: 5432
+  type: ClusterIP
+---
+# Redis Cache - Optimized
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis-optimized
+  namespace: aia-optimized-neural
+  labels:
+    app: redis-optimized
+    tier: cache
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis-optimized
+  template:
+    metadata:
+      labels:
+        app: redis-optimized
+        tier: cache
+    spec:
+      containers:
+      - name: redis
+        image: redis:7-alpine
+        ports:
+        - containerPort: 6379
+        command: ["redis-server"]
+        args: ["--requirepass", "$(REDIS_PASSWORD)", "--maxmemory", "256mb", "--maxmemory-policy", "allkeys-lru"]
+        env:
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: aia-neural-secrets-optimized
+              key: REDIS_PASSWORD
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-optimized
+  namespace: aia-optimized-neural
+spec:
+  selector:
+    app: redis-optimized
+  ports:
+  - port: 6379
+    targetPort: 6379
+  type: ClusterIP
+---
+# AIA Neural Backend - Main Sentient API (Optimized)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-neural-backend-optimized
+  namespace: aia-optimized-neural
+  labels:
+    app: aia-neural-backend-optimized
+    tier: api
+    component: neural-intelligence
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: aia-neural-backend-optimized
+  template:
+    metadata:
+      labels:
+        app: aia-neural-backend-optimized
+        tier: api
+        component: neural-intelligence
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8000"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+      - name: aia-backend
+        image: gcr.io/aia-system-prod-1759055445/aia-global-backend@sha256:ce2a08c036d6b3f9523ab6547bd0916749d545932f04e1dbd82de8efe5d51682
+        ports:
+        - containerPort: 8000
+          name: http
+        envFrom:
+        - configMapRef:
+            name: aia-neural-config-optimized
+        - secretRef:
+            name: aia-neural-secrets-optimized
+        env:
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 60
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        volumeMounts:
+        - name: app-logs
+          mountPath: /app/logs
+        - name: temp-storage
+          mountPath: /app/temp
+      volumes:
+      - name: app-logs
+        emptyDir: {}
+      - name: temp-storage
+        emptyDir:
+          sizeLimit: 1Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-neural-backend-optimized
+  namespace: aia-optimized-neural
+  labels:
+    app: aia-neural-backend-optimized
+    tier: api
+spec:
+  selector:
+    app: aia-neural-backend-optimized
+  ports:
+  - port: 80
+    targetPort: 8000
+    name: http
+  type: ClusterIP
+---
+# AIA Neural Frontend - 3D Analytics & Immersive Visualization (Optimized)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-neural-frontend-optimized
+  namespace: aia-optimized-neural
+  labels:
+    app: aia-neural-frontend-optimized
+    tier: frontend
+    component: immersive-3d
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: aia-neural-frontend-optimized
+  template:
+    metadata:
+      labels:
+        app: aia-neural-frontend-optimized
+        tier: frontend
+        component: immersive-3d
+    spec:
+      containers:
+      - name: aia-frontend
+        image: gcr.io/aia-system-prod-1759055445/aia-global-frontend@sha256:61432b3255e349c141877ede0f84e533ff88b1f4803590f25c4b33d7db113196
+        ports:
+        - containerPort: 80
+          name: http
+        envFrom:
+        - configMapRef:
+            name: aia-neural-config-optimized
+        env:
+        - name: REACT_APP_API_URL
+          value: "https://013a.tech/api"
+        - name: REACT_APP_WS_URL
+          value: "wss://013a.tech/ws"
+        - name: REACT_APP_ENVIRONMENT
+          value: "production"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 10
+          periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-neural-frontend-optimized
+  namespace: aia-optimized-neural
+  labels:
+    app: aia-neural-frontend-optimized
+    tier: frontend
+spec:
+  selector:
+    app: aia-neural-frontend-optimized
+  ports:
+  - port: 80
+    targetPort: 80
+    name: http
+  type: ClusterIP
+---
+# Multi-Agent Orchestration System (Optimized)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-neural-orchestrator-optimized
+  namespace: aia-optimized-neural
+  labels:
+    app: aia-neural-orchestrator-optimized
+    tier: orchestration
+    component: multi-agent
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: aia-neural-orchestrator-optimized
+  template:
+    metadata:
+      labels:
+        app: aia-neural-orchestrator-optimized
+        tier: orchestration
+        component: multi-agent
+    spec:
+      containers:
+      - name: orchestrator
+        image: gcr.io/aia-system-prod-1759055445/aia-cognitive-processor:latest
+        ports:
+        - containerPort: 8001
+          name: http
+        envFrom:
+        - configMapRef:
+            name: aia-neural-config-optimized
+        - secretRef:
+            name: aia-neural-secrets-optimized
+        env:
+        - name: ORCHESTRATOR_MODE
+          value: "neural-coordination"
+        - name: U_DKG_ENABLED
+          value: "true"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8001
+          initialDelaySeconds: 60
+          periodSeconds: 30
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-neural-orchestrator-optimized
+  namespace: aia-optimized-neural
+spec:
+  selector:
+    app: aia-neural-orchestrator-optimized
+  ports:
+  - port: 8001
+    targetPort: 8001
+    name: http
+  type: ClusterIP
+---
+# Enterprise Partner Services (Optimized)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-neural-enterprise-optimized
+  namespace: aia-optimized-neural
+  labels:
+    app: aia-neural-enterprise-optimized
+    tier: enterprise
+    component: fortune-500
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: aia-neural-enterprise-optimized
+  template:
+    metadata:
+      labels:
+        app: aia-neural-enterprise-optimized
+        tier: enterprise
+        component: fortune-500
+    spec:
+      containers:
+      - name: enterprise-api
+        image: gcr.io/aia-system-prod-1759055445/aia-api:latest
+        ports:
+        - containerPort: 8002
+          name: http
+        envFrom:
+        - configMapRef:
+            name: aia-neural-config-optimized
+        - secretRef:
+            name: aia-neural-secrets-optimized
+        env:
+        - name: ENTERPRISE_MODE
+          value: "fortune-500"
+        - name: COMPLIANCE_LEVEL
+          value: "enterprise"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-neural-enterprise-optimized
+  namespace: aia-optimized-neural
+spec:
+  selector:
+    app: aia-neural-enterprise-optimized
+  ports:
+  - port: 8002
+    targetPort: 8002
+    name: http
+  type: ClusterIP
+---
+# Payment Processing Service (Optimized)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-neural-payment-optimized
+  namespace: aia-optimized-neural
+  labels:
+    app: aia-neural-payment-optimized
+    tier: payment
+    component: stripe-eu
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: aia-neural-payment-optimized
+  template:
+    metadata:
+      labels:
+        app: aia-neural-payment-optimized
+        tier: payment
+        component: stripe-eu
+    spec:
+      containers:
+      - name: payment-processor
+        image: gcr.io/aia-system-prod-1759055445/aia-ml-processor:latest
+        ports:
+        - containerPort: 8003
+          name: http
+        envFrom:
+        - configMapRef:
+            name: aia-neural-config-optimized
+        - secretRef:
+            name: aia-neural-secrets-optimized
+        env:
+        - name: PAYMENT_PROCESSOR
+          value: "stripe"
+        - name: COMPLIANCE_MODE
+          value: "eu-gdpr"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-neural-payment-optimized
+  namespace: aia-optimized-neural
+spec:
+  selector:
+    app: aia-neural-payment-optimized
+  ports:
+  - port: 8003
+    targetPort: 8003
+    name: http
+  type: ClusterIP
+---
+# WebSocket Service for Real-time Collaboration (Optimized)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-neural-websocket-optimized
+  namespace: aia-optimized-neural
+  labels:
+    app: aia-neural-websocket-optimized
+    tier: websocket
+    component: real-time
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: aia-neural-websocket-optimized
+  template:
+    metadata:
+      labels:
+        app: aia-neural-websocket-optimized
+        tier: websocket
+        component: real-time
+    spec:
+      containers:
+      - name: websocket-server
+        image: gcr.io/aia-system-prod-1759055445/aia-websocket-server:latest
+        ports:
+        - containerPort: 8004
+          name: http
+        envFrom:
+        - configMapRef:
+            name: aia-neural-config-optimized
+        - secretRef:
+            name: aia-neural-secrets-optimized
+        env:
+        - name: WEBSOCKET_MODE
+          value: "neural-collaboration"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-neural-websocket-optimized
+  namespace: aia-optimized-neural
+spec:
+  selector:
+    app: aia-neural-websocket-optimized
+  ports:
+  - port: 8004
+    targetPort: 8004
+    name: http
+  type: ClusterIP
+---
+# ML Processing Engine (Optimized)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-neural-ml-engine-optimized
+  namespace: aia-optimized-neural
+  labels:
+    app: aia-neural-ml-engine-optimized
+    tier: ml
+    component: ai-processing
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: aia-neural-ml-engine-optimized
+  template:
+    metadata:
+      labels:
+        app: aia-neural-ml-engine-optimized
+        tier: ml
+        component: ai-processing
+    spec:
+      containers:
+      - name: ml-processor
+        image: gcr.io/aia-system-prod-1759055445/aia-ml-processor:latest
+        ports:
+        - containerPort: 8005
+          name: http
+        envFrom:
+        - configMapRef:
+            name: aia-neural-config-optimized
+        - secretRef:
+            name: aia-neural-secrets-optimized
+        env:
+        - name: ML_MODE
+          value: "neural-processing"
+        - name: GPU_ENABLED
+          value: "false"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-neural-ml-engine-optimized
+  namespace: aia-optimized-neural
+spec:
+  selector:
+    app: aia-neural-ml-engine-optimized
+  ports:
+  - port: 8005
+    targetPort: 8005
+    name: http
+  type: ClusterIP
+---
+# Main Ingress with SSL (Optimized)
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: aia-neural-ingress-optimized
+  namespace: aia-optimized-neural
+  annotations:
+    kubernetes.io/ingress.global-static-ip-name: aia-neural-global-ip
+    kubernetes.io/ingress.class: gce
+    ingress.gcp.io/load-balancer-type: "External"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+spec:
+  tls:
+  - hosts:
+    - "013a.tech"
+    - "www.013a.tech"
+    - "api.013a.tech"
+    secretName: aia-neural-tls-optimized
+  rules:
+  - host: "013a.tech"
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-neural-frontend-optimized
+            port:
+              number: 80
+  - host: "www.013a.tech"
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-neural-frontend-optimized
+            port:
+              number: 80
+  - host: "api.013a.tech"
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-neural-backend-optimized
+            port:
+              number: 80
+      - path: /orchestrator
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-neural-orchestrator-optimized
+            port:
+              number: 8001
+      - path: /enterprise
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-neural-enterprise-optimized
+            port:
+              number: 8002
+      - path: /payments
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-neural-payment-optimized
+            port:
+              number: 8003
+      - path: /ws
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-neural-websocket-optimized
+            port:
+              number: 8004
+      - path: /ml
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-neural-ml-engine-optimized
+            port:
+              number: 8005
+---
+# SSL Certificate for Optimized Deployment
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: aia-neural-tls-optimized
+  namespace: aia-optimized-neural
+spec:
+  secretName: aia-neural-tls-optimized
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+  dnsNames:
+  - "013a.tech"
+  - "www.013a.tech"
+  - "api.013a.tech"
+---
+# Horizontal Pod Autoscaler for Backend (Optimized)
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: aia-neural-backend-hpa-optimized
+  namespace: aia-optimized-neural
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: aia-neural-backend-optimized
+  minReplicas: 2
+  maxReplicas: 6
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 75
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+---
+# Network Policy for Security (Optimized)
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: aia-neural-network-policy-optimized
+  namespace: aia-optimized-neural
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: aia-optimized-neural
+    - namespaceSelector:
+        matchLabels:
+          name: kube-system
+  egress:
+  - to: []

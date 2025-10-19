@@ -1,0 +1,525 @@
+# TEMPORARILY DISABLED FOR QUOTA COMPLIANCE
+# This deployment has been temporarily disabled to meet GCP quota requirements
+# Original content below (commented out):
+#
+# ---
+# # AIA NEURAL MONITORING STACK
+# # Comprehensive Prometheus + Grafana + Alertmanager
+# apiVersion: v1
+# kind: Namespace
+# metadata:
+#   name: aia-neural-monitoring
+#   labels:
+#     name: monitoring
+# ---
+# apiVersion: v1
+# kind: ServiceAccount
+# metadata:
+#   name: prometheus
+#   namespace: aia-neural-monitoring
+# ---
+# apiVersion: rbac.authorization.k8s.io/v1
+# kind: ClusterRole
+# metadata:
+#   name: prometheus
+# rules:
+# - apiGroups: [""]
+#   resources:
+#   - nodes
+#   - nodes/metrics
+#   - services
+#   - endpoints
+#   - pods
+#   verbs: ["get", "list", "watch"]
+# - apiGroups: [""]
+#   resources:
+#   - configmaps
+#   verbs: ["get"]
+# - nonResourceURLs: ["/metrics"]
+#   verbs: ["get"]
+# ---
+# apiVersion: rbac.authorization.k8s.io/v1
+# kind: ClusterRoleBinding
+# metadata:
+#   name: prometheus
+# roleRef:
+#   apiGroup: rbac.authorization.k8s.io
+#   kind: ClusterRole
+#   name: prometheus
+# subjects:
+# - kind: ServiceAccount
+#   name: prometheus
+#   namespace: aia-neural-monitoring
+# ---
+# apiVersion: v1
+# kind: ConfigMap
+# metadata:
+#   name: prometheus-config
+#   namespace: aia-neural-monitoring
+# data:
+#   prometheus.yml: |
+#     global:
+#       scrape_interval: 15s
+#       evaluation_interval: 15s
+# 
+#     rule_files:
+#       - "/etc/prometheus/rules/*.yml"
+# 
+#     alerting:
+#       alertmanagers:
+#       - static_configs:
+#         - targets:
+#           - alertmanager:9093
+# 
+#     scrape_configs:
+#       - job_name: 'prometheus'
+#         static_configs:
+#         - targets: ['localhost:9090']
+# 
+#       - job_name: 'aia-neural-backend'
+#         kubernetes_sd_configs:
+#         - role: endpoints
+#           namespaces:
+#             names:
+#             - aia-neural-production
+#         relabel_configs:
+#         - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_scrape]
+#           action: keep
+#           regex: true
+#         - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_path]
+#           action: replace
+#           target_label: __metrics_path__
+#           regex: (.+)
+#         - source_labels: [__address__, __meta_kubernetes_service_annotation_prometheus_io_port]
+#           action: replace
+#           regex: ([^:]+)(?::\d+)?;(\d+)
+#           replacement: $1:$2
+#           target_label: __address__
+# 
+#       - job_name: 'kubernetes-apiservers'
+#         kubernetes_sd_configs:
+#         - role: endpoints
+#         scheme: https
+#         tls_config:
+#           ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+#           insecure_skip_verify: true
+#         bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+#         relabel_configs:
+#         - source_labels: [__meta_kubernetes_namespace, __meta_kubernetes_service_name, __meta_kubernetes_endpoint_port_name]
+#           action: keep
+#           regex: default;kubernetes;https
+# 
+#       - job_name: 'kubernetes-nodes'
+#         kubernetes_sd_configs:
+#         - role: node
+#         scheme: https
+#         tls_config:
+#           ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+#           insecure_skip_verify: true
+#         bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+#         relabel_configs:
+#         - action: labelmap
+#           regex: __meta_kubernetes_node_label_(.+)
+#         - target_label: __address__
+#           replacement: kubernetes.default.svc:443
+#         - source_labels: [__meta_kubernetes_node_name]
+#           regex: (.+)
+#           target_label: __metrics_path__
+#           replacement: /api/v1/nodes/${1}/proxy/metrics
+# 
+#   alert_rules.yml: |
+#     groups:
+#     - name: aia-neural-alerts
+#       rules:
+#       - alert: AIA-High-CPU
+#         expr: sum(rate(container_cpu_usage_seconds_total{namespace="aia-neural-production"}[5m])) by (pod) > 0.8
+#         for: 5m
+#         labels:
+#           severity: warning
+#         annotations:
+#           summary: "High CPU usage detected"
+#           description: "Pod {{ $labels.pod }} has high CPU usage"
+# 
+#       - alert: AIA-High-Memory
+#         expr: sum(container_memory_usage_bytes{namespace="aia-neural-production"}) by (pod) / sum(container_spec_memory_limit_bytes{namespace="aia-neural-production"}) by (pod) > 0.9
+#         for: 5m
+#         labels:
+#           severity: critical
+#         annotations:
+#           summary: "High memory usage detected"
+#           description: "Pod {{ $labels.pod }} has high memory usage"
+# 
+#       - alert: AIA-Pod-Down
+#         expr: up{job="aia-neural-backend"} == 0
+#         for: 1m
+#         labels:
+#           severity: critical
+#         annotations:
+#           summary: "AIA Neural Backend is down"
+#           description: "AIA Neural Backend pod is not responding"
+# ---
+# apiVersion: apps/v1
+# kind: Deployment
+# metadata:
+#   name: prometheus
+#   namespace: aia-neural-monitoring
+#   labels:
+#     app: prometheus
+# spec:
+#   replicas: 1
+#   selector:
+#     matchLabels:
+#       app: prometheus
+#   template:
+#     metadata:
+#       labels:
+#         app: prometheus
+#     spec:
+#       serviceAccountName: prometheus
+#       containers:
+#       - name: prometheus
+#         image: prom/prometheus:v2.45.0
+#         args:
+#           - '--config.file=/etc/prometheus/prometheus.yml'
+#           - '--storage.tsdb.path=/prometheus/'
+#           - '--web.console.libraries=/etc/prometheus/console_libraries'
+#           - '--web.console.templates=/etc/prometheus/consoles'
+#           - '--storage.tsdb.retention.time=200h'
+#           - '--web.enable-lifecycle'
+#           - '--web.enable-admin-api'
+#         ports:
+#         - containerPort: 9090
+#         volumeMounts:
+#         - name: prometheus-config-volume
+#           mountPath: /etc/prometheus/
+#         - name: prometheus-storage-volume
+#           mountPath: /prometheus/
+#         resources:
+#           requests:
+#             memory: "128Mi"
+#             cpu: "100m"
+#           limits:
+#             memory: "128Mi"
+#             cpu: "100m"
+#       volumes:
+#       - name: prometheus-config-volume
+#         configMap:
+#           defaultMode: 420
+#           name: prometheus-config
+#       - name: prometheus-storage-volume
+#         emptyDir: {}
+# ---
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   name: prometheus
+#   namespace: aia-neural-monitoring
+#   annotations:
+#     prometheus.io/scrape: 'true'
+#     prometheus.io/port: '9090'
+# spec:
+#   selector:
+#     app: prometheus
+#   type: ClusterIP
+#   ports:
+#     - port: 9090
+#       targetPort: 9090
+# ---
+# apiVersion: v1
+# kind: ConfigMap
+# metadata:
+#   name: grafana-datasources
+#   namespace: aia-neural-monitoring
+# data:
+#   prometheus.yaml: |-
+#     {
+#         "apiVersion": 1,
+#         "datasources": [
+#             {
+#                "access":"proxy",
+#                 "editable": true,
+#                 "name": "prometheus",
+#                 "orgId": 1,
+#                 "type": "prometheus",
+#                 "url": "http://prometheus:9090",
+#                 "version": 1
+#             }
+#         ]
+#     }
+# ---
+# apiVersion: v1
+# kind: ConfigMap
+# metadata:
+#   name: grafana-dashboards
+#   namespace: aia-neural-monitoring
+# data:
+#   aia-neural-dashboard.json: |
+#     {
+#       "annotations": {
+#         "list": []
+#       },
+#       "editable": true,
+#       "fiscalYearStartMonth": 0,
+#       "graphTooltip": 0,
+#       "id": 1,
+#       "links": [],
+#       "liveNow": false,
+#       "panels": [
+#         {
+#           "datasource": {
+#             "type": "prometheus",
+#             "uid": "prometheus"
+#           },
+#           "fieldConfig": {
+#             "defaults": {
+#               "color": {
+#                 "mode": "palette-classic"
+#               },
+#               "custom": {
+#                 "axisLabel": "",
+#                 "axisPlacement": "auto",
+#                 "barAlignment": 0,
+#                 "drawStyle": "line",
+#                 "fillOpacity": 10,
+#                 "gradientMode": "none",
+#                 "hideFrom": {
+#                   "legend": false,
+#                   "tooltip": false,
+#                   "vis": false
+#                 },
+#                 "lineInterpolation": "linear",
+#                 "lineWidth": 1,
+#                 "pointSize": 5,
+#                 "scaleDistribution": {
+#                   "type": "linear"
+#                 },
+#                 "showPoints": "never",
+#                 "spanNulls": false,
+#                 "stacking": {
+#                   "group": "A",
+#                   "mode": "none"
+#                 },
+#                 "thresholdsStyle": {
+#                   "mode": "off"
+#                 }
+#               },
+#               "mappings": [],
+#               "thresholds": {
+#                 "mode": "absolute",
+#                 "steps": [
+#                   {
+#                     "color": "green",
+#                     "value": null
+#                   },
+#                   {
+#                     "color": "red",
+#                     "value": 80
+#                   }
+#                 ]
+#               },
+#               "unit": "percent"
+#             },
+#             "overrides": []
+#           },
+#           "gridPos": {
+#             "h": 8,
+#             "w": 12,
+#             "x": 0,
+#             "y": 0
+#           },
+#           "id": 2,
+#           "options": {
+#             "legend": {
+#               "calcs": [],
+#               "displayMode": "list",
+#               "placement": "bottom"
+#             },
+#             "tooltip": {
+#               "mode": "single"
+#             }
+#           },
+#           "targets": [
+#             {
+#               "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=\"aia-neural-production\"}[5m])) by (pod) * 100",
+#               "interval": "",
+#               "legendFormat": "{{pod}}",
+#               "refId": "A"
+#             }
+#           ],
+#           "title": "AIA Neural - CPU Usage",
+#           "type": "timeseries"
+#         },
+#         {
+#           "datasource": {
+#             "type": "prometheus",
+#             "uid": "prometheus"
+#           },
+#           "fieldConfig": {
+#             "defaults": {
+#               "color": {
+#                 "mode": "palette-classic"
+#               },
+#               "custom": {
+#                 "axisLabel": "",
+#                 "axisPlacement": "auto",
+#                 "barAlignment": 0,
+#                 "drawStyle": "line",
+#                 "fillOpacity": 10,
+#                 "gradientMode": "none",
+#                 "hideFrom": {
+#                   "legend": false,
+#                   "tooltip": false,
+#                   "vis": false
+#                 },
+#                 "lineInterpolation": "linear",
+#                 "lineWidth": 1,
+#                 "pointSize": 5,
+#                 "scaleDistribution": {
+#                   "type": "linear"
+#                 },
+#                 "showPoints": "never",
+#                 "spanNulls": false,
+#                 "stacking": {
+#                   "group": "A",
+#                   "mode": "none"
+#                 },
+#                 "thresholdsStyle": {
+#                   "mode": "off"
+#                 }
+#               },
+#               "mappings": [],
+#               "thresholds": {
+#                 "mode": "absolute",
+#                 "steps": [
+#                   {
+#                     "color": "green",
+#                     "value": null
+#                   },
+#                   {
+#                     "color": "red",
+#                     "value": 80
+#                   }
+#                 ]
+#               },
+#               "unit": "bytes"
+#             },
+#             "overrides": []
+#           },
+#           "gridPos": {
+#             "h": 8,
+#             "w": 12,
+#             "x": 12,
+#             "y": 0
+#           },
+#           "id": 3,
+#           "options": {
+#             "legend": {
+#               "calcs": [],
+#               "displayMode": "list",
+#               "placement": "bottom"
+#             },
+#             "tooltip": {
+#               "mode": "single"
+#             }
+#           },
+#           "targets": [
+#             {
+#               "expr": "sum(container_memory_usage_bytes{namespace=\"aia-neural-production\"}) by (pod)",
+#               "interval": "",
+#               "legendFormat": "{{pod}}",
+#               "refId": "A"
+#             }
+#           ],
+#           "title": "AIA Neural - Memory Usage",
+#           "type": "timeseries"
+#         }
+#       ],
+#       "schemaVersion": 27,
+#       "style": "dark",
+#       "tags": ["aia", "neural", "production"],
+#       "templating": {
+#         "list": []
+#       },
+#       "time": {
+#         "from": "now-6h",
+#         "to": "now"
+#       },
+#       "timepicker": {},
+#       "timezone": "",
+#       "title": "AIA Neural Intelligence Dashboard",
+#       "uid": "aia-neural-dashboard",
+#       "version": 1
+#     }
+# ---
+# apiVersion: apps/v1
+# kind: Deployment
+# metadata:
+#   name: grafana
+#   namespace: aia-neural-monitoring
+# spec:
+#   replicas: 1
+#   selector:
+#     matchLabels:
+#       app: grafana
+#   template:
+#     metadata:
+#       name: grafana
+#       labels:
+#         app: grafana
+#     spec:
+#       containers:
+#       - name: grafana
+#         image: grafana/grafana:10.0.0
+#         ports:
+#         - name: grafana
+#           containerPort: 3000
+#         env:
+#         - name: GF_SECURITY_ADMIN_USER
+#           value: admin
+#         - name: GF_SECURITY_ADMIN_PASSWORD
+#           value: aia-neural-admin-2025
+#         - name: GF_USERS_ALLOW_SIGN_UP
+#           value: "false"
+#         resources:
+#           limits:
+#             memory: "128Mi"
+#             cpu: "100m"
+#           requests:
+#             memory: "128Mi"
+#             cpu: "100m"
+#         volumeMounts:
+#         - mountPath: /var/lib/grafana
+#           name: grafana-storage
+#         - mountPath: /etc/grafana/provisioning/datasources
+#           name: grafana-datasources
+#           readOnly: false
+#         - mountPath: /etc/grafana/provisioning/dashboards
+#           name: grafana-dashboards
+#           readOnly: false
+#       volumes:
+#       - name: grafana-storage
+#         emptyDir: {}
+#       - name: grafana-datasources
+#         configMap:
+#           defaultMode: 420
+#           name: grafana-datasources
+#       - name: grafana-dashboards
+#         configMap:
+#           defaultMode: 420
+#           name: grafana-dashboards
+# ---
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   name: grafana
+#   namespace: aia-neural-monitoring
+#   annotations:
+#     prometheus.io/scrape: 'true'
+#     prometheus.io/port: '3000'
+# spec:
+#   selector:
+#     app: grafana
+#   type: ClusterIP
+#   ports:
+#     - port: 3000
+#       targetPort: 3000

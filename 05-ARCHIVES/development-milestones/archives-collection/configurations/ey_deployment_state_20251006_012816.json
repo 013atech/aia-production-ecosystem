@@ -1,0 +1,167 @@
+{
+  "deployment": {
+    "deployment_id": "EY_DEPLOY_20251006_012816",
+    "start_date": "2025-10-06 01:28:16.626623",
+    "target_consultants": 50000,
+    "installed_count": 47500,
+    "revenue_target": 6200000.0,
+    "revenue_activated": 5890000.0,
+    "sox_controls": [
+      {
+        "control_id": "SOX_302",
+        "control_name": "Management Assessment of Internal Controls",
+        "automation_level": 0.95,
+        "ri[STRIPE_KEY_PLACEHOLDER]": "Medium",
+        "audit_trail_enabled": true,
+        "compliance_status": "Compliant",
+        "last_validation": null
+      },
+      {
+        "control_id": "SOX_404",
+        "control_name": "Internal Control Assessment",
+        "automation_level": 0.92,
+        "ri[STRIPE_KEY_PLACEHOLDER]": "High",
+        "audit_trail_enabled": true,
+        "compliance_status": "Compliant",
+        "last_validation": null
+      },
+      {
+        "control_id": "SOX_409",
+        "control_name": "Real-time Financial Reporting",
+        "automation_level": 0.98,
+        "ri[STRIPE_KEY_PLACEHOLDER]": "Critical",
+        "audit_trail_enabled": true,
+        "compliance_status": "Compliant",
+        "last_validation": null
+      },
+      {
+        "control_id": "SOX_906",
+        "control_name": "CEO/CFO Certification",
+        "automation_level": 0.88,
+        "ri[STRIPE_KEY_PLACEHOLDER]": "Critical",
+        "audit_trail_enabled": true,
+        "compliance_status": "Compliant",
+        "last_validation": null
+      }
+    ],
+    "compliance_frameworks": [
+      "ComplianceFramework.SOX",
+      "ComplianceFramework.GERMAN_GRUNDGESETZ",
+      "ComplianceFramework.GDPR"
+    ],
+    "deployment_status": "partial"
+  },
+  "sox_controls": [
+    {
+      "control_id": "SOX_302",
+      "control_name": "Management Assessment of Internal Controls",
+      "automation_level": 0.95,
+      "ri[STRIPE_KEY_PLACEHOLDER]": "Medium",
+      "audit_trail_enabled": true,
+      "compliance_status": "Compliant",
+      "last_validation": null
+    },
+    {
+      "control_id": "SOX_404",
+      "control_name": "Internal Control Assessment",
+      "automation_level": 0.92,
+      "ri[STRIPE_KEY_PLACEHOLDER]": "High",
+      "audit_trail_enabled": true,
+      "compliance_status": "Compliant",
+      "last_validation": null
+    },
+    {
+      "control_id": "SOX_409",
+      "control_name": "Real-time Financial Reporting",
+      "automation_level": 0.98,
+      "ri[STRIPE_KEY_PLACEHOLDER]": "Critical",
+      "audit_trail_enabled": true,
+      "compliance_status": "Compliant",
+      "last_validation": null
+    },
+    {
+      "control_id": "SOX_906",
+      "control_name": "CEO/CFO Certification",
+      "automation_level": 0.88,
+      "ri[STRIPE_KEY_PLACEHOLDER]": "Critical",
+      "audit_trail_enabled": true,
+      "compliance_status": "Compliant",
+      "last_validation": null
+    }
+  ],
+  "german_framework": {
+    "Article 1": {
+      "title": "Human Dignity",
+      "compliance_requirements": [
+        "Respect for human dignity in data processing",
+        "Protection of individual privacy rights",
+        "Ethical AI and automated decision making"
+      ]
+    },
+    "Article 2": {
+      "title": "Personal Liberty",
+      "compliance_requirements": [
+        "Freedom of personal development",
+        "Data subject rights and consent",
+        "Transparency in automated processing"
+      ]
+    },
+    "Article 5": {
+      "title": "Freedom of Expression and Information",
+      "compliance_requirements": [
+        "Access to information rights",
+        "Freedom of opinion and expression",
+        "Research and teaching freedom"
+      ]
+    },
+    "Article 12": {
+      "title": "Freedom of Occupation",
+      "compliance_requirements": [
+        "Professional practice freedom",
+        "Equal access to employment",
+        "Fair automated hiring practices"
+      ]
+    },
+    "Article 14": {
+      "title": "Property Rights",
+      "compliance_requirements": [
+        "Intellectual property protection",
+        "Data ownership rights",
+        "Fair compensation for data use"
+      ]
+    }
+  },
+  "plugin_config": {
+    "plugin_id": "aia-013a-enterprise",
+    "version": "1.0.0",
+    "features": [
+      "AI-powered research assistance",
+      "Knowledge graph visualization",
+      "Real-time collaboration",
+      "Document analysis and summarization",
+      "Multi-language support"
+    ],
+    "enterprise_features": [
+      "SOX compliance automation",
+      "Enterprise audit trail",
+      "Advanced security controls",
+      "Multi-tenant workspace management",
+      "Custom workflow automation",
+      "German Grundgesetz compliance",
+      "Advanced analytics and reporting",
+      "Enterprise SSO integration"
+    ],
+    "r_and_d_features": [
+      "Advanced ML model integration",
+      "Quantum-enhanced analytics",
+      "Neural network visualization",
+      "Predictive analysis tools",
+      "Scientific computation support",
+      "Research collaboration tools",
+      "Data science workflow integration"
+    ],
+    "installation_package": "aia-obsidian-plugin-1.0.0.zip",
+    "update_mechanism": "automatic"
+  },
+  "saved_timestamp": "2025-10-06T01:28:16.627027"
+}

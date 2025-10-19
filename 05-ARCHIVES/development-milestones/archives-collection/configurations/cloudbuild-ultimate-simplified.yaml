@@ -1,0 +1,96 @@
+# TEMPORARILY DISABLED FOR QUOTA COMPLIANCE
+# This deployment has been temporarily disabled to meet GCP quota requirements
+# Original content below (commented out):
+#
+# # 🚀 AIA ULTIMATE PRODUCTION - SIMPLIFIED BUILD
+# # Core container images for clean slate deployment
+# 
+# steps:
+# # 🔧 ULTIMATE BACKEND BUILD
+# - name: 'gcr.io/cloud-builders/docker'
+#   id: 'build-ultimate-backend'
+#   args: [
+#     'build',
+#     '-f', 'Dockerfile.ultimate-backend',
+#     '-t', 'gcr.io/$PROJECT_ID/aia-ultimate-backend:latest',
+#     '.'
+#   ]
+#   timeout: '1200s'
+# 
+# # 🎨 ULTIMATE FRONTEND BUILD
+# - name: 'gcr.io/cloud-builders/docker'
+#   id: 'build-ultimate-frontend'
+#   args: [
+#     'build',
+#     '-f', 'Dockerfile.ultimate-frontend',
+#     '-t', 'gcr.io/$PROJECT_ID/aia-ultimate-frontend:latest',
+#     '.'
+#   ]
+#   timeout: '900s'
+# 
+# # 🤖 ULTIMATE ORCHESTRATOR BUILD
+# - name: 'gcr.io/cloud-builders/docker'
+#   id: 'build-ultimate-orchestrator'
+#   args: [
+#     'build',
+#     '-f', 'Dockerfile.ultimate-orchestrator',
+#     '-t', 'gcr.io/$PROJECT_ID/aia-ultimate-orchestrator:latest',
+#     '.'
+#   ]
+#   timeout: '1200s'
+# 
+# # 🏢 ENTERPRISE PARTNERS BUILD
+# - name: 'gcr.io/cloud-builders/docker'
+#   id: 'build-enterprise-partners'
+#   args: [
+#     'build',
+#     '-f', 'aia/enterprise/Dockerfile',
+#     '-t', 'gcr.io/$PROJECT_ID/aia-enterprise-partners:latest',
+#     './aia/enterprise/'
+#   ]
+#   timeout: '600s'
+# 
+# # 🔄 UPDATE KUBERNETES DEPLOYMENTS
+# - name: 'gcr.io/cloud-builders/kubectl'
+#   id: 'restart-deployments'
+#   args: [
+#     'rollout', 'restart',
+#     'deployment/aia-ultimate-backend',
+#     'deployment/aia-ultimate-frontend',
+#     'deployment/aia-ultimate-orchestrator',
+#     'deployment/aia-ultimate-enterprise-partners',
+#     '-n', 'aia-ultimate-production'
+#   ]
+#   env:
+#   - 'CLOUDSDK_COMPUTE_ZONE=europe-west4-a'
+#   - 'CLOUDSDK_CONTAINER_CLUSTER=aia-production-optimal'
+#   waitFor: [
+#     'build-ultimate-backend',
+#     'build-ultimate-frontend',
+#     'build-ultimate-orchestrator',
+#     'build-enterprise-partners'
+#   ]
+# 
+# # 📊 DEPLOYMENT STATUS
+# - name: 'gcr.io/cloud-builders/kubectl'
+#   id: 'check-status'
+#   args: [
+#     'get', 'pods',
+#     '-n', 'aia-ultimate-production'
+#   ]
+#   env:
+#   - 'CLOUDSDK_COMPUTE_ZONE=europe-west4-a'
+#   - 'CLOUDSDK_CONTAINER_CLUSTER=aia-production-optimal'
+#   waitFor: ['restart-deployments']
+# 
+# images:
+# - 'gcr.io/$PROJECT_ID/aia-ultimate-backend:latest'
+# - 'gcr.io/$PROJECT_ID/aia-ultimate-frontend:latest'
+# - 'gcr.io/$PROJECT_ID/aia-ultimate-orchestrator:latest'
+# - 'gcr.io/$PROJECT_ID/aia-enterprise-partners:latest'
+# 
+# options:
+#   machineType: 'E2_HIGHCPU_8'
+#   diskSizeGb: '100'
+# 
+# timeout: '3600s'

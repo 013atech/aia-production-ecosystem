@@ -1,0 +1,462 @@
+{
+  "test_summary": {
+    "total_tests": 40,
+    "passed": 3,
+    "failed": 37,
+    "warnings": 0,
+    "skipped": 0,
+    "success_rate": 7.5,
+    "total_duration_seconds": 11.258863
+  },
+  "system_status": "UNHEALTHY",
+  "recommendations": [
+    "\u274c HIGH: Fix 37 error-level issues",
+    "\ud83d\udd12 SECURITY: Address 2 security header issues"
+  ],
+  "detailed_results": [
+    {
+      "test_name": "DNS Resolution - 013a.tech",
+      "status": "PASS",
+      "duration_ms": 44.3110466003418,
+      "details": {
+        "domain": "013a.tech",
+        "ip_addresses": [
+          "104.21.90.188",
+          "172.67.159.200"
+        ],
+        "record_count": 2
+      },
+      "error": null,
+      "severity": "INFO"
+    },
+    {
+      "test_name": "DNS Resolution - api.013a.tech",
+      "status": "PASS",
+      "duration_ms": 41.764259338378906,
+      "details": {
+        "domain": "api.013a.tech",
+        "ip_addresses": [
+          "172.67.159.200",
+          "104.21.90.188"
+        ],
+        "record_count": 2
+      },
+      "error": null,
+      "severity": "INFO"
+    },
+    {
+      "test_name": "DNS Resolution - www.013a.tech",
+      "status": "PASS",
+      "duration_ms": 40.74215888977051,
+      "details": {
+        "domain": "www.013a.tech",
+        "ip_addresses": [
+          "104.21.90.188",
+          "172.67.159.200"
+        ],
+        "record_count": 2
+      },
+      "error": null,
+      "severity": "INFO"
+    },
+    {
+      "test_name": "SSL Certificate - 013a.tech",
+      "status": "FAIL",
+      "duration_ms": 124.10712242126465,
+      "details": {
+        "domain": "013a.tech"
+      },
+      "error": "[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)",
+      "severity": "ERROR"
+    },
+    {
+      "test_name": "SSL Certificate - api.013a.tech",
+      "status": "FAIL",
+      "duration_ms": 115.85307121276855,
+      "details": {
+        "domain": "api.013a.tech"
+      },
+      "error": "[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)",
+      "severity": "ERROR"
+    },
+    {
+      "test_name": "Frontend Route - home",
+      "status": "FAIL",
+      "duration_ms": 247.90501594543457,
+      "details": {
+        "url": "https://013a.tech/"
+      },
+      "error": "Cannot connect to host 013a.tech:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]",
+      "severity": "ERROR"
+    },
+    {
+      "test_name": "Frontend Route - request",
+      "status": "FAIL",
+      "duration_ms": 1222.5489616394043,
+      "details": {
+        "url": "https://013a.tech/request"
+      },
+      "error": "Cannot connect to host 013a.tech:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]",
+      "severity": "ERROR"
+    },
+    {
+      "test_name": "Frontend Route - signup",
+      "status": "FAIL",
+      "duration_ms": 206.71916007995605,
+      "details": {
+        "url": "https://013a.tech/signup"
+      },
+      "error": "Cannot connect to host 013a.tech:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]",
+      "severity": "ERROR"
+    },
+    {
+      "test_name": "Frontend Route - login",
+      "status": "FAIL",
+      "duration_ms": 250.1089572906494,
+      "details": {
+        "url": "https://013a.tech/login"
+      },
+      "error": "Cannot connect to host 013a.tech:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]",
+      "severity": "ERROR"
+    },
+    {
+      "test_name": "Frontend Route - dashboard",
+      "status": "FAIL",
+      "duration_ms": 174.0269660949707,
+      "details": {
+        "url": "https://013a.tech/dashboard"
+      },
+      "error": "Cannot connect to host 013a.tech:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]",
+      "severity": "ERROR"
+    },
+    {
+      "test_name": "Frontend Route - aia",
+      "status": "FAIL",
+      "duration_ms": 210.1278305053711,
+      "details": {
+        "url": "https://013a.tech/aia"
+      },
+      "error": "Cannot connect to host 013a.tech:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]",
+      "severity": "ERROR"
+    },
+    {
+      "test_name": "Frontend Route - complete",
+      "status": "FAIL",
+      "duration_ms": 239.8359775543213,
+      "details": {
+        "url": "https://013a.tech/complete"
+      },
+      "error": "Cannot connect to host 013a.tech:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]",
+      "severity": "ERROR"
+    },
+    {
+      "test_name": "Frontend Route - test",
+      "status": "FAIL",
+      "duration_ms": 174.03292655944824,
+      "details": {
+        "url": "https://013a.tech/test"
+      },
+      "error": "Cannot connect to host 013a.tech:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]",
+      "severity": "ERROR"
+    },
+    {
+      "test_name": "Frontend Route - ultimate",
+      "status": "FAIL",
+      "duration_ms": 172.62625694274902,
+      "details": {
+        "url": "https://013a.tech/ultimate"
+      },
+      "error": "Cannot connect to host 013a.tech:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]",
+      "severity": "ERROR"
+    },
+    {
+      "test_name": "Frontend Route - immersive",
+      "status": "FAIL",
+      "duration_ms": 206.5269947052002,
+      "details": {
+        "url": "https://013a.tech/immersive"
+      },
+      "error": "Cannot connect to host 013a.tech:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]",
+      "severity": "ERROR"
+    },
+    {
+      "test_name": "Frontend Route - sprint1",
+      "status": "FAIL",
+      "duration_ms": 206.92110061645508,
+      "details": {
+        "url": "https://013a.tech/sprint1"
+      },
+      "error": "Cannot connect to host 013a.tech:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]",
+      "severity": "ERROR"
+    },
+    {
+      "test_name": "Frontend Route - payment",
+      "status": "FAIL",
+      "duration_ms": 177.81877517700195,
+      "details": {
+        "url": "https://013a.tech/payment"
+      },
+      "error": "Cannot connect to host 013a.tech:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]",
+      "severity": "ERROR"
+    },
+    {
+      "test_name": "Frontend Route - ey",
+      "status": "FAIL",
+      "duration_ms": 175.46701431274414,
+      "details": {
+        "url": "https://013a.tech/partners/ey"
+      },
+      "error": "Cannot connect to host 013a.tech:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]",
+      "severity": "ERROR"
+    },
+    {
+      "test_name": "Frontend Route - jpmorgan",
+      "status": "FAIL",
+      "duration_ms": 174.1640567779541,
+      "details": {
+        "url": "https://013a.tech/partners/jpmorgan"
+      },
+      "error": "Cannot connect to host 013a.tech:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]",
+      "severity": "ERROR"
+    },
+    {
+      "test_name": "Frontend Route - google-cloud",
+      "status": "FAIL",
+      "duration_ms": 1166.9392585754395,
+      "details": {
+        "url": "https://013a.tech/partners/google-cloud"
+      },
+      "error": "Cannot connect to host 013a.tech:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]",
+      "severity": "ERROR"
+    },
+    {
+      "test_name": "Frontend Route - apple",
+      "status": "FAIL",
+      "duration_ms": 169.80600357055664,
+      "details": {
+        "url": "https://013a.tech/partners/apple"
+      },
+      "error": "Cannot connect to host 013a.tech:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]",
+      "severity": "ERROR"
+    },
+    {
+      "test_name": "Backend API - root",
+      "status": "FAIL",
+      "duration_ms": 209.54179763793945,
+      "details": {
+        "endpoint": "https://api.013a.tech/"
+      },
+      "error": "Cannot connect to host api.013a.tech:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]",
+      "severity": "ERROR"
+    },
+    {
+      "test_name": "Backend API - health",
+      "status": "FAIL",
+      "duration_ms": 241.38307571411133,
+      "details": {
+        "endpoint": "https://api.013a.tech/health"
+      },
+      "error": "Cannot connect to host api.013a.tech:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]",
+      "severity": "ERROR"
+    },
+    {
+      "test_name": "Backend API - metrics",
+      "status": "FAIL",
+      "duration_ms": 200.2239227294922,
+      "details": {
+        "endpoint": "https://api.013a.tech/metrics"
+      },
+      "error": "Cannot connect to host api.013a.tech:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]",
+      "severity": "ERROR"
+    },
+    {
+      "test_name": "Backend API - status",
+      "status": "FAIL",
+      "duration_ms": 210.07990837097168,
+      "details": {
+        "endpoint": "https://api.013a.tech/knowledge-graph/status"
+      },
+      "error": "Cannot connect to host api.013a.tech:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]",
+      "severity": "ERROR"
+    },
+    {
+      "test_name": "Backend API - dashboard",
+      "status": "FAIL",
+      "duration_ms": 244.0950870513916,
+      "details": {
+        "endpoint": "https://api.013a.tech/business-intelligence/dashboard"
+      },
+      "error": "Cannot connect to host api.013a.tech:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]",
+      "severity": "ERROR"
+    },
+    {
+      "test_name": "Backend API - status",
+      "status": "FAIL",
+      "duration_ms": 239.3789291381836,
+      "details": {
+        "endpoint": "https://api.013a.tech/sprint4/status"
+      },
+      "error": "Cannot connect to host api.013a.tech:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]",
+      "severity": "ERROR"
+    },
+    {
+      "test_name": "Backend API - status",
+      "status": "FAIL",
+      "duration_ms": 448.73809814453125,
+      "details": {
+        "endpoint": "https://api.013a.tech/sprint5/status"
+      },
+      "error": "Cannot connect to host api.013a.tech:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]",
+      "severity": "ERROR"
+    },
+    {
+      "test_name": "Backend API - dashboard",
+      "status": "FAIL",
+      "duration_ms": 233.05130004882812,
+      "details": {
+        "endpoint": "https://api.013a.tech/monitoring/dashboard"
+      },
+      "error": "Cannot connect to host api.013a.tech:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]",
+      "severity": "ERROR"
+    },
+    {
+      "test_name": "Health Check - health",
+      "status": "FAIL",
+      "duration_ms": 235.1541519165039,
+      "details": {
+        "endpoint": "https://api.013a.tech/health"
+      },
+      "error": "Cannot connect to host api.013a.tech:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]",
+      "severity": "ERROR"
+    },
+    {
+      "test_name": "Health Check - metrics",
+      "status": "FAIL",
+      "duration_ms": 207.26299285888672,
+      "details": {
+        "endpoint": "https://api.013a.tech/metrics"
+      },
+      "error": "Cannot connect to host api.013a.tech:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]",
+      "severity": "ERROR"
+    },
+    {
+      "test_name": "Health Check - dashboard",
+      "status": "FAIL",
+      "duration_ms": 208.73785018920898,
+      "details": {
+        "endpoint": "https://api.013a.tech/monitoring/dashboard"
+      },
+      "error": "Cannot connect to host api.013a.tech:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]",
+      "severity": "ERROR"
+    },
+    {
+      "test_name": "Load Test - home",
+      "status": "FAIL",
+      "duration_ms": 237.28609085083008,
+      "details": {
+        "url": "https://013a.tech/",
+        "concurrent_requests": 10,
+        "successful_requests": 0,
+        "failed_requests": 10,
+        "success_rate_percent": 0.0,
+        "avg_response_time_ms": 201.65941715240479,
+        "max_response_time_ms": 236.5548610687256,
+        "min_response_time_ms": 178.11822891235352
+      },
+      "error": null,
+      "severity": "ERROR"
+    },
+    {
+      "test_name": "Load Test - health",
+      "status": "FAIL",
+      "duration_ms": 260.1919174194336,
+      "details": {
+        "url": "https://api.013a.tech/health",
+        "concurrent_requests": 10,
+        "successful_requests": 0,
+        "failed_requests": 10,
+        "success_rate_percent": 0.0,
+        "avg_response_time_ms": 224.0954875946045,
+        "max_response_time_ms": 259.4261169433594,
+        "min_response_time_ms": 184.60822105407715
+      },
+      "error": null,
+      "severity": "ERROR"
+    },
+    {
+      "test_name": "Load Test - metrics",
+      "status": "FAIL",
+      "duration_ms": 263.0629539489746,
+      "details": {
+        "url": "https://api.013a.tech/metrics",
+        "concurrent_requests": 10,
+        "successful_requests": 0,
+        "failed_requests": 10,
+        "success_rate_percent": 0.0,
+        "avg_response_time_ms": 230.2689552307129,
+        "max_response_time_ms": 262.51816749572754,
+        "min_response_time_ms": 184.56220626831055
+      },
+      "error": null,
+      "severity": "ERROR"
+    },
+    {
+      "test_name": "CORS Test - https://013a.tech",
+      "status": "FAIL",
+      "duration_ms": 1238.084077835083,
+      "details": {
+        "origin": "https://013a.tech"
+      },
+      "error": "Cannot connect to host api.013a.tech:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]",
+      "severity": "ERROR"
+    },
+    {
+      "test_name": "CORS Test - https://www.013a.tech",
+      "status": "FAIL",
+      "duration_ms": 174.788236618042,
+      "details": {
+        "origin": "https://www.013a.tech"
+      },
+      "error": "Cannot connect to host api.013a.tech:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]",
+      "severity": "ERROR"
+    },
+    {
+      "test_name": "CORS Test - http://localhost:3000",
+      "status": "FAIL",
+      "duration_ms": 243.1168556213379,
+      "details": {
+        "origin": "http://localhost:3000"
+      },
+      "error": "Cannot connect to host api.013a.tech:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]",
+      "severity": "ERROR"
+    },
+    {
+      "test_name": "Security Headers - home",
+      "status": "FAIL",
+      "duration_ms": 378.6909580230713,
+      "details": {
+        "url": "https://013a.tech/"
+      },
+      "error": "Cannot connect to host 013a.tech:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]",
+      "severity": "ERROR"
+    },
+    {
+      "test_name": "Security Headers - health",
+      "status": "FAIL",
+      "duration_ms": 238.43097686767578,
+      "details": {
+        "url": "https://api.013a.tech/health"
+      },
+      "error": "Cannot connect to host api.013a.tech:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]",
+      "severity": "ERROR"
+    }
+  ],
+  "test_environment": {
+    "frontend_base": "https://013a.tech",
+    "backend_base": "https://api.013a.tech",
+    "loadbalancer_ip": "35.204.144.16",
+    "test_timestamp": "2025-10-03T14:31:42.951651",
+    "platform": "macOS-15.6.1-arm64-arm-64bit",
+    "python_version": "3.12.8"
+  }
+}

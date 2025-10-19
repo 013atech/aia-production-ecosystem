@@ -1,0 +1,50 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: aia-secure-ssl-ingress
+  namespace: aia-production-secure
+  annotations:
+    kubernetes.io/ingress.global-static-ip-name: "aia-production-secure-ip"
+    networking.gke.io/managed-certificates: "aia-secure-ssl-cert"
+    kubernetes.io/ingress.class: "gce"
+    ingress.gcp.kubernetes.io/load-balancer-type: "External"
+spec:
+  rules:
+  - host: 013a.tech
+    http:
+      paths:
+      - path: /*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-loadbalancer
+            port:
+              number: 80
+  - host: www.013a.tech
+    http:
+      paths:
+      - path: /*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-loadbalancer
+            port:
+              number: 80
+---
+apiVersion: networking.gke.io/v1
+kind: ManagedCertificate
+metadata:
+  name: aia-secure-ssl-cert
+  namespace: aia-production-secure
+spec:
+  domains:
+    - 013a.tech
+    - www.013a.tech
+---
+apiVersion: compute.cnrm.cloud.google.com/v1beta1
+kind: ComputeAddress
+metadata:
+  name: aia-production-secure-ip
+  namespace: aia-production-secure
+spec:
+  location: global

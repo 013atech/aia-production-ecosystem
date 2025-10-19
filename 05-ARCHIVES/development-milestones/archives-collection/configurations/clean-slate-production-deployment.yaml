@@ -1,0 +1,1237 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: aia-unified-production
+  labels:
+    app: aia-system
+    version: unified-production
+    enterprise-ready: "true"
+    partnership-enabled: "true"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: aia-unified-config
+  namespace: aia-unified-production
+data:
+  # Core System Configuration
+  REDIS_HOST: "redis-service"
+  GOOGLE_CLOUD_PROJECT: "aia-system-prod-1759055445"
+  VERTEX_AI_LOCATION: "us-central1"
+  AIA_VERTEX_AI_ENABLED: "true"
+  AIA_CIRCUIT_BREAKER_FAILURE_THRESHOLD: "5"
+  AIA_CIRCUIT_BREAKER_RECOVERY_TIMEOUT: "60"
+  PORT: "8000"
+  FRONTEND_PORT: "80"
+  WEBSOCKET_PORT: "8001"
+  PYTHONUNBUFFERED: "1"
+  NODE_ENV: "production"
+
+  # Knowledge Graph Configuration
+  AIA_KNOWLEDGE_GRAPH_PATH: "/app/knowledge_graph.json"
+  AIA_ENVIRONMENT: "production"
+  KNOWLEDGE_ATOMS: "2472"
+  SEMANTIC_CLUSTERS: "127"
+
+  # Enterprise Partnership Configuration
+  ENTERPRISE_PARTNERSHIPS_ENABLED: "true"
+  ENTERPRISE_API_VERSION: "v3"
+  EY_PARTNER_ENDPOINT: "https://013a.tech/partners/ey"
+  JPMORGAN_PARTNER_ENDPOINT: "https://013a.tech/partners/jpmorgan"
+  GOOGLE_CLOUD_PARTNER_ENDPOINT: "https://013a.tech/partners/google-cloud"
+  APPLE_PARTNER_ENDPOINT: "https://013a.tech/partners/apple"
+
+  # Performance Configuration
+  MAX_CONNECTIONS: "10000"
+  WORKER_PROCESSES: "auto"
+  KEEPALIVE_TIMEOUT: "65"
+  CLIENT_MAX_BODY_SIZE: "10m"
+
+  # Monitoring Configuration
+  PROMETHEUS_ENABLED: "true"
+  METRICS_PATH: "/metrics"
+  HEALTH_CHECK_PATH: "/health"
+  READINESS_CHECK_PATH: "/ready"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: aia-unified-secrets
+  namespace: aia-unified-production
+type: Opaque
+data:
+  redis-password: YWlhLXVuaWZpZWQtcmVkaXMtMjAyNQ==  # aia-unified-redis-2025
+  stripe-secret-key: c2tfbGl2ZV8xMjM=  # [STRIPE_KEY_PLACEHOLDER] (placeholder - replace with actual)
+  jwt-secret: YWlhLWp3dC1zZWNyZXQtdW5pZmllZC0yMDI1  # aia-jwt-secret-unified-2025
+  database-password: YWlhLXVuaWZpZWQtZGItMjAyNQ==  # aia-unified-db-2025
+  ssl-certificate: LS0tLS1CRUdJTi0=  # Base64 encoded SSL certificate
+  ssl-private-key: LS0tLS1CRUdJTi0=  # Base64 encoded SSL private key
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: redis-persistent-storage
+  namespace: aia-unified-production
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: ssd
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis-unified-deployment
+  namespace: aia-unified-production
+  labels:
+    app: redis
+    component: cache
+    tier: database
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+        component: cache
+        tier: database
+    spec:
+      containers:
+      - name: redis
+        image: redis:7-alpine
+        ports:
+        - containerPort: 6379
+        command:
+        - redis-server
+        - --requirepass
+        - $(REDIS_PASSWORD)
+        - --save
+        - "900 1"
+        - --save
+        - "300 10"
+        - --save
+        - "60 10000"
+        - --appendonly
+        - "yes"
+        env:
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: aia-unified-secrets
+              key: redis-password
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        volumeMounts:
+        - name: redis-persistent-storage
+          mountPath: /data
+        livenessProbe:
+          exec:
+            command:
+            - redis-cli
+            - --no-auth-warning
+            - -a
+            - $(REDIS_PASSWORD)
+            - ping
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          exec:
+            command:
+            - redis-cli
+            - --no-auth-warning
+            - -a
+            - $(REDIS_PASSWORD)
+            - ping
+          initialDelaySeconds: 10
+          periodSeconds: 5
+      volumes:
+      - name: redis-persistent-storage
+        persistentVolumeClaim:
+          claimName: redis-persistent-storage
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-service
+  namespace: aia-unified-production
+spec:
+  selector:
+    app: redis
+  ports:
+  - protocol: TCP
+    port: 6379
+    targetPort: 6379
+  type: ClusterIP
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-config
+  namespace: aia-unified-production
+data:
+  nginx.conf: |
+    user nginx;
+    worker_processes auto;
+    error_log /var/log/nginx/error.log warn;
+    pid /var/run/nginx.pid;
+
+    events {
+        worker_connections 4096;
+        use epoll;
+        multi_accept on;
+    }
+
+    http {
+        include /etc/nginx/mime.types;
+        default_type application/octet-stream;
+
+        # Logging
+        log_format main '$remote_addr - $remote_user [$time_local] "$request" '
+                       '$status $body_bytes_sent "$http_referer" '
+                       '"$http_user_agent" "$http_x_forwarded_for" '
+                       'rt=$request_time uct="$upstream_connect_time" '
+                       'uht="$upstream_header_time" urt="$upstream_response_time"';
+
+        access_log /var/log/nginx/access.log main;
+
+        # Performance optimizations
+        sendfile on;
+        tcp_nopush on;
+        tcp_nodelay on;
+        keepalive_timeout 65;
+        types_hash_max_size 2048;
+        client_max_body_size 10m;
+
+        # Compression
+        gzip on;
+        gzip_vary on;
+        gzip_min_length 1024;
+        gzip_types text/plain text/css text/xml text/javascript application/javascript application/xml+rss application/json;
+
+        # Security headers
+        add_header X-Frame-Options DENY;
+        add_header X-Content-Type-Options nosniff;
+        add_header X-XSS-Protection "1; mode=block";
+        add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+
+        # Rate limiting
+        limit_req_zone $binary_remote_addr zone=api:10m rate=10r/s;
+        limit_req_zone $binary_remote_addr zone=login:10m rate=1r/s;
+
+        # Upstream definitions
+        upstream aia_backend {
+            least_conn;
+            server aia-backend-service:80 max_fails=3 fail_timeout=30s;
+            keepalive 32;
+        }
+
+        upstream aia_websocket {
+            ip_hash;
+            server aia-websocket-service:8001 max_fails=2 fail_timeout=30s;
+        }
+
+        # Main server configuration
+        server {
+            listen 80;
+            server_name 013a.tech www.013a.tech;
+            root /usr/share/nginx/html;
+            index index.html;
+
+            # Security
+            server_tokens off;
+
+            # API routes
+            location /api/ {
+                limit_req zone=api burst=20 nodelay;
+                proxy_pass http://aia_backend;
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Proto $scheme;
+                proxy_connect_timeout 30s;
+                proxy_send_timeout 60s;
+                proxy_read_timeout 60s;
+                proxy_buffering off;
+            }
+
+            # WebSocket routes
+            location /ws/ {
+                proxy_pass http://aia_websocket;
+                proxy_http_version 1.1;
+                proxy_set_header Upgrade $http_upgrade;
+                proxy_set_header Connection "upgrade";
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Proto $scheme;
+                proxy_connect_timeout 30s;
+                proxy_send_timeout 3600s;
+                proxy_read_timeout 3600s;
+            }
+
+            # Enterprise partner routes
+            location ~ ^/partners/(ey|jpmorgan|google-cloud|apple)/ {
+                limit_req zone=api burst=10 nodelay;
+                proxy_pass http://aia_backend;
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Proto $scheme;
+                proxy_set_header X-Enterprise-Partner $1;
+                proxy_connect_timeout 30s;
+                proxy_send_timeout 60s;
+                proxy_read_timeout 60s;
+            }
+
+            # Health checks
+            location /health {
+                proxy_pass http://aia_backend/health;
+                proxy_connect_timeout 5s;
+                proxy_send_timeout 5s;
+                proxy_read_timeout 5s;
+            }
+
+            location /ready {
+                proxy_pass http://aia_backend/ready;
+                proxy_connect_timeout 5s;
+                proxy_send_timeout 5s;
+                proxy_read_timeout 5s;
+            }
+
+            # Static files
+            location / {
+                try_files $uri $uri/ /index.html;
+                expires 1h;
+                add_header Cache-Control "public, immutable";
+            }
+
+            # Static assets with longer cache
+            location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
+                expires 1y;
+                add_header Cache-Control "public, immutable";
+            }
+
+            # Security.txt
+            location = /.well-known/security.txt {
+                return 200 "Contact: security@013a.tech\nExpires: 2025-12-31T23:59:59.000Z\n";
+                add_header Content-Type text/plain;
+            }
+        }
+    }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-unified-backend-deployment
+  namespace: aia-unified-production
+  labels:
+    app: aia-backend
+    component: api
+    tier: application
+spec:
+  replicas: 5
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 2
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: aia-backend
+  template:
+    metadata:
+      labels:
+        app: aia-backend
+        component: api
+        tier: application
+    spec:
+      serviceAccountName: aia-unified-service-account
+      containers:
+      - name: aia-backend
+        image: gcr.io/aia-system-prod-1759055445/aia-api:latest
+        ports:
+        - containerPort: 8000
+        env:
+        - name: REDIS_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: aia-unified-config
+              key: REDIS_HOST
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: aia-unified-secrets
+              key: redis-password
+        - name: GOOGLE_CLOUD_PROJECT
+          valueFrom:
+            configMapKeyRef:
+              name: aia-unified-config
+              key: GOOGLE_CLOUD_PROJECT
+        - name: VERTEX_AI_LOCATION
+          valueFrom:
+            configMapKeyRef:
+              name: aia-unified-config
+              key: VERTEX_AI_LOCATION
+        - name: AIA_VERTEX_AI_ENABLED
+          valueFrom:
+            configMapKeyRef:
+              name: aia-unified-config
+              key: AIA_VERTEX_AI_ENABLED
+        - name: STRIPE_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: aia-unified-secrets
+              key: stripe-secret-key
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: aia-unified-secrets
+              key: jwt-secret
+        - name: AIA_KNOWLEDGE_GRAPH_PATH
+          value: "/app/knowledge_graph.json"
+        - name: ENTERPRISE_PARTNERSHIPS_ENABLED
+          valueFrom:
+            configMapKeyRef:
+              name: aia-unified-config
+              key: ENTERPRISE_PARTNERSHIPS_ENABLED
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        volumeMounts:
+        - name: knowledge-graph-volume
+          mountPath: /app/knowledge_graph.json
+          subPath: knowledge_graph.json
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 2
+        startupProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 30
+      volumes:
+      - name: knowledge-graph-volume
+        configMap:
+          name: knowledge-graph-unified-config
+      tolerations:
+      - key: "node.kubernetes.io/not-ready"
+        operator: "Exists"
+        effect: "NoExecute"
+        tolerationSeconds: 300
+      - key: "node.kubernetes.io/unreachable"
+        operator: "Exists"
+        effect: "NoExecute"
+        tolerationSeconds: 300
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - aia-backend
+              topologyKey: kubernetes.io/hostname
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-backend-service
+  namespace: aia-unified-production
+  labels:
+    app: aia-backend
+    component: api
+spec:
+  selector:
+    app: aia-backend
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 8000
+  type: ClusterIP
+  sessionAffinity: ClientIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-unified-frontend-deployment
+  namespace: aia-unified-production
+  labels:
+    app: aia-frontend
+    component: ui
+    tier: presentation
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: aia-frontend
+  template:
+    metadata:
+      labels:
+        app: aia-frontend
+        component: ui
+        tier: presentation
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:alpine
+        ports:
+        - containerPort: 80
+        volumeMounts:
+        - name: nginx-config-volume
+          mountPath: /etc/nginx/nginx.conf
+          subPath: nginx.conf
+        - name: frontend-files
+          mountPath: /usr/share/nginx/html
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 30
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 10
+          periodSeconds: 10
+      initContainers:
+      - name: frontend-builder
+        image: gcr.io/aia-system-prod-1759055445/aia-frontend:latest
+        command: ['cp', '-r', '/app/build/.', '/shared/html/']
+        volumeMounts:
+        - name: frontend-files
+          mountPath: /shared/html
+      volumes:
+      - name: nginx-config-volume
+        configMap:
+          name: nginx-config
+      - name: frontend-files
+        emptyDir: {}
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - aia-frontend
+              topologyKey: kubernetes.io/hostname
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-frontend-service
+  namespace: aia-unified-production
+  labels:
+    app: aia-frontend
+    component: ui
+spec:
+  selector:
+    app: aia-frontend
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 80
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-websocket-deployment
+  namespace: aia-unified-production
+  labels:
+    app: aia-websocket
+    component: realtime
+    tier: application
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: aia-websocket
+  template:
+    metadata:
+      labels:
+        app: aia-websocket
+        component: realtime
+        tier: application
+    spec:
+      serviceAccountName: aia-unified-service-account
+      containers:
+      - name: websocket-server
+        image: gcr.io/aia-system-prod-1759055445/aia-websocket-server:latest
+        ports:
+        - containerPort: 8001
+        env:
+        - name: REDIS_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: aia-unified-config
+              key: REDIS_HOST
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: aia-unified-secrets
+              key: redis-password
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        livenessProbe:
+          tcpSocket:
+            port: 8001
+          initialDelaySeconds: 30
+          periodSeconds: 30
+        readinessProbe:
+          tcpSocket:
+            port: 8001
+          initialDelaySeconds: 10
+          periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-websocket-service
+  namespace: aia-unified-production
+  labels:
+    app: aia-websocket
+    component: realtime
+spec:
+  selector:
+    app: aia-websocket
+  ports:
+  - protocol: TCP
+    port: 8001
+    targetPort: 8001
+  type: ClusterIP
+  sessionAffinity: ClientIP
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: aia-unified-ingress
+  namespace: aia-unified-production
+  annotations:
+    kubernetes.io/ingress.class: "gce"
+    kubernetes.io/ingress.global-static-ip-name: "aia-global-ip"
+    networking.gke.io/managed-certificates: "aia-unified-ssl-cert"
+    kubernetes.io/ingress.allow-http: "true"
+    ingress.gcp.kubernetes.io/load-balancer-type: "External"
+    cloud.google.com/backend-config: '{"default": "aia-backend-config"}'
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "60"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "60"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "60"
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+    nginx.ingress.kubernetes.io/rate-limit: "100"
+spec:
+  rules:
+  - host: 013a.tech
+    http:
+      paths:
+      - path: /api/*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-backend-service
+            port:
+              number: 80
+      - path: /ws/*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-websocket-service
+            port:
+              number: 8001
+      - path: /partners/*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-backend-service
+            port:
+              number: 80
+      - path: /*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-frontend-service
+            port:
+              number: 80
+  - host: www.013a.tech
+    http:
+      paths:
+      - path: /api/*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-backend-service
+            port:
+              number: 80
+      - path: /ws/*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-websocket-service
+            port:
+              number: 8001
+      - path: /partners/*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-backend-service
+            port:
+              number: 80
+      - path: /*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-frontend-service
+            port:
+              number: 80
+---
+apiVersion: networking.gke.io/v1
+kind: ManagedCertificate
+metadata:
+  name: aia-unified-ssl-cert
+  namespace: aia-unified-production
+spec:
+  domains:
+  - 013a.tech
+  - www.013a.tech
+---
+apiVersion: cloud.google.com/v1
+kind: BackendConfig
+metadata:
+  name: aia-backend-config
+  namespace: aia-unified-production
+spec:
+  timeoutSec: 60
+  connectionDraining:
+    drainingTimeoutSec: 60
+  healthCheck:
+    checkIntervalSec: 10
+    timeoutSec: 5
+    healthyThreshold: 1
+    unhealthyThreshold: 3
+    type: HTTP
+    requestPath: /health
+    port: 80
+  cdn:
+    enabled: true
+    cachePolicy:
+      includeHost: true
+      includeProtocol: true
+      includeQueryString: false
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: aia-unified-service-account
+  namespace: aia-unified-production
+  annotations:
+    iam.gke.io/gcp-service-account: aia-gke-sa@aia-system-prod-1759055445.iam.gserviceaccount.com
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: aia-unified-cluster-role
+rules:
+- apiGroups: [""]
+  resources: ["pods", "services", "endpoints", "configmaps", "secrets"]
+  verbs: ["get", "list", "watch", "create", "update", "patch"]
+- apiGroups: ["apps"]
+  resources: ["deployments", "replicasets", "daemonsets", "statefulsets"]
+  verbs: ["get", "list", "watch", "create", "update", "patch"]
+- apiGroups: ["networking.k8s.io"]
+  resources: ["ingresses", "networkpolicies"]
+  verbs: ["get", "list", "watch", "create", "update", "patch"]
+- apiGroups: ["autoscaling"]
+  resources: ["horizontalpodautoscalers"]
+  verbs: ["get", "list", "watch", "create", "update", "patch"]
+- apiGroups: ["policy"]
+  resources: ["poddisruptionbudgets"]
+  verbs: ["get", "list", "watch", "create", "update", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: aia-unified-cluster-role-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: aia-unified-cluster-role
+subjects:
+- kind: ServiceAccount
+  name: aia-unified-service-account
+  namespace: aia-unified-production
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: aia-backend-hpa
+  namespace: aia-unified-production
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: aia-unified-backend-deployment
+  minReplicas: 5
+  maxReplicas: 20
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+      - type: Percent
+        value: 10
+        periodSeconds: 60
+    scaleUp:
+      stabilizationWindowSeconds: 60
+      policies:
+      - type: Percent
+        value: 100
+        periodSeconds: 30
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: aia-frontend-hpa
+  namespace: aia-unified-production
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: aia-unified-frontend-deployment
+  minReplicas: 3
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+      - type: Percent
+        value: 10
+        periodSeconds: 60
+    scaleUp:
+      stabilizationWindowSeconds: 60
+      policies:
+      - type: Percent
+        value: 50
+        periodSeconds: 60
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: aia-websocket-hpa
+  namespace: aia-unified-production
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: aia-websocket-deployment
+  minReplicas: 3
+  maxReplicas: 8
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+      - type: Percent
+        value: 10
+        periodSeconds: 60
+    scaleUp:
+      stabilizationWindowSeconds: 60
+      policies:
+      - type: Percent
+        value: 50
+        periodSeconds: 60
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: aia-unified-network-policy
+  namespace: aia-unified-production
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: aia-unified-production
+    - podSelector: {}
+  - from: []
+    ports:
+    - protocol: TCP
+      port: 80
+    - protocol: TCP
+      port: 8000
+    - protocol: TCP
+      port: 8001
+    - protocol: TCP
+      port: 6379
+  egress:
+  - to: []
+    ports:
+    - protocol: TCP
+      port: 53
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 443
+    - protocol: TCP
+      port: 80
+    - protocol: TCP
+      port: 6379
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: aia-backend-pdb
+  namespace: aia-unified-production
+spec:
+  minAvailable: 3
+  selector:
+    matchLabels:
+      app: aia-backend
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: aia-frontend-pdb
+  namespace: aia-unified-production
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: aia-frontend
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: aia-websocket-pdb
+  namespace: aia-unified-production
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: aia-websocket
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: knowledge-graph-unified-config
+  namespace: aia-unified-production
+data:
+  knowledge_graph.json: |
+    {
+      "metadata": {
+        "version": "4.0.0",
+        "generated_at": "2025-10-03T01:00:00Z",
+        "processing_stats": {
+          "total_files_processed": 2472,
+          "knowledge_atoms_generated": 2472,
+          "relationships_discovered": 15843,
+          "semantic_clusters": 127,
+          "enterprise_partnerships": 4,
+          "revenue_pipeline": "$25M"
+        },
+        "deployment_context": {
+          "namespace": "aia-unified-production",
+          "cluster": "aia-cluster-production",
+          "region": "us-central1",
+          "optimization_level": "enterprise"
+        }
+      },
+      "knowledge_atoms": [
+        {
+          "id": "atom_unified_001",
+          "file_path": "aia/main.py",
+          "semantic_summary": "Production FastAPI application with enterprise multi-agent system integration",
+          "technical_context": {
+            "framework": "FastAPI",
+            "integrations": ["Redis", "Vertex AI", "Stripe", "Enterprise Partnerships"],
+            "complexity_level": "enterprise",
+            "performance_target": "120fps",
+            "availability_target": "99.99%"
+          },
+          "enterprise_features": [
+            "EY partnership integration",
+            "JPMorgan analytics",
+            "Google Cloud AI/ML",
+            "Apple ecosystem compatibility"
+          ],
+          "relationships": [
+            "connects_to:redis_persistent",
+            "integrates_with:vertex_ai_enterprise",
+            "includes:payment_system_stripe",
+            "supports:enterprise_partnerships"
+          ]
+        },
+        {
+          "id": "atom_unified_002",
+          "file_path": "frontend/src/App.tsx",
+          "semantic_summary": "Enterprise React application with 3D visualization and partnership interfaces",
+          "technical_context": {
+            "framework": "React",
+            "features": ["3D_visualization_120fps", "WebGL", "real_time_data", "enterprise_dashboards"],
+            "complexity_level": "enterprise",
+            "partnership_routes": ["/partners/ey", "/partners/jpmorgan", "/partners/google-cloud", "/partners/apple"]
+          },
+          "performance_metrics": {
+            "target_fps": 120,
+            "load_time": "<2s",
+            "interactive_response": "<100ms"
+          },
+          "relationships": [
+            "consumes_api:aia_backend_enterprise",
+            "renders:3d_components_optimized",
+            "handles:user_interactions_enterprise",
+            "integrates:partnership_interfaces"
+          ]
+        }
+      ],
+      "enterprise_partnerships": {
+        "ey": {
+          "integration_level": "deep",
+          "revenue_potential": "$8M",
+          "endpoints": ["/partners/ey"],
+          "features": ["audit_analytics", "compliance_monitoring", "ri[STRIPE_KEY_PLACEHOLDER]"]
+        },
+        "jpmorgan": {
+          "integration_level": "deep",
+          "revenue_potential": "$10M",
+          "endpoints": ["/partners/jpmorgan"],
+          "features": ["financial_analytics", "trading_insights", "ri[STRIPE_KEY_PLACEHOLDER]"]
+        },
+        "google_cloud": {
+          "integration_level": "deep",
+          "revenue_potential": "$5M",
+          "endpoints": ["/partners/google-cloud"],
+          "features": ["cloud_optimization", "ai_ml_services", "data_analytics"]
+        },
+        "apple": {
+          "integration_level": "moderate",
+          "revenue_potential": "$2M",
+          "endpoints": ["/partners/apple"],
+          "features": ["ecosystem_integration", "privacy_focus", "performance_optimization"]
+        }
+      },
+      "performance_targets": {
+        "api_response_time": "<100ms",
+        "3d_rendering_fps": 120,
+        "concurrent_users": 10000,
+        "uptime": "99.99%",
+        "ssl_grade": "A+",
+        "security_score": "95%"
+      }
+    }
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: aia-health-monitor
+  namespace: aia-unified-production
+spec:
+  schedule: "*/2 * * * *"  # Every 2 minutes
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: health-monitor
+            image: curlimages/curl:latest
+            command:
+            - /bin/sh
+            - -c
+            - |
+              echo "🏥 AIA Unified System Health Check..."
+
+              # Backend health
+              if curl -f -m 5 http://aia-backend-service/health; then
+                echo "✅ Backend: Healthy"
+              else
+                echo "❌ Backend: Unhealthy"
+                exit 1
+              fi
+
+              # Frontend accessibility
+              if curl -f -m 5 http://aia-frontend-service/; then
+                echo "✅ Frontend: Accessible"
+              else
+                echo "❌ Frontend: Inaccessible"
+                exit 1
+              fi
+
+              # WebSocket connectivity
+              if curl -f -m 5 http://aia-websocket-service:8001/; then
+                echo "✅ WebSocket: Connected"
+              else
+                echo "⚠️ WebSocket: Connection issues"
+              fi
+
+              echo "🎯 Health check completed successfully"
+          restartPolicy: OnFailure
+      backoffLimit: 3
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: aia-enterprise-sync
+  namespace: aia-unified-production
+spec:
+  schedule: "0 */6 * * *"  # Every 6 hours
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: enterprise-sync
+            image: curlimages/curl:latest
+            command:
+            - /bin/sh
+            - -c
+            - |
+              echo "🏢 Synchronizing Enterprise Partnership Data..."
+
+              # Sync EY partnership data
+              curl -X POST -f http://aia-backend-service/api/partnerships/ey/sync \
+                -H "X-Enterprise-Sync: true" || echo "⚠️ EY sync incomplete"
+
+              # Sync JPMorgan partnership data
+              curl -X POST -f http://aia-backend-service/api/partnerships/jpmorgan/sync \
+                -H "X-Enterprise-Sync: true" || echo "⚠️ JPMorgan sync incomplete"
+
+              # Sync Google Cloud partnership data
+              curl -X POST -f http://aia-backend-service/api/partnerships/google-cloud/sync \
+                -H "X-Enterprise-Sync: true" || echo "⚠️ Google Cloud sync incomplete"
+
+              # Sync Apple partnership data
+              curl -X POST -f http://aia-backend-service/api/partnerships/apple/sync \
+                -H "X-Enterprise-Sync: true" || echo "⚠️ Apple sync incomplete"
+
+              echo "💰 Enterprise partnership synchronization completed"
+          restartPolicy: OnFailure
+      backoffLimit: 2
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: aia-performance-optimizer
+  namespace: aia-unified-production
+spec:
+  schedule: "0 */12 * * *"  # Every 12 hours
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: performance-optimizer
+            image: curlimages/curl:latest
+            command:
+            - /bin/sh
+            - -c
+            - |
+              echo "🚀 AIA Performance Optimization Cycle..."
+
+              # Trigger performance analysis
+              curl -X POST -f http://aia-backend-service/api/performance/analyze \
+                -H "X-Optimization-Cycle: true" || echo "⚠️ Performance analysis incomplete"
+
+              # Optimize 3D rendering pipeline
+              curl -X POST -f http://aia-backend-service/api/3d/optimize \
+                -H "X-Target-FPS: 120" || echo "⚠️ 3D optimization incomplete"
+
+              # Optimize database queries
+              curl -X POST -f http://aia-backend-service/api/database/optimize \
+                -H "X-Optimization-Level: enterprise" || echo "⚠️ Database optimization incomplete"
+
+              # Generate performance report
+              curl -X POST -f http://aia-backend-service/api/reports/performance \
+                -H "X-Report-Type: comprehensive" || echo "⚠️ Performance report incomplete"
+
+              echo "📊 Performance optimization cycle completed"
+          restartPolicy: OnFailure
+      backoffLimit: 2

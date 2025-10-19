@@ -1,0 +1,56 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: aia-comprehensive-live-ingress
+  namespace: aia-production
+  annotations:
+    kubernetes.io/ingress.global-static-ip-name: "aia-production-ip"
+    networking.gke.io/managed-certificates: "aia-comprehensive-ssl"
+    kubernetes.io/ingress.class: "gce"
+    ingress.gcp.kubernetes.io/load-balancer-type: "External"
+spec:
+  rules:
+  - host: 013a.tech
+    http:
+      paths:
+      - path: /api/*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-backend-cloud-sql-service
+            port:
+              number: 8080
+      - path: /health
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-backend-cloud-sql-service
+            port:
+              number: 8080
+      - path: /*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-frontend-service
+            port:
+              number: 80
+  - host: www.013a.tech
+    http:
+      paths:
+      - path: /*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-frontend-service
+            port:
+              number: 80
+---
+apiVersion: networking.gke.io/v1
+kind: ManagedCertificate
+metadata:
+  name: aia-comprehensive-ssl
+  namespace: aia-production
+spec:
+  domains:
+    - 013a.tech
+    - www.013a.tech

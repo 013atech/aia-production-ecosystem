@@ -1,0 +1,707 @@
+# Missing Services for Complete Platform
+# Acquisition Service ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: aia-acquisition-content
+  namespace: aia-comprehensive-platform
+data:
+  index.html: |
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Get Started with AIA</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
+            body {
+                font-family: 'SF Pro Display', -apple-system, sans-serif;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                min-height: 100vh;
+                overflow-x: hidden;
+            }
+            .hero {
+                text-align: center;
+                padding: 120px 20px 80px;
+                position: relative;
+            }
+            .hero::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: radial-gradient(circle at center, rgba(255,255,255,0.1) 0%, transparent 70%);
+            }
+            .hero-content {
+                position: relative;
+                z-index: 1;
+                max-width: 1000px;
+                margin: 0 auto;
+            }
+            .title {
+                font-size: 5em;
+                margin-bottom: 30px;
+                font-weight: 700;
+                text-shadow: 2px 2px 8px rgba(0,0,0,0.3);
+                background: linear-gradient(45deg, #fff, #f0f8ff);
+                background-clip: text;
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+            }
+            .subtitle {
+                font-size: 1.6em;
+                margin-bottom: 50px;
+                opacity: 0.95;
+                line-height: 1.5;
+            }
+            .cta-buttons {
+                margin: 60px 0;
+            }
+            .btn {
+                display: inline-block;
+                padding: 25px 50px;
+                margin: 15px;
+                border: none;
+                border-radius: 50px;
+                font-size: 1.3em;
+                font-weight: 700;
+                text-decoration: none;
+                cursor: pointer;
+                transition: all 0.4s;
+                text-transform: uppercase;
+                letter-spacing: 1px;
+            }
+            .btn-primary {
+                background: linear-gradient(45deg, #ff6b6b, #ff5252);
+                color: white;
+                box-shadow: 0 15px 30px rgba(255, 107, 107, 0.4);
+            }
+            .btn-primary:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 25px 50px rgba(255, 107, 107, 0.6);
+            }
+            .btn-secondary {
+                background: rgba(255, 255, 255, 0.2);
+                color: white;
+                border: 2px solid rgba(255, 255, 255, 0.5);
+                backdrop-filter: blur(10px);
+            }
+            .btn-secondary:hover {
+                background: rgba(255, 255, 255, 0.3);
+                transform: translateY(-3px);
+            }
+            .features-grid {
+                max-width: 1400px;
+                margin: 0 auto;
+                padding: 80px 20px;
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+                gap: 40px;
+            }
+            .feature {
+                background: rgba(255, 255, 255, 0.15);
+                padding: 50px;
+                border-radius: 20px;
+                backdrop-filter: blur(20px);
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                text-align: center;
+                transition: all 0.4s;
+            }
+            .feature:hover {
+                transform: translateY(-10px);
+                background: rgba(255, 255, 255, 0.25);
+            }
+            .feature-icon {
+                font-size: 4em;
+                margin-bottom: 30px;
+                filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
+            }
+            .feature h3 {
+                font-size: 1.8em;
+                margin-bottom: 20px;
+                font-weight: 600;
+            }
+            .feature p {
+                font-size: 1.1em;
+                line-height: 1.6;
+                opacity: 0.9;
+            }
+            .pricing-teaser {
+                text-align: center;
+                padding: 80px 20px;
+                background: rgba(0, 0, 0, 0.2);
+            }
+            .pricing-teaser h2 {
+                font-size: 3em;
+                margin-bottom: 30px;
+                font-weight: 600;
+            }
+            .pricing-teaser p {
+                font-size: 1.3em;
+                opacity: 0.9;
+                max-width: 600px;
+                margin: 0 auto 40px;
+                line-height: 1.6;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="hero">
+            <div class="hero-content">
+                <h1 class="title">Get Started with AIA</h1>
+                <p class="subtitle">Transform your business with enterprise AI intelligence. Join thousands of companies already using AIA to drive growth and innovation.</p>
+
+                <div class="cta-buttons">
+                    <a href="#" class="btn btn-primary">Start Free Trial</a>
+                    <a href="#" class="btn btn-secondary">Schedule Demo</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="features-grid">
+            <div class="feature">
+                <div class="feature-icon">🚀</div>
+                <h3>Quick Setup</h3>
+                <p>Get started in under 5 minutes with our guided onboarding process. No technical expertise required.</p>
+            </div>
+            <div class="feature">
+                <div class="feature-icon">🔒</div>
+                <h3>Enterprise Security</h3>
+                <p>Bank-level security with SOX compliance, end-to-end encryption, and complete data sovereignty.</p>
+            </div>
+            <div class="feature">
+                <div class="feature-icon">📊</div>
+                <h3>Real-Time Analytics</h3>
+                <p>Comprehensive dashboards with live metrics, predictive insights, and actionable recommendations.</p>
+            </div>
+            <div class="feature">
+                <div class="feature-icon">🤖</div>
+                <h3>AI Automation</h3>
+                <p>Intelligent automation that learns from your business processes and optimizes operations.</p>
+            </div>
+            <div class="feature">
+                <div class="feature-icon">🌍</div>
+                <h3>Global Scale</h3>
+                <p>Multi-region infrastructure with 99.9% uptime SLA and automatic scaling capabilities.</p>
+            </div>
+            <div class="feature">
+                <div class="feature-icon">💪</div>
+                <h3>24/7 Support</h3>
+                <p>Expert support team available around the clock with dedicated account management.</p>
+            </div>
+        </div>
+
+        <div class="pricing-teaser">
+            <h2>Simple, Transparent Pricing</h2>
+            <p>Choose the perfect plan for your business needs. All plans include our core AI features with no hidden fees or setup costs.</p>
+            <a href="#" class="btn btn-primary">View Pricing Plans</a>
+        </div>
+    </body>
+    </html>
+---
+# Trial Service ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: aia-trial-content
+  namespace: aia-comprehensive-platform
+data:
+  index.html: |
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>AIA Free Trial</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+            body {
+                font-family: 'SF Pro Display', sans-serif;
+                margin: 0;
+                background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+                color: white;
+                padding: 40px 20px;
+                min-height: 100vh;
+            }
+            .container {
+                max-width: 800px;
+                margin: 0 auto;
+                text-align: center;
+            }
+            .title {
+                font-size: 4em;
+                margin-bottom: 30px;
+                font-weight: 700;
+            }
+            .subtitle {
+                font-size: 1.4em;
+                margin-bottom: 50px;
+                opacity: 0.9;
+            }
+            .trial-form {
+                background: rgba(255, 255, 255, 0.15);
+                padding: 60px;
+                border-radius: 20px;
+                backdrop-filter: blur(20px);
+                margin: 50px 0;
+            }
+            .form-group {
+                margin: 30px 0;
+                text-align: left;
+            }
+            .form-group label {
+                display: block;
+                margin-bottom: 10px;
+                font-weight: 600;
+                font-size: 1.1em;
+            }
+            .form-group input, .form-group select {
+                width: 100%;
+                padding: 18px;
+                border: none;
+                border-radius: 10px;
+                font-size: 1.1em;
+                background: rgba(255, 255, 255, 0.9);
+                color: #333;
+            }
+            .btn {
+                background: linear-gradient(45deg, #ff6b6b, #ff5252);
+                color: white;
+                padding: 20px 40px;
+                border: none;
+                border-radius: 10px;
+                font-size: 1.3em;
+                font-weight: 700;
+                cursor: pointer;
+                margin-top: 30px;
+                width: 100%;
+                transition: all 0.3s;
+            }
+            .btn:hover {
+                transform: translateY(-3px);
+                box-shadow: 0 15px 35px rgba(255, 107, 107, 0.4);
+            }
+            .benefits {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+                gap: 30px;
+                margin: 60px 0;
+            }
+            .benefit {
+                background: rgba(255, 255, 255, 0.1);
+                padding: 30px;
+                border-radius: 15px;
+                backdrop-filter: blur(10px);
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1 class="title">Start Your Free Trial</h1>
+            <p class="subtitle">Experience the full power of AIA for 30 days, completely free. No credit card required.</p>
+
+            <div class="trial-form">
+                <form>
+                    <div class="form-group">
+                        <label for="company">Company Name</label>
+                        <input type="text" id="company" name="company" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="email">Email Address</label>
+                        <input type="email" id="email" name="email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="industry">Industry</label>
+                        <select id="industry" name="industry">
+                            <option value="">Select Industry</option>
+                            <option value="finance">Finance & Banking</option>
+                            <option value="healthcare">Healthcare</option>
+                            <option value="retail">Retail & E-commerce</option>
+                            <option value="manufacturing">Manufacturing</option>
+                            <option value="technology">Technology</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="use-case">Primary Use Case</label>
+                        <select id="use-case" name="use-case">
+                            <option value="">Select Use Case</option>
+                            <option value="analytics">Business Analytics</option>
+                            <option value="automation">Process Automation</option>
+                            <option value="customer-intelligence">Customer Intelligence</option>
+                            <option value="risk-management">Risk Management</option>
+                            <option value="operations">Operations Optimization</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn">Start Free Trial</button>
+                </form>
+            </div>
+
+            <div class="benefits">
+                <div class="benefit">
+                    <h3>✅ Full Platform Access</h3>
+                    <p>Complete access to all AIA features and capabilities</p>
+                </div>
+                <div class="benefit">
+                    <h3>📊 Unlimited Data Processing</h3>
+                    <p>Process unlimited data during your trial period</p>
+                </div>
+                <div class="benefit">
+                    <h3>🤖 AI Agent Creation</h3>
+                    <p>Create and deploy custom AI agents for your use cases</p>
+                </div>
+                <div class="benefit">
+                    <h3>👨‍💼 Dedicated Support</h3>
+                    <p>Personal onboarding and expert guidance throughout trial</p>
+                </div>
+            </div>
+        </div>
+    </body>
+    </html>
+---
+# Pricing Service ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: aia-pricing-content
+  namespace: aia-comprehensive-platform
+data:
+  index.html: |
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>AIA Pricing Plans</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+            body {
+                font-family: 'SF Pro Display', sans-serif;
+                margin: 0;
+                background: #f8fafc;
+                color: #1a202c;
+                padding: 40px 20px;
+            }
+            .header {
+                text-align: center;
+                margin-bottom: 80px;
+            }
+            .title {
+                font-size: 4em;
+                margin-bottom: 20px;
+                font-weight: 700;
+                color: #2d3748;
+            }
+            .subtitle {
+                font-size: 1.3em;
+                color: #4a5568;
+                max-width: 600px;
+                margin: 0 auto;
+            }
+            .pricing-grid {
+                max-width: 1200px;
+                margin: 0 auto;
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+                gap: 40px;
+            }
+            .pricing-card {
+                background: white;
+                border-radius: 20px;
+                padding: 50px;
+                box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+                position: relative;
+                transition: all 0.3s;
+                border: 3px solid transparent;
+            }
+            .pricing-card:hover {
+                transform: translateY(-10px);
+                box-shadow: 0 30px 60px rgba(0,0,0,0.15);
+            }
+            .pricing-card.featured {
+                border-color: #4299e1;
+                transform: scale(1.05);
+            }
+            .plan-name {
+                font-size: 1.8em;
+                font-weight: 700;
+                margin-bottom: 20px;
+                color: #2d3748;
+            }
+            .plan-price {
+                font-size: 3.5em;
+                font-weight: 800;
+                color: #4299e1;
+                margin-bottom: 10px;
+            }
+            .plan-price span {
+                font-size: 0.4em;
+                color: #718096;
+            }
+            .plan-description {
+                color: #4a5568;
+                margin-bottom: 40px;
+                font-size: 1.1em;
+                line-height: 1.6;
+            }
+            .features-list {
+                list-style: none;
+                padding: 0;
+                margin-bottom: 40px;
+            }
+            .features-list li {
+                padding: 12px 0;
+                border-bottom: 1px solid #e2e8f0;
+                position: relative;
+                padding-left: 30px;
+            }
+            .features-list li::before {
+                content: '✓';
+                position: absolute;
+                left: 0;
+                color: #48bb78;
+                font-weight: bold;
+                font-size: 1.2em;
+            }
+            .btn {
+                width: 100%;
+                padding: 20px;
+                border: none;
+                border-radius: 10px;
+                font-size: 1.2em;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.3s;
+                text-transform: uppercase;
+                letter-spacing: 1px;
+            }
+            .btn-primary {
+                background: linear-gradient(135deg, #4299e1, #3182ce);
+                color: white;
+            }
+            .btn-primary:hover {
+                background: linear-gradient(135deg, #3182ce, #2c5282);
+                transform: translateY(-2px);
+            }
+            .btn-secondary {
+                background: #edf2f7;
+                color: #4a5568;
+                border: 2px solid #e2e8f0;
+            }
+            .btn-secondary:hover {
+                background: #e2e8f0;
+                border-color: #cbd5e0;
+            }
+            .popular-badge {
+                position: absolute;
+                top: -15px;
+                right: 30px;
+                background: linear-gradient(135deg, #ed64a6, #f56565);
+                color: white;
+                padding: 8px 20px;
+                border-radius: 15px;
+                font-size: 0.9em;
+                font-weight: 600;
+                text-transform: uppercase;
+                letter-spacing: 1px;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="header">
+            <h1 class="title">Choose Your Plan</h1>
+            <p class="subtitle">Transparent pricing with no hidden fees. Scale your AI capabilities as your business grows.</p>
+        </div>
+
+        <div class="pricing-grid">
+            <!-- Starter Plan -->
+            <div class="pricing-card">
+                <div class="plan-name">Starter</div>
+                <div class="plan-price">$99<span>/month</span></div>
+                <div class="plan-description">Perfect for small teams and startups getting started with AI</div>
+                <ul class="features-list">
+                    <li>Up to 5 AI agents</li>
+                    <li>10,000 API calls/month</li>
+                    <li>Basic analytics dashboard</li>
+                    <li>Email support</li>
+                    <li>Standard security</li>
+                    <li>Community access</li>
+                </ul>
+                <button class="btn btn-secondary">Start Free Trial</button>
+            </div>
+
+            <!-- Professional Plan -->
+            <div class="pricing-card featured">
+                <div class="popular-badge">Most Popular</div>
+                <div class="plan-name">Professional</div>
+                <div class="plan-price">$499<span>/month</span></div>
+                <div class="plan-description">Advanced AI capabilities for growing businesses and teams</div>
+                <ul class="features-list">
+                    <li>Up to 50 AI agents</li>
+                    <li>100,000 API calls/month</li>
+                    <li>Advanced analytics & reporting</li>
+                    <li>Priority support (24/7)</li>
+                    <li>Enhanced security features</li>
+                    <li>Custom integrations</li>
+                    <li>Multi-user collaboration</li>
+                    <li>API access & webhooks</li>
+                </ul>
+                <button class="btn btn-primary">Start Free Trial</button>
+            </div>
+
+            <!-- Enterprise Plan -->
+            <div class="pricing-card">
+                <div class="plan-name">Enterprise</div>
+                <div class="plan-price">Custom<span>pricing</span></div>
+                <div class="plan-description">Complete AI platform for large organizations and Fortune 500 companies</div>
+                <ul class="features-list">
+                    <li>Unlimited AI agents</li>
+                    <li>Unlimited API calls</li>
+                    <li>Custom analytics & BI</li>
+                    <li>Dedicated account manager</li>
+                    <li>White-label solutions</li>
+                    <li>On-premises deployment</li>
+                    <li>Custom SLAs & compliance</li>
+                    <li>Advanced security & audit</li>
+                    <li>Priority feature development</li>
+                </ul>
+                <button class="btn btn-secondary">Contact Sales</button>
+            </div>
+        </div>
+    </body>
+    </html>
+---
+# Deploy the missing services with ConfigMaps
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-acquisition-deployment
+  namespace: aia-comprehensive-platform
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: aia-acquisition
+  template:
+    metadata:
+      labels:
+        app: aia-acquisition
+    spec:
+      containers:
+      - name: acquisition
+        image: nginx:alpine
+        ports:
+        - containerPort: 80
+        volumeMounts:
+        - name: acquisition-content
+          mountPath: /usr/share/nginx/html
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "50m"
+          limits:
+            memory: "256Mi"
+            cpu: "100m"
+      volumes:
+      - name: acquisition-content
+        configMap:
+          name: aia-acquisition-content
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-trial-service
+  namespace: aia-comprehensive-platform
+spec:
+  selector:
+    app: aia-trial
+  ports:
+  - port: 80
+    targetPort: 80
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-trial-deployment
+  namespace: aia-comprehensive-platform
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: aia-trial
+  template:
+    metadata:
+      labels:
+        app: aia-trial
+    spec:
+      containers:
+      - name: trial
+        image: nginx:alpine
+        ports:
+        - containerPort: 80
+        volumeMounts:
+        - name: trial-content
+          mountPath: /usr/share/nginx/html
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "50m"
+          limits:
+            memory: "256Mi"
+            cpu: "100m"
+      volumes:
+      - name: trial-content
+        configMap:
+          name: aia-trial-content
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-pricing-service
+  namespace: aia-comprehensive-platform
+spec:
+  selector:
+    app: aia-pricing
+  ports:
+  - port: 80
+    targetPort: 80
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-pricing-deployment
+  namespace: aia-comprehensive-platform
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: aia-pricing
+  template:
+    metadata:
+      labels:
+        app: aia-pricing
+    spec:
+      containers:
+      - name: pricing
+        image: nginx:alpine
+        ports:
+        - containerPort: 80
+        volumeMounts:
+        - name: pricing-content
+          mountPath: /usr/share/nginx/html
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "50m"
+          limits:
+            memory: "256Mi"
+            cpu: "100m"
+      volumes:
+      - name: pricing-content
+        configMap:
+          name: aia-pricing-content

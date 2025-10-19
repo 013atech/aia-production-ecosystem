@@ -1,0 +1,40 @@
+# TEMPORARILY DISABLED FOR QUOTA COMPLIANCE
+# This deployment has been temporarily disabled to meet GCP quota requirements
+# Original content below (commented out):
+#
+# # Simplified Cloud Build for immediate deployment
+# steps:
+# # Frontend Build with Kaniko
+# - name: 'gcr.io/kaniko-project/executor:latest'
+#   args: [
+#     '--dockerfile=./frontend/Dockerfile',
+#     '--destination=us-central1-docker.pkg.dev/$PROJECT_ID/aia-repo/aia-frontend:$BUILD_ID',
+#     '--destination=us-central1-docker.pkg.dev/$PROJECT_ID/aia-repo/aia-frontend:latest',
+#     '--context=./frontend',
+#     '--cache=true',
+#     '--cache-repo=us-central1-docker.pkg.dev/$PROJECT_ID/aia-repo/aia-frontend/cache',
+#     '--cache-ttl=168h'
+#   ]
+#   timeout: 1200s
+#   id: 'build-frontend'
+# 
+# # Backend Build with Kaniko
+# - name: 'gcr.io/kaniko-project/executor:latest'
+#   args: [
+#     '--dockerfile=./aia/Dockerfile',
+#     '--destination=us-central1-docker.pkg.dev/$PROJECT_ID/aia-repo/aia-backend:$BUILD_ID',
+#     '--destination=us-central1-docker.pkg.dev/$PROJECT_ID/aia-repo/aia-backend:latest',
+#     '--context=./aia',
+#     '--cache=true',
+#     '--cache-repo=us-central1-docker.pkg.dev/$PROJECT_ID/aia-repo/aia-backend/cache',
+#     '--cache-ttl=168h'
+#   ]
+#   timeout: 1800s
+#   id: 'build-backend'
+# 
+# options:
+#   substitution_option: ALLOW_LOOSE
+#   machineType: 'E2_HIGHCPU_8'
+#   logging: CLOUD_LOGGING_ONLY
+# 
+# timeout: 1800s

@@ -1,0 +1,87 @@
+steps:
+# Build Analytics Backend
+- name: 'gcr.io/cloud-builders/docker'
+  id: 'build-analytics'
+  args: [
+    'build',
+    '-f', 'Dockerfile.aia-ai',
+    '-t', 'gcr.io/$PROJECT_ID/aia-analytics-backend:latest',
+    '.'
+  ]
+
+# Build ML Processor
+- name: 'gcr.io/cloud-builders/docker'
+  id: 'build-ml-processor'
+  args: [
+    'build',
+    '-f', 'Dockerfile.aia-ai',
+    '-t', 'gcr.io/$PROJECT_ID/aia-ml-processor:latest',
+    '.'
+  ]
+
+# Build Analytics Frontend
+- name: 'gcr.io/cloud-builders/docker'
+  id: 'build-frontend'
+  args: [
+    'build',
+    '-f', 'frontend/Dockerfile',
+    '-t', 'gcr.io/$PROJECT_ID/aia-analytics-frontend:latest',
+    './frontend'
+  ]
+
+# Build Cognitive Processor
+- name: 'gcr.io/cloud-builders/docker'
+  id: 'build-cognitive'
+  args: [
+    'build',
+    '-f', 'Dockerfile.aia-ai',
+    '-t', 'gcr.io/$PROJECT_ID/aia-cognitive-processor:latest',
+    '.'
+  ]
+
+# Build Payment Processor
+- name: 'gcr.io/cloud-builders/docker'
+  id: 'build-payment'
+  args: [
+    'build',
+    '-f', 'Dockerfile',
+    '-t', 'gcr.io/$PROJECT_ID/aia-payment-processor:latest',
+    '.'
+  ]
+
+# Build Biometric Processor
+- name: 'gcr.io/cloud-builders/docker'
+  id: 'build-biometric'
+  args: [
+    'build',
+    '-f', 'Dockerfile.aia-ai',
+    '-t', 'gcr.io/$PROJECT_ID/aia-biometric-processor:latest',
+    '.'
+  ]
+
+# Build WebSocket Server
+- name: 'gcr.io/cloud-builders/docker'
+  id: 'build-websocket'
+  args: [
+    'build',
+    '-f', 'Dockerfile.aia-ai',
+    '-t', 'gcr.io/$PROJECT_ID/aia-websocket-server:latest',
+    '.'
+  ]
+
+images:
+- 'gcr.io/$PROJECT_ID/aia-analytics-backend:latest'
+- 'gcr.io/$PROJECT_ID/aia-ml-processor:latest'
+- 'gcr.io/$PROJECT_ID/aia-analytics-frontend:latest'
+- 'gcr.io/$PROJECT_ID/aia-cognitive-processor:latest'
+- 'gcr.io/$PROJECT_ID/aia-payment-processor:latest'
+- 'gcr.io/$PROJECT_ID/aia-biometric-processor:latest'
+- 'gcr.io/$PROJECT_ID/aia-websocket-server:latest'
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+  machineType: 'E2_HIGHCPU_32'
+  diskSizeGb: 200
+  substitutionOption: ALLOW_LOOSE
+
+timeout: '2400s'

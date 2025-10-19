@@ -1,0 +1,160 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: alertmanager-config-fixed
+  namespace: aia-monitoring
+data:
+  alertmanager.yml: |
+    global:
+      smtp_smarthost: 'smtp.gmail.com:587'
+      smtp_from: 'alerts@013a.tech'
+      smtp_auth_username: 'alerts@013a.tech'
+      smtp_auth_password: 'your-app-password'
+      smtp_require_tls: true
+
+    route:
+      group_by: ['alertname']
+      group_wait: 30s
+      group_interval: 5m
+      repeat_interval: 24h
+      receiver: 'aia-team'
+      routes:
+      - match:
+          severity: critical
+        receiver: 'critical-alerts'
+        continue: false
+        group_wait: 10s
+        repeat_interval: 1h
+
+    receivers:
+    - name: 'aia-team'
+      email_configs:
+      - to: 'team@013a.tech'
+        headers:
+          Subject: '[AIA Alert] {{ .GroupLabels.alertname }}'
+        html: |
+          <h2>Alert: {{ .GroupLabels.alertname }}</h2>
+          {{ range .Alerts }}
+          <p><strong>Instance:</strong> {{ .Labels.instance }}</p>
+          <p><strong>Summary:</strong> {{ .Annotations.summary }}</p>
+          <p><strong>Description:</strong> {{ .Annotations.description }}</p>
+          {{ end }}
+
+    - name: 'critical-alerts'
+      email_configs:
+      - to: 'critical@013a.tech'
+        headers:
+          Subject: '[CRITICAL AIA Alert] {{ .GroupLabels.alertname }}'
+        html: |
+          <h1 style="color: red;">CRITICAL ALERT: {{ .GroupLabels.alertname }}</h1>
+          {{ range .Alerts }}
+          <p><strong>Instance:</strong> {{ .Labels.instance }}</p>
+          <p><strong>Summary:</strong> {{ .Annotations.summary }}</p>
+          <p><strong>Description:</strong> {{ .Annotations.description }}</p>
+          <p><strong>Labels:</strong> {{ .Labels }}</p>
+          {{ end }}
+
+      slack_configs:
+      - api_url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
+        channel: '#alerts'
+        title: 'Critical AIA Alert'
+        text: |
+          Alert: {{ .GroupLabels.alertname }}
+          {{ range .Alerts }}
+          Instance: {{ .Labels.instance }}
+          Summary: {{ .Annotations.summary }}
+          {{ end }}
+
+    inhibit_rules:
+    - source_match:
+        severity: 'critical'
+      target_match:
+        severity: 'warning'
+      equal: ['alertname', 'cluster', 'service']
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: alertmanager-fixed
+  namespace: aia-monitoring
+  labels:
+    app: alertmanager-fixed
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: alertmanager-fixed
+  template:
+    metadata:
+      labels:
+        app: alertmanager-fixed
+    spec:
+      containers:
+      - name: alertmanager
+        image: prom/alertmanager:v0.26.0
+        ports:
+        - containerPort: 9093
+        args:
+        - '--config.file=/etc/alertmanager/alertmanager.yml'
+        - '--storage.path=/alertmanager'
+        - '--web.external-url=http://localhost:9093/'
+        - '--web.route-prefix=/'
+        - '--cluster.listen-address=0.0.0.0:9094'
+        - '--cluster.advertise-address=$(POD_IP):9094'
+        - '--log.level=info'
+        env:
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        volumeMounts:
+        - name: alertmanager-config
+          mountPath: /etc/alertmanager
+        - name: alertmanager-storage
+          mountPath: /alertmanager
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        livenessProbe:
+          httpGet:
+            path: /-/healthy
+            port: 9093
+          initialDelaySeconds: 30
+          timeoutSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /-/ready
+            port: 9093
+          initialDelaySeconds: 15
+          timeoutSeconds: 10
+      volumes:
+      - name: alertmanager-config
+        configMap:
+          name: alertmanager-config-fixed
+      - name: alertmanager-storage
+        emptyDir: {}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: alertmanager-fixed
+  namespace: aia-monitoring
+  labels:
+    app: alertmanager-fixed
+spec:
+  selector:
+    app: alertmanager-fixed
+  ports:
+  - name: web
+    port: 9093
+    targetPort: 9093
+  - name: cluster
+    port: 9094
+    targetPort: 9094
+  type: ClusterIP

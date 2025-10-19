@@ -1,0 +1,880 @@
+# TEMPORARILY DISABLED FOR QUOTA COMPLIANCE
+# This deployment has been temporarily disabled to meet GCP quota requirements
+# Original content below (commented out):
+#
+# ---
+# # Fixed Backend Deployment with proper permissions
+# apiVersion: apps/v1
+# kind: Deployment
+# metadata:
+#   name: aia-backend-api-fixed
+#   namespace: aia-production
+#   labels:
+#     app: aia-backend-api-fixed
+#     tier: api
+#     version: v4.0.1
+# spec:
+#   replicas: 2
+#   strategy:
+#     type: RollingUpdate
+#     rollingUpdate:
+#       maxSurge: 1
+#       maxUnavailable: 0
+#   selector:
+#     matchLabels:
+#       app: aia-backend-api-fixed
+#   template:
+#     metadata:
+#       labels:
+#         app: aia-backend-api-fixed
+#         tier: api
+#         version: v4.0.1
+#     spec:
+#       securityContext:
+#         fsGroup: 1000
+#       initContainers:
+#       - name: wait-for-postgres
+#         image: postgres:16-alpine
+#         command:
+#         - sh
+#         - -c
+#         - until pg_isready -h aia-postgres -p 5432 -U aia_user; do echo "Waiting for PostgreSQL..."; sleep 2; done; echo "PostgreSQL is ready!"
+#       - name: wait-for-redis
+#         image: redis:7-alpine
+#         command:
+#         - sh
+#         - -c
+#         - until redis-cli -h aia-redis -p 6379 ping | grep -q PONG; do echo "Waiting for Redis..."; sleep 2; done; echo "Redis is ready!"
+#       containers:
+#       - name: aia-api
+#         image: python:3.12-slim
+#         ports:
+#         - containerPort: 8000
+#           name: http
+#         - containerPort: 8080
+#           name: metrics
+#         env:
+#         - name: PORT
+#           value: "8000"
+#         - name: WORKERS
+#           value: "1"
+#         - name: PYTHONPATH
+#           value: "/app"
+#         envFrom:
+#         - configMapRef:
+#             name: aia-backend-config
+#         - secretRef:
+#             name: aia-secrets
+#         command:
+#         - /bin/bash
+#         - -c
+#         - |
+#           set -e
+#           echo "=== AIA Production Backend v4.0.1 Initializing ==="
+# 
+#           # Install system dependencies as root
+#           apt-get update && apt-get install -y --no-install-recommends \
+#             gcc g++ libpq-dev curl && \
+#             rm -rf /var/lib/apt/lists/*
+# 
+#           # Install Python dependencies globally
+#           pip install --no-cache-dir --upgrade pip
+#           pip install --no-cache-dir \
+#             fastapi==0.118.0 \
+#             uvicorn[standard]==0.37.0 \
+#             psycopg2-binary==2.9.10 \
+#             redis==6.4.0 \
+#             sqlalchemy==2.0.43 \
+#             alembic==1.16.5 \
+#             prometheus-client==0.21.1 \
+#             structlog==23.2.0 \
+#             python-multipart==0.0.16 \
+#             python-jose[cryptography]==3.3.0 \
+#             passlib[bcrypt]==1.7.4
+# 
+#           echo "Creating AIA application structure..."
+#           mkdir -p /app/aia/{api,agents,orchestration,analytics,crypto,economic}
+# 
+#           # Create comprehensive API application
+#           cat > /app/aia/__init__.py << 'EOF'
+#           """AIA - Advanced Intelligence Architecture v4.0.1"""
+#           __version__ = "4.0.1"
+#           __description__ = "Production-grade multi-agent AI orchestration platform"
+#           EOF
+# 
+#           cat > /app/aia/api/main.py << 'EOF'
+#           import os
+#           import asyncio
+#           import logging
+#           import traceback
+#           from datetime import datetime, timedelta
+#           from typing import Dict, List, Optional, Any
+#           import json
+#           import uuid
+#           import hashlib
+#           import secrets
+# 
+#           # FastAPI and dependencies
+#           from fastapi import FastAPI, HTTPException, Depends, Request, Response, BackgroundTasks
+#           from fastapi.middleware.cors import CORSMiddleware
+#           from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+#           from fastapi.responses import JSONResponse, HTMLResponse
+#           from pydantic import BaseModel, Field
+#           import uvicorn
+# 
+#           # Database and caching
+#           import psycopg2
+#           from psycopg2.extras import RealDictCursor
+#           import redis
+#           import sqlalchemy as sa
+#           from sqlalchemy import create_engine, text
+# 
+#           # Monitoring
+#           from prometheus_client import Counter, Histogram, Gauge, generate_latest, CONTENT_TYPE_LATEST
+#           import structlog
+# 
+#           # Configure structured logging
+#           logging.basicConfig(
+#               level=logging.INFO,
+#               format='%(asctime)s [%(levelname)s] %(name)s: %(message)s'
+#           )
+#           logger = structlog.get_logger()
+# 
+#           # Prometheus metrics
+#           REQUEST_COUNT = Counter('aia_requests_total', 'Total API requests', ['method', 'endpoint', 'status'])
+#           REQUEST_DURATION = Histogram('aia_request_duration_seconds', 'Request duration')
+#           ACTIVE_AGENTS = Gauge('aia_active_agents', 'Number of active agents')
+#           SYSTEM_HEALTH = Gauge('aia_system_health_score', 'Overall system health score')
+#           DATABASE_CONNECTIONS = Gauge('aia_database_connections', 'Active database connections')
+# 
+#           # Pydantic models
+#           class HealthResponse(BaseModel):
+#               status: str
+#               timestamp: str
+#               version: str = "4.0.1"
+#               services: Dict[str, str]
+#               metrics: Optional[Dict[str, Any]] = None
+# 
+#           class OrchestrationRequest(BaseModel):
+#               ta[STRIPE_KEY_PLACEHOLDER]: str = Field(..., description="Type of task to orchestrate")
+#               parameters: Dict[str, Any] = Field(default_factory=dict)
+#               priority: int = Field(default=5, ge=1, le=10)
+#               timeout_seconds: int = Field(default=300, ge=30, le=3600)
+# 
+#           class AgentResponse(BaseModel):
+#               orchestration_id: str
+#               status: str
+#               agents_activated: List[str]
+#               estimated_completion: str
+#               created_at: str
+# 
+#           class TokenBalance(BaseModel):
+#               aia_balance: float
+#               aia_gov_balance: float
+#               total_value_usd: float
+#               last_updated: str
+# 
+#           class SystemMetrics(BaseModel):
+#               active_agents: int
+#               completed_tasks: int
+#               system_health: float
+#               resource_utilization: float
+#               database_health: str
+#               cache_health: str
+#               response_time_avg: float
+# 
+#           # Initialize FastAPI with comprehensive configuration
+#           app = FastAPI(
+#               title="AIA Production API",
+#               version="4.0.1",
+#               description="""
+#               # Advanced Intelligence Architecture - Production API v4.0.1
+# 
+#               Full-scale production deployment featuring:
+# 
+#               ## 🤖 Multi-Agent Orchestration
+#               - Coordinated AI agent ecosystem
+#               - Task distribution and load balancing
+#               - Performance monitoring and optimization
+# 
+#               ## 🔐 Post-Quantum Cryptography
+#               - Future-proof security protocols
+#               - Identity management with DID integration
+#               - Zero-knowledge proof systems
+# 
+#               ## 🌐 Distributed Knowledge Graph (DKG)
+#               - Atomic knowledge representation
+#               - Intelligent graph traversal
+#               - Real-time knowledge synthesis
+# 
+#               ## 💎 Token Economy
+#               - AIA & AIA_GOV dual-token system
+#               - Staking and governance mechanisms
+#               - Economic incentive alignment
+# 
+#               ## 📊 Advanced Analytics
+#               - Real-time performance metrics
+#               - Predictive analytics dashboard
+#               - Business intelligence integration
+#               """,
+#               docs_url="/api/docs",
+#               redoc_url="/api/redoc",
+#               openapi_url="/api/openapi.json",
+#               contact={
+#                   "name": "013a Analytics Team",
+#                   "url": "https://013a.tech",
+#                   "email": "hello@013a.tech"
+#               }
+#           )
+# 
+#           # CORS middleware for frontend integration
+#           app.add_middleware(
+#               CORSMiddleware,
+#               allow_origins=["*"],  # In production, restrict to specific domains
+#               allow_credentials=True,
+#               allow_methods=["*"],
+#               allow_headers=["*"],
+#           )
+# 
+#           # Security
+#           security = HTTPBearer()
+# 
+#           # Global state management
+#           class SystemState:
+#               def __init__(self):
+#                   self.start_time = datetime.utcnow()
+#                   self.request_count = 0
+#                   self.active_orchestrations = {}
+#                   self.agent_registry = {
+#                       "research": {"status": "active", "load": 0.3},
+#                       "analysis": {"status": "active", "load": 0.4},
+#                       "synthesis": {"status": "active", "load": 0.2},
+#                       "crypto": {"status": "active", "load": 0.1},
+#                       "economic": {"status": "active", "load": 0.5},
+#                       "dkg": {"status": "active", "load": 0.6}
+#                   }
+# 
+#           system_state = SystemState()
+# 
+#           # Database connection management
+#           def get_db_connection():
+#               try:
+#                   DATABASE_URL = os.environ.get("DATABASE_URL")
+#                   if not DATABASE_URL:
+#                       raise ValueError("DATABASE_URL environment variable not set")
+# 
+#                   conn = psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
+#                   DATABASE_CONNECTIONS.inc()
+#                   return conn
+#               except Exception as e:
+#                   logger.error("Database connection failed", error=str(e))
+#                   raise HTTPException(status_code=503, detail=f"Database connection failed: {str(e)}")
+# 
+#           # Redis connection management
+#           def get_redis_connection():
+#               try:
+#                   REDIS_URL = os.environ.get("REDIS_URL", "redis://aia-redis:6379/0")
+#                   return redis.from_url(REDIS_URL, decode_responses=True)
+#               except Exception as e:
+#                   logger.error("Redis connection failed", error=str(e))
+#                   raise HTTPException(status_code=503, detail=f"Redis connection failed: {str(e)}")
+# 
+#           # Middleware for request tracking
+#           @app.middleware("http")
+#           async def track_requests(request: Request, call_next):
+#               start_time = datetime.utcnow()
+# 
+#               with REQUEST_DURATION.time():
+#                   response = await call_next(request)
+# 
+#               # Update metrics
+#               REQUEST_COUNT.labels(
+#                   method=request.method,
+#                   endpoint=request.url.path,
+#                   status=response.status_code
+#               ).inc()
+# 
+#               system_state.request_count += 1
+# 
+#               # Add response headers
+#               response.headers["X-Process-Time"] = str((datetime.utcnow() - start_time).total_seconds())
+#               response.headers["X-AIA-Version"] = "4.0.1"
+# 
+#               return response
+# 
+#           # Health check endpoint with comprehensive system validation
+#           @app.get("/health", response_model=HealthResponse)
+#           async def health_check():
+#               """Comprehensive health check with database and cache connectivity validation"""
+# 
+#               services = {}
+#               overall_health = "healthy"
+# 
+#               # Check PostgreSQL
+#               try:
+#                   with get_db_connection() as conn:
+#                       with conn.cursor() as cur:
+#                           cur.execute("SELECT 1 as health_check")
+#                           result = cur.fetchone()
+#                           services["postgres"] = "connected" if result else "error"
+#               except Exception as e:
+#                   services["postgres"] = f"error: {str(e)[:50]}"
+#                   overall_health = "degraded"
+# 
+#               # Check Redis
+#               try:
+#                   r = get_redis_connection()
+#                   r.ping()
+#                   services["redis"] = "connected"
+#               except Exception as e:
+#                   services["redis"] = f"error: {str(e)[:50]}"
+#                   overall_health = "degraded"
+# 
+#               # Agent status
+#               active_agents = sum(1 for agent in system_state.agent_registry.values()
+#                                 if agent["status"] == "active")
+#               services["agents"] = f"{active_agents}/6 active"
+#               ACTIVE_AGENTS.set(active_agents)
+# 
+#               # System metrics
+#               uptime = (datetime.utcnow() - system_state.start_time).total_seconds()
+#               avg_load = sum(agent["load"] for agent in system_state.agent_registry.values()) / len(system_state.agent_registry)
+# 
+#               health_score = min(1.0, max(0.0, (active_agents / 6) * (1 - avg_load)))
+#               SYSTEM_HEALTH.set(health_score)
+# 
+#               metrics = {
+#                   "uptime_seconds": uptime,
+#                   "total_requests": system_state.request_count,
+#                   "active_orchestrations": len(system_state.active_orchestrations),
+#                   "avg_agent_load": avg_load,
+#                   "health_score": health_score
+#               }
+# 
+#               return HealthResponse(
+#                   status=overall_health,
+#                   timestamp=datetime.utcnow().isoformat() + "Z",
+#                   services=services,
+#                   metrics=metrics
+#               )
+# 
+#           # Root endpoint with system overview
+#           @app.get("/", response_class=HTMLResponse)
+#           async def root():
+#               """System overview and status dashboard"""
+# 
+#               uptime = datetime.utcnow() - system_state.start_time
+# 
+#               html_content = f"""
+#               <!DOCTYPE html>
+#               <html>
+#               <head>
+#                   <title>AIA Production API v4.0.1</title>
+#                   <style>
+#                       body {{
+#                           font-family: 'Segoe UI', system-ui, sans-serif;
+#                           margin: 0; padding: 20px;
+#                           background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+#                           color: #ffffff; min-height: 100vh;
+#                       }}
+#                       .container {{ max-width: 1200px; margin: 0 auto; }}
+#                       .header {{ text-align: center; margin-bottom: 40px; }}
+#                       .logo {{ font-size: 3rem; font-weight: 100; margin-bottom: 10px;
+#                                background: linear-gradient(45deg, #00ffff, #ffff00);
+#                                -webkit-background-clip: text; -webkit-text-fill-color: transparent; }}
+#                       .grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }}
+#                       .card {{ background: rgba(255,255,255,0.1); padding: 20px; border-radius: 10px;
+#                                border: 1px solid rgba(255,255,255,0.2); }}
+#                       .metric {{ margin: 10px 0; }}
+#                       .status-ok {{ color: #00ff88; }}
+#                       .status-degraded {{ color: #ffaa00; }}
+#                       .status-error {{ color: #ff4444; }}
+#                       .footer {{ text-align: center; margin-top: 40px; opacity: 0.7; }}
+#                   </style>
+#               </head>
+#               <body>
+#                   <div class="container">
+#                       <div class="header">
+#                           <div class="logo">AIA Production</div>
+#                           <p>Advanced Intelligence Architecture v4.0.1</p>
+#                           <p>🚀 Multi-Agent | 🔐 Post-Quantum | 🌐 Distributed | 💎 Token Economy</p>
+#                       </div>
+# 
+#                       <div class="grid">
+#                           <div class="card">
+#                               <h3>🚀 System Status</h3>
+#                               <div class="metric">Uptime: {uptime}</div>
+#                               <div class="metric">Requests: {system_state.request_count}</div>
+#                               <div class="metric">Active Agents: {len([a for a in system_state.agent_registry.values() if a['status'] == 'active'])}/6</div>
+#                           </div>
+# 
+#                           <div class="card">
+#                               <h3>🤖 Agent Registry</h3>
+#                               {''.join([f'<div class="metric">{name}: <span class="status-ok">{info["status"]}</span> (Load: {info["load"]:.1%})</div>'
+#                                        for name, info in system_state.agent_registry.items()])}
+#                           </div>
+# 
+#                           <div class="card">
+#                               <h3>📊 API Endpoints</h3>
+#                               <div class="metric"><a href="/api/docs" style="color: #00ffff;">/api/docs</a> - Interactive API Documentation</div>
+#                               <div class="metric"><a href="/health" style="color: #00ffff;">/health</a> - System Health Check</div>
+#                               <div class="metric"><a href="/metrics" style="color: #00ffff;">/metrics</a> - Prometheus Metrics</div>
+#                               <div class="metric"><a href="/api/v1/analytics/dashboard" style="color: #00ffff;">/analytics</a> - Real-time Dashboard</div>
+#                           </div>
+# 
+#                           <div class="card">
+#                               <h3>🔐 Security Features</h3>
+#                               <div class="metric">✅ Post-Quantum Cryptography</div>
+#                               <div class="metric">✅ Zero-Knowledge Proofs</div>
+#                               <div class="metric">✅ DID Identity Management</div>
+#                               <div class="metric">✅ JWT Authentication</div>
+#                           </div>
+#                       </div>
+# 
+#                       <div class="footer">
+#                           <p>013a Analytics - Transforming Data into Intelligence</p>
+#                           <p>Production deployment on GKE | Kubernetes | PostgreSQL | Redis</p>
+#                       </div>
+#                   </div>
+#               </body>
+#               </html>
+#               """
+# 
+#               return HTMLResponse(content=html_content)
+# 
+#           # Multi-agent orchestration endpoint
+#           @app.post("/api/v1/agents/orchestrate", response_model=AgentResponse)
+#           async def orchestrate_agents(request: OrchestrationRequest, background_tasks: BackgroundTasks):
+#               """Orchestrate multi-agent task execution with comprehensive monitoring"""
+# 
+#               try:
+#                   orchestration_id = f"orch_{uuid.uuid4().hex[:12]}"
+#                   timestamp = datetime.utcnow().isoformat() + "Z"
+# 
+#                   # Select appropriate agents based on task type
+#                   agent_mapping = {
+#                       "research": ["research", "dkg"],
+#                       "analysis": ["analysis", "crypto"],
+#                       "synthesis": ["synthesis", "economic"],
+#                       "comprehensive": ["research", "analysis", "synthesis", "dkg", "crypto", "economic"]
+#                   }
+# 
+#                   selected_agents = agent_mapping.get(request.ta[STRIPE_KEY_PLACEHOLDER], ["research", "analysis", "synthesis"])
+# 
+#                   # Store orchestration state
+#                   orchestration_data = {
+#                       "id": orchestration_id,
+#                       "ta[STRIPE_KEY_PLACEHOLDER]": request.ta[STRIPE_KEY_PLACEHOLDER],
+#                       "parameters": request.parameters,
+#                       "agents": selected_agents,
+#                       "status": "initiated",
+#                       "created_at": timestamp,
+#                       "priority": request.priority,
+#                       "timeout": request.timeout_seconds
+#                   }
+# 
+#                   system_state.active_orchestrations[orchestration_id] = orchestration_data
+# 
+#                   # Cache in Redis for persistence
+#                   try:
+#                       r = get_redis_connection()
+#                       r.setex(f"orchestration:{orchestration_id}", 3600, json.dumps(orchestration_data))
+#                   except Exception as e:
+#                       logger.warning("Failed to cache orchestration in Redis", error=str(e))
+# 
+#                   # Background task simulation
+#                   async def simulate_orchestration():
+#                       await asyncio.sleep(2)  # Simulate processing time
+#                       if orchestration_id in system_state.active_orchestrations:
+#                           system_state.active_orchestrations[orchestration_id]["status"] = "processing"
+# 
+#                   background_tasks.add_task(simulate_orchestration)
+# 
+#                   estimated_time = f"{len(selected_agents) * 30}-{len(selected_agents) * 45} seconds"
+# 
+#                   logger.info("Agent orchestration initiated",
+#                              orchestration_id=orchestration_id,
+#                              ta[STRIPE_KEY_PLACEHOLDER]=request.ta[STRIPE_KEY_PLACEHOLDER],
+#                              agents=selected_agents)
+# 
+#                   return AgentResponse(
+#                       orchestration_id=orchestration_id,
+#                       status="initiated",
+#                       agents_activated=selected_agents,
+#                       estimated_completion=estimated_time,
+#                       created_at=timestamp
+#                   )
+# 
+#               except Exception as e:
+#                   logger.error("Orchestration failed", error=str(e), traceback=traceback.format_exc())
+#                   raise HTTPException(status_code=500, detail=f"Orchestration failed: {str(e)}")
+# 
+#           # Analytics dashboard endpoint
+#           @app.get("/api/v1/analytics/dashboard", response_model=SystemMetrics)
+#           async def get_analytics():
+#               """Real-time system analytics and performance metrics"""
+# 
+#               try:
+#                   # Calculate system metrics
+#                   active_agents = sum(1 for agent in system_state.agent_registry.values()
+#                                     if agent["status"] == "active")
+# 
+#                   # Simulate task completion tracking
+#                   completed_tasks = system_state.request_count * 3 + 1547  # Base + dynamic
+# 
+#                   # Calculate health score
+#                   avg_load = sum(agent["load"] for agent in system_state.agent_registry.values()) / len(system_state.agent_registry)
+#                   health_score = min(1.0, max(0.0, (active_agents / 6) * (1 - avg_load * 0.8)))
+# 
+#                   # Database health check
+#                   db_health = "healthy"
+#                   try:
+#                       with get_db_connection() as conn:
+#                           with conn.cursor() as cur:
+#                               cur.execute("SELECT COUNT(*) FROM pg_stat_activity WHERE state = 'active'")
+#                               active_connections = cur.fetchone()['count']
+#                               DATABASE_CONNECTIONS.set(active_connections)
+#                   except Exception:
+#                       db_health = "degraded"
+# 
+#                   # Cache health check
+#                   cache_health = "healthy"
+#                   try:
+#                       r = get_redis_connection()
+#                       r.ping()
+#                   except Exception:
+#                       cache_health = "degraded"
+# 
+#                   # Response time calculation
+#                   response_time_avg = 0.15 + (avg_load * 0.1)  # Simulated based on load
+# 
+#                   return SystemMetrics(
+#                       active_agents=active_agents,
+#                       completed_tasks=completed_tasks,
+#                       system_health=round(health_score, 3),
+#                       resource_utilization=round(avg_load, 3),
+#                       database_health=db_health,
+#                       cache_health=cache_health,
+#                       response_time_avg=round(response_time_avg, 3)
+#                   )
+# 
+#               except Exception as e:
+#                   logger.error("Analytics retrieval failed", error=str(e))
+#                   raise HTTPException(status_code=500, detail=f"Analytics unavailable: {str(e)}")
+# 
+#           # Token economy status endpoint
+#           @app.get("/api/v1/economy/status", response_model=TokenBalance)
+#           async def get_economy_status():
+#               """Token economy metrics and treasury status"""
+# 
+#               try:
+#                   # Simulate token economy metrics (in production, these would be from blockchain)
+#                   base_time = datetime.utcnow()
+# 
+#                   # Dynamic token supply based on system activity
+#                   aia_supply = 1000000 + (system_state.request_count * 10)
+#                   aia_gov_supply = 100000 + (len(system_state.active_orchestrations) * 50)
+# 
+#                   # Simulated USD values
+#                   aia_price = 0.15 + (hash(str(base_time.date())) % 100) / 10000  # Stable around $0.15
+#                   gov_price = 2.50 + (hash(str(base_time.hour)) % 100) / 1000    # Stable around $2.50
+# 
+#                   total_value = (aia_supply * aia_price) + (aia_gov_supply * gov_price)
+# 
+#                   return TokenBalance(
+#                       aia_balance=aia_supply,
+#                       aia_gov_balance=aia_gov_supply,
+#                       total_value_usd=round(total_value, 2),
+#                       last_updated=base_time.isoformat() + "Z"
+#                   )
+# 
+#               except Exception as e:
+#                   logger.error("Economy status retrieval failed", error=str(e))
+#                   raise HTTPException(status_code=500, detail=f"Economy status unavailable: {str(e)}")
+# 
+#           # Post-quantum cryptography status
+#           @app.get("/api/v1/crypto/status")
+#           async def get_crypto_status():
+#               """Post-quantum cryptography system status"""
+# 
+#               return {
+#                   "pqc_enabled": True,
+#                   "algorithms": ["Kyber-768", "Dilithium-2", "SPHINCS+"],
+#                   "key_exchanges": 1247,
+#                   "signatures_verified": 3456,
+#                   "zkp_proofs": 89,
+#                   "did_identities": 156,
+#                   "last_key_rotation": (datetime.utcnow() - timedelta(hours=6)).isoformat() + "Z"
+#               }
+# 
+#           # Distributed Knowledge Graph status
+#           @app.get("/api/v1/dkg/status")
+#           async def get_dkg_status():
+#               """Distributed Knowledge Graph system metrics"""
+# 
+#               try:
+#                   # Simulate DKG metrics
+#                   nodes_count = 1500 + (system_state.request_count * 2)
+#                   connections = nodes_count * 3.2  # Average connections per node
+# 
+#                   return {
+#                       "total_nodes": int(nodes_count),
+#                       "total_connections": int(connections),
+#                       "knowledge_domains": ["technology", "business", "research", "analytics"],
+#                       "query_resolution_time_ms": 45 + (hash(str(datetime.utcnow().minute)) % 30),
+#                       "graph_density": round(connections / (nodes_count * (nodes_count - 1)), 6),
+#                       "active_queries": len(system_state.active_orchestrations),
+#                       "last_sync": datetime.utcnow().isoformat() + "Z"
+#                   }
+# 
+#               except Exception as e:
+#                   logger.error("DKG status retrieval failed", error=str(e))
+#                   raise HTTPException(status_code=500, detail=f"DKG status unavailable: {str(e)}")
+# 
+#           # Prometheus metrics endpoint
+#           @app.get("/metrics")
+#           async def get_metrics():
+#               """Prometheus metrics for monitoring and alerting"""
+#               return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
+# 
+#           # Orchestration status endpoint
+#           @app.get("/api/v1/orchestration/{orchestration_id}")
+#           async def get_orchestration_status(orchestration_id: str):
+#               """Get status of specific orchestration task"""
+# 
+#               # Check local state first
+#               if orchestration_id in system_state.active_orchestrations:
+#                   return system_state.active_orchestrations[orchestration_id]
+# 
+#               # Check Redis cache
+#               try:
+#                   r = get_redis_connection()
+#                   cached_data = r.get(f"orchestration:{orchestration_id}")
+#                   if cached_data:
+#                       return json.loads(cached_data)
+#               except Exception as e:
+#                   logger.warning("Failed to retrieve from Redis cache", error=str(e))
+# 
+#               raise HTTPException(status_code=404, detail="Orchestration not found")
+# 
+#           # Startup event
+#           @app.on_event("startup")
+#           async def startup_event():
+#               logger.info("AIA Production API v4.0.1 starting up...")
+# 
+#               # Initialize agent registry
+#               for agent_name in system_state.agent_registry:
+#                   system_state.agent_registry[agent_name]["last_heartbeat"] = datetime.utcnow()
+# 
+#               # Test database connection
+#               try:
+#                   with get_db_connection() as conn:
+#                       with conn.cursor() as cur:
+#                           cur.execute("SELECT version()")
+#                           version = cur.fetchone()
+#                           logger.info("Database connected", version=version[0] if version else "unknown")
+#               except Exception as e:
+#                   logger.error("Database connection failed during startup", error=str(e))
+# 
+#               # Test Redis connection
+#               try:
+#                   r = get_redis_connection()
+#                   r.ping()
+#                   logger.info("Redis connected successfully")
+#               except Exception as e:
+#                   logger.error("Redis connection failed during startup", error=str(e))
+# 
+#               logger.info("AIA Production API v4.0.1 startup complete")
+# 
+#           # Shutdown event
+#           @app.on_event("shutdown")
+#           async def shutdown_event():
+#               logger.info("AIA Production API v4.0.1 shutting down...")
+# 
+#               # Clean up active orchestrations
+#               system_state.active_orchestrations.clear()
+# 
+#               logger.info("AIA Production API v4.0.1 shutdown complete")
+# 
+#           # Exception handler
+#           @app.exception_handler(Exception)
+#           async def global_exception_handler(request: Request, exc: Exception):
+#               logger.error("Unhandled exception",
+#                           path=request.url.path,
+#                           error=str(exc),
+#                           traceback=traceback.format_exc())
+# 
+#               return JSONResponse(
+#                   status_code=500,
+#                   content={
+#                       "error": "Internal server error",
+#                       "detail": str(exc) if os.getenv("DEBUG") else "An unexpected error occurred",
+#                       "timestamp": datetime.utcnow().isoformat() + "Z"
+#                   }
+#               )
+# 
+#           # Main application entry point
+#           if __name__ == "__main__":
+#               port = int(os.environ.get("PORT", 8000))
+#               workers = int(os.environ.get("WORKERS", 1))
+# 
+#               logger.info("Starting AIA Production API server", port=port, workers=workers)
+# 
+#               uvicorn.run(
+#                   "aia.api.main:app",
+#                   host="0.0.0.0",
+#                   port=port,
+#                   workers=1,  # Use 1 worker for container stability
+#                   log_level="info",
+#                   access_log=True,
+#                   reload=False,
+#                   loop="uvloop"
+#               )
+#           EOF
+# 
+#           echo "Starting AIA Production API v4.0.1..."
+#           cd /app
+#           exec python -m aia.api.main
+#         resources:
+#           requests:
+#             memory: "128Mi"
+#             cpu: "100m"
+#           limits:
+#             memory: "128Mi"
+#             cpu: "100m"
+#         readinessProbe:
+#           httpGet:
+#             path: /health
+#             port: 8000
+#           initialDelaySeconds: 45
+#           periodSeconds: 10
+#           timeoutSeconds: 5
+#           failureThreshold: 3
+#         livenessProbe:
+#           httpGet:
+#             path: /health
+#             port: 8000
+#           initialDelaySeconds: 60
+#           periodSeconds: 30
+#           timeoutSeconds: 10
+#           failureThreshold: 3
+#         securityContext:
+#           runAsUser: 0  # Run as root to install dependencies
+#           allowPrivilegeEscalation: true
+# 
+# ---
+# # Fixed Backend Service
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   name: aia-backend-service-fixed
+#   namespace: aia-production
+#   labels:
+#     app: aia-backend-api-fixed
+# spec:
+#   selector:
+#     app: aia-backend-api-fixed
+#   ports:
+#   - port: 8000
+#     targetPort: 8000
+#     name: http
+#   - port: 8080
+#     targetPort: 8080
+#     name: metrics
+#   type: ClusterIP
+# 
+# ---
+# # Fixed API Service (NodePort for ingress)
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   name: aia-api-service-fixed
+#   namespace: aia-production
+#   labels:
+#     app: aia-backend-api-fixed
+# spec:
+#   selector:
+#     app: aia-backend-api-fixed
+#   ports:
+#   - port: 8000
+#     targetPort: 8000
+#     nodePort: 30801
+#     name: http
+#   type: NodePort
+# 
+# ---
+# # Updated HPA for fixed backend
+# apiVersion: autoscaling/v2
+# kind: HorizontalPodAutoscaler
+# metadata:
+#   name: aia-backend-hpa-fixed
+#   namespace: aia-production
+# spec:
+#   scaleTargetRef:
+#     apiVersion: apps/v1
+#     kind: Deployment
+#     name: aia-backend-api-fixed
+#   minReplicas: 2
+#   maxReplicas: 8
+#   metrics:
+#   - type: Resource
+#     resource:
+#       name: cpu
+#       target:
+#         type: Utilization
+#         averageUtilization: 70
+#   - type: Resource
+#     resource:
+#       name: memory
+#       target:
+#         type: Utilization
+#         averageUtilization: 80
+# 
+# ---
+# # Updated ingress to use fixed service
+# apiVersion: networking.k8s.io/v1
+# kind: Ingress
+# metadata:
+#   name: aia-production-ingress-fixed
+#   namespace: aia-production
+#   annotations:
+#     kubernetes.io/ingress.global-static-ip-name: "aia-cognitive-ip"
+#     networking.gke.io/managed-certificates: "aia-ssl-cert-fixed"
+#     kubernetes.io/ingress.class: "gce"
+#     kubernetes.io/ingress.allow-http: "false"
+#     nginx.ingress.kubernetes.io/ssl-redirect: "true"
+#     nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+# spec:
+#   rules:
+#   - host: 013a.tech
+#     http:
+#       paths:
+#       - path: /
+#         pathType: Prefix
+#         backend:
+#           service:
+#             name: aia-frontend-service
+#             port:
+#               number: 80
+#   - host: api.013a.tech
+#     http:
+#       paths:
+#       - path: /
+#         pathType: Prefix
+#         backend:
+#           service:
+#             name: aia-api-service-fixed
+#             port:
+#               number: 8000
+# 
+# ---
+# # Fixed SSL Certificate
+# apiVersion: networking.gke.io/v1
+# kind: ManagedCertificate
+# metadata:
+#   name: aia-ssl-cert-fixed
+#   namespace: aia-production
+# spec:
+#   domains:
+#     - 013a.tech
+#     - api.013a.tech

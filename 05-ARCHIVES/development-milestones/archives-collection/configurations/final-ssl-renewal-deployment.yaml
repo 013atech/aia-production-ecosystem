@@ -1,0 +1,191 @@
+---
+# 🔐 CRYPTOGRAPHY AGENT: Final SSL Renewal Deployment
+# Mission: Clean SSL certificate and ingress deployment
+# Enterprise Partners: EY, JPMorgan, GCP, Apple ($25M pipeline)
+---
+apiVersion: networking.gke.io/v1
+kind: ManagedCertificate
+metadata:
+  name: aia-final-ssl-certificate
+  namespace: aia-unified-production
+  labels:
+    app: aia-system
+    component: ssl-certificate
+    version: "final"
+    cryptography-agent: "renewal-v2"
+  annotations:
+    description: "Final consolidated SSL certificate for 013a.tech and enterprise partners"
+    cryptography.aia.tech/renewal-timestamp: "2025-10-02T14:23:00Z"
+spec:
+  domains:
+  - 013a.tech
+  - www.013a.tech
+  - api.013a.tech
+  - ey.013a.tech
+  - jpmorgan.013a.tech
+  - gcp.013a.tech
+  - apple.013a.tech
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: aia-final-production-ingress
+  namespace: aia-unified-production
+  labels:
+    app: aia-system
+    component: production-ingress
+    version: "final"
+    cryptography-agent: "renewal-v2"
+  annotations:
+    # SSL Certificate
+    ingress.gcp.kubernetes.io/managed-certificates: "aia-final-ssl-certificate"
+    kubernetes.io/ingress.global-static-ip-name: "aia-production-ip"
+    kubernetes.io/ingress.allow-http: "true"
+
+    # Security (Cloud Armor)
+    cloud.google.com/armor-config: |
+      {
+        "default-rule": {
+          "evaluate-preconfigured-expr": [
+            "owasp-crs-v030001-id942110-sqli",
+            "owasp-crs-v030001-id942120-sqli",
+            "owasp-crs-v030001-id941100-xss",
+            "owasp-crs-v030001-id944240-java-attack"
+          ]
+        }
+      }
+
+    description: "Final production ingress with SSL and enterprise partner support"
+
+spec:
+  rules:
+  # Main Domain
+  - host: 013a.tech
+    http:
+      paths:
+      - path: /api
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-unified-backend-service
+            port:
+              number: 8000
+      - path: /health
+        pathType: Exact
+        backend:
+          service:
+            name: aia-unified-backend-service
+            port:
+              number: 8000
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-unified-frontend-service
+            port:
+              number: 80
+
+  # WWW Subdomain
+  - host: www.013a.tech
+    http:
+      paths:
+      - path: /api
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-unified-backend-service
+            port:
+              number: 8000
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-unified-frontend-service
+            port:
+              number: 80
+
+  # API Subdomain
+  - host: api.013a.tech
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-unified-backend-service
+            port:
+              number: 8000
+
+  # Enterprise Partners
+  - host: ey.013a.tech
+    http:
+      paths:
+      - path: /api
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-unified-backend-service
+            port:
+              number: 8000
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-unified-frontend-service
+            port:
+              number: 80
+
+  - host: jpmorgan.013a.tech
+    http:
+      paths:
+      - path: /api
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-unified-backend-service
+            port:
+              number: 8000
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-unified-frontend-service
+            port:
+              number: 80
+
+  - host: gcp.013a.tech
+    http:
+      paths:
+      - path: /api
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-unified-backend-service
+            port:
+              number: 8000
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-unified-frontend-service
+            port:
+              number: 80
+
+  - host: apple.013a.tech
+    http:
+      paths:
+      - path: /api
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-unified-backend-service
+            port:
+              number: 8000
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-unified-frontend-service
+            port:
+              number: 80

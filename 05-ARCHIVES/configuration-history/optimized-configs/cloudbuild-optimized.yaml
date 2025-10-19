@@ -1,0 +1,177 @@
+# TEMPORARILY DISABLED FOR QUOTA COMPLIANCE
+# This deployment has been temporarily disabled to meet GCP quota requirements
+# Original content below (commented out):
+#
+# options:
+#   diskSizeGb: 100
+#   logging: CLOUD_LOGGING_ONLY
+#   machineType: E2_HIGHCPU_32
+# steps:
+# - args:
+#   - build
+#   - --target
+#   - base
+#   - -t
+#   - gcr.io/${_PROJECT_ID}/aia-base:${BUILD_ID}
+#   - -f
+#   - Dockerfile.comprehensive-production
+#   - --cache-from
+#   - gcr.io/${_PROJECT_ID}/aia-base:latest
+#   - .
+#   id: build-base-images
+#   name: gcr.io/cloud-builders/docker
+# - args:
+#   - build
+#   - --target
+#   - api
+#   - -t
+#   - gcr.io/${_PROJECT_ID}/aia-api:${BUILD_ID}
+#   - -t
+#   - gcr.io/${_PROJECT_ID}/aia-api:latest
+#   - -f
+#   - Dockerfile.comprehensive-production
+#   - --cache-from
+#   - gcr.io/${_PROJECT_ID}/aia-base:${BUILD_ID}
+#   - --cache-from
+#   - gcr.io/${_PROJECT_ID}/aia-api:latest
+#   - .
+#   id: build-api
+#   name: gcr.io/cloud-builders/docker
+#   waitFor:
+#   - build-base-images
+# - args:
+#   - build
+#   - --target
+#   - frontend
+#   - -t
+#   - gcr.io/${_PROJECT_ID}/aia-frontend:${BUILD_ID}
+#   - -t
+#   - gcr.io/${_PROJECT_ID}/aia-frontend:latest
+#   - -f
+#   - Dockerfile.comprehensive-production
+#   - --cache-from
+#   - gcr.io/${_PROJECT_ID}/aia-base:${BUILD_ID}
+#   - --cache-from
+#   - gcr.io/${_PROJECT_ID}/aia-frontend:latest
+#   - .
+#   id: build-frontend
+#   name: gcr.io/cloud-builders/docker
+#   waitFor:
+#   - build-base-images
+# - args:
+#   - build
+#   - --target
+#   - mas-orchestrator
+#   - -t
+#   - gcr.io/${_PROJECT_ID}/aia-mas:${BUILD_ID}
+#   - -t
+#   - gcr.io/${_PROJECT_ID}/aia-mas:latest
+#   - -f
+#   - Dockerfile.comprehensive-production
+#   - --cache-from
+#   - gcr.io/${_PROJECT_ID}/aia-base:${BUILD_ID}
+#   - --cache-from
+#   - gcr.io/${_PROJECT_ID}/aia-mas:latest
+#   - .
+#   id: build-mas
+#   name: gcr.io/cloud-builders/docker
+#   waitFor:
+#   - build-base-images
+# - args:
+#   - container
+#   - images
+#   - scan
+#   - gcr.io/${_PROJECT_ID}/aia-api:${BUILD_ID}
+#   - --quiet
+#   id: security-scan
+#   name: gcr.io/cloud-builders/gcloud
+#   waitFor:
+#   - build-api
+# - args:
+#   - -m
+#   - pytest
+#   - aia/tests/
+#   - -v
+#   - --tb=short
+#   entrypoint: python
+#   id: unit-tests
+#   name: gcr.io/${_PROJECT_ID}/aia-base:${BUILD_ID}
+#   waitFor:
+#   - build-base-images
+# - args:
+#   - comprehensive_integration_test.py
+#   entrypoint: python
+#   id: integration-tests
+#   name: gcr.io/${_PROJECT_ID}/aia-base:${BUILD_ID}
+#   waitFor:
+#   - unit-tests
+# - args:
+#   - push
+#   - --all-tags
+#   - gcr.io/${_PROJECT_ID}/aia-api
+#   id: push-images
+#   name: gcr.io/cloud-builders/docker
+#   waitFor:
+#   - security-scan
+#   - integration-tests
+# - args:
+#   - push
+#   - --all-tags
+#   - gcr.io/${_PROJECT_ID}/aia-frontend
+#   name: gcr.io/cloud-builders/docker
+#   waitFor:
+#   - build-frontend
+# - args:
+#   - push
+#   - --all-tags
+#   - gcr.io/${_PROJECT_ID}/aia-mas
+#   name: gcr.io/cloud-builders/docker
+#   waitFor:
+#   - build-mas
+# - args:
+#   - run
+#   - --filename=k8s-deployments/
+#   - --cluster=${_CLUSTER_NAME}
+#   - --location=${_REGION}
+#   - --namespace=aia-staging
+#   - --image=gcr.io/${_PROJECT_ID}/aia-api:${BUILD_ID}
+#   - --image=gcr.io/${_PROJECT_ID}/aia-frontend:${BUILD_ID}
+#   - --image=gcr.io/${_PROJECT_ID}/aia-mas:${BUILD_ID}
+#   id: deploy-staging
+#   name: gcr.io/cloud-builders/gke-deploy
+#   waitFor:
+#   - push-images
+# - args:
+#   - wait
+#   - --for=condition=available
+#   - --timeout=300s
+#   - deployment/aia-comprehensive-api
+#   - -n
+#   - aia-staging
+#   env:
+#   - CLOUDSDK_COMPUTE_ZONE=${_REGION}
+#   - CLOUDSDK_CONTAINER_CLUSTER=${_CLUSTER_NAME}
+#   id: health-check
+#   name: gcr.io/cloud-builders/kubectl
+#   waitFor:
+#   - deploy-staging
+# - args:
+#   - run
+#   - --filename=k8s-deployments/
+#   - --cluster=${_CLUSTER_NAME}
+#   - --location=${_REGION}
+#   - --namespace=${_NAMESPACE}
+#   - --image=gcr.io/${_PROJECT_ID}/aia-api:${BUILD_ID}
+#   - --image=gcr.io/${_PROJECT_ID}/aia-frontend:${BUILD_ID}
+#   - --image=gcr.io/${_PROJECT_ID}/aia-mas:${BUILD_ID}
+#   id: deploy-production
+#   name: gcr.io/cloud-builders/gke-deploy
+#   waitFor:
+#   - health-check
+# substitutions:
+#   _CLUSTER_NAME: aia-production-cluster
+#   _NAMESPACE: aia-system
+#   _PROJECT_ID: a-467519
+#   _REGION: us-central1
+# timeout: 3600s
+# 

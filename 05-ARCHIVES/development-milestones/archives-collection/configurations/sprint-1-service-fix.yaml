@@ -1,0 +1,127 @@
+---
+# Sprint 1: Service Type Fix - Convert ClusterIP to NodePort for ingress compatibility
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-frontend-blue-service
+  namespace: aia-blue-production
+spec:
+  type: NodePort  # Changed from ClusterIP
+  selector:
+    app: aia-frontend-blue
+  ports:
+  - port: 80
+    targetPort: 80
+    protocol: TCP
+    name: http
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-main-api-blue-service
+  namespace: aia-blue-production
+spec:
+  type: NodePort  # Changed from ClusterIP
+  selector:
+    app: aia-backend-blue
+  ports:
+  - port: 8000
+    targetPort: 8000
+    protocol: TCP
+    name: http
+---
+# Updated Ingress with proper API routing on main domain
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: aia-production-ingress-fixed
+  namespace: aia-blue-production
+  annotations:
+    kubernetes.io/ingress.global-static-ip-name: "aia-production-ip"
+    networking.gke.io/managed-certificates: "aia-ssl-certificate"
+    kubernetes.io/ingress.class: "gce"
+    kubernetes.io/ingress.allow-http: "true"
+spec:
+  rules:
+  # Main domain with API routing
+  - host: 013a.tech
+    http:
+      paths:
+      # Backend API routes (highest priority)
+      - path: /api/*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-main-api-blue-service
+            port:
+              number: 8000
+      # Health and metrics
+      - path: /health
+        pathType: Exact
+        backend:
+          service:
+            name: aia-main-api-blue-service
+            port:
+              number: 8000
+      - path: /metrics
+        pathType: Exact
+        backend:
+          service:
+            name: aia-main-api-blue-service
+            port:
+              number: 8000
+      # Frontend (catch-all)
+      - path: /*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-frontend-blue-service
+            port:
+              number: 80
+  # WWW domain
+  - host: www.013a.tech
+    http:
+      paths:
+      - path: /api/*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-main-api-blue-service
+            port:
+              number: 8000
+      - path: /health
+        pathType: Exact
+        backend:
+          service:
+            name: aia-main-api-blue-service
+            port:
+              number: 8000
+      - path: /*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-frontend-blue-service
+            port:
+              number: 80
+  # API subdomain (dedicated backend)
+  - host: api.013a.tech
+    http:
+      paths:
+      - path: /*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-main-api-blue-service
+            port:
+              number: 8000
+  # App subdomain (frontend)
+  - host: app.013a.tech
+    http:
+      paths:
+      - path: /*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-frontend-blue-service
+            port:
+              number: 80

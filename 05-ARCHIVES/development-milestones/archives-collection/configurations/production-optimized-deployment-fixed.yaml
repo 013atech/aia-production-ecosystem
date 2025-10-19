@@ -1,0 +1,220 @@
+# FIXED PRODUCTION OPTIMIZED AIA DEPLOYMENT
+# Using correct container images and startup commands
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-api-optimized-fixed
+  namespace: 013a-analytics-production
+  labels:
+    app: aia-api
+    version: optimized-fixed
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: aia-api
+      version: optimized-fixed
+  template:
+    metadata:
+      labels:
+        app: aia-api
+        version: optimized-fixed
+    spec:
+      containers:
+      - name: api
+        image: gcr.io/aia-system-prod-1759055445/aia-api:latest
+        ports:
+        - containerPort: 8080
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        env:
+        - name: PORT
+          value: "8080"
+        - name: HOST
+          value: "0.0.0.0"
+        - name: WORKERS
+          value: "4"
+        command: ["python"]
+        args: ["-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080", "--workers", "1"]
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-cognitive-processor-optimized-fixed
+  namespace: 013a-analytics-production
+  labels:
+    app: aia-cognitive-processor
+    version: optimized-fixed
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: aia-cognitive-processor
+      version: optimized-fixed
+  template:
+    metadata:
+      labels:
+        app: aia-cognitive-processor
+        version: optimized-fixed
+    spec:
+      containers:
+      - name: cognitive-processor
+        image: gcr.io/aia-system-prod-1759055445/aia-cognitive-processor:cpu-optimized
+        ports:
+        - containerPort: 8080
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        env:
+        - name: ML_MODE
+          value: "cpu_inference"
+        - name: BATCH_SIZE
+          value: "32"
+        - name: THREADS
+          value: "4"
+        command: ["python"]
+        args: ["main.py"]
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 90
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 45
+          periodSeconds: 15
+
+---
+# Services for fixed deployments
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-api-optimized-fixed
+  namespace: 013a-analytics-production
+spec:
+  selector:
+    app: aia-api
+    version: optimized-fixed
+  ports:
+  - name: http
+    port: 80
+    targetPort: 8080
+    protocol: TCP
+  type: ClusterIP
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-cognitive-processor-optimized-fixed
+  namespace: 013a-analytics-production
+spec:
+  selector:
+    app: aia-cognitive-processor
+    version: optimized-fixed
+  ports:
+  - name: http
+    port: 80
+    targetPort: 8080
+    protocol: TCP
+  type: ClusterIP
+
+---
+# Updated Ingress for optimized services
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: aia-optimized-ingress
+  namespace: 013a-analytics-production
+  annotations:
+    kubernetes.io/ingress.class: "gce"
+    kubernetes.io/ingress.global-static-ip-name: "aia-production-ip"
+    networking.gke.io/managed-certificates: "aia-ssl-cert"
+    kubernetes.io/ingress.allow-http: "false"
+spec:
+  rules:
+  - host: 013a.tech
+    http:
+      paths:
+      - path: /api/*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-api-optimized-fixed
+            port:
+              number: 80
+      - path: /ws/*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-websocket-optimized
+            port:
+              number: 8090
+      - path: /cognitive/*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-cognitive-processor-optimized-fixed
+            port:
+              number: 80
+      - path: /*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-frontend-optimized
+            port:
+              number: 80
+
+---
+# Performance monitoring ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: performance-optimization-config
+  namespace: 013a-analytics-production
+data:
+  optimization-metrics.json: |
+    {
+      "target_coordination_efficiency": 0.75,
+      "current_efficiency": 0.514,
+      "optimization_strategies": [
+        "Resource consolidation: Reduced deployment count from 15+ to 4 core services",
+        "CPU optimization: Freed 8+ CPU cores by removing duplicate deployments",
+        "Memory efficiency: Optimized container resource requests/limits",
+        "Autoscaling: Implemented HPA for dynamic scaling based on actual load",
+        "Service mesh: Consolidated routing through optimized ingress"
+      ],
+      "performance_targets": {
+        "api_response_time": "<200ms p95",
+        "frontend_load_time": "<3s",
+        "websocket_latency": "<50ms",
+        "cognitive_processing": "<5s per batch"
+      }
+    }

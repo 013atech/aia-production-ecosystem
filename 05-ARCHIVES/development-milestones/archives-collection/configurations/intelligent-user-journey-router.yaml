@@ -1,0 +1,385 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: intelligent-user-journey-router
+  namespace: aia-production
+  annotations:
+    kubernetes.io/ingress.global-static-ip-name: "aia-global-ip"
+    networking.gke.io/managed-certificates: "aia-primary-ssl-cert"
+    kubernetes.io/ingress.class: "gce"
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      # Intelligent User Journey Routing for 013a.tech
+      set $target_domain "get.013a.tech";
+
+      # Enterprise Detection (User-Agent, Referrer, IP ranges)
+      if ($http_user_agent ~* "(LinkedInBot|enterprise|corporate)") {
+        set $target_domain "enterprise.013a.tech";
+      }
+
+      # Developer/Technical Detection
+      if ($http_user_agent ~* "(postman|curl|wget|api|dev)") {
+        set $target_domain "api.013a.tech";
+      }
+
+      # Industry-Specific Campaign Detection
+      if ($arg_industry = "finance") {
+        set $target_domain "finance.013a.tech";
+      }
+      if ($arg_industry = "healthcare") {
+        set $target_domain "healthcare.013a.tech";
+      }
+      if ($arg_industry = "retail") {
+        set $target_domain "retail.013a.tech";
+      }
+      if ($arg_industry = "manufacturing") {
+        set $target_domain "manufacturing.013a.tech";
+      }
+
+      # Partner Referral Detection
+      if ($arg_partner ~* "(ey|jpmorgan|google|apple)") {
+        set $target_domain "partners.013a.tech";
+      }
+
+      # Demo Request Detection
+      if ($arg_action = "demo") {
+        set $target_domain "demo.013a.tech";
+      }
+
+      # Trial Request Detection
+      if ($arg_action = "trial") {
+        set $target_domain "trial.013a.tech";
+      }
+
+      # Default: Intelligent Consumer Landing
+      return 302 https://$target_domain$request_uri;
+
+spec:
+  rules:
+  # 013a.tech - Intelligent Journey Router
+  - host: 013a.tech
+    http:
+      paths:
+      - path: /api/*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-backend-optimized-service
+            port:
+              number: 8000
+
+      - path: /health
+        pathType: Exact
+        backend:
+          service:
+            name: aia-backend-optimized-service
+            port:
+              number: 8000
+
+      - path: /*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: intelligent-landing-service
+            port:
+              number: 80
+
+  # www.013a.tech - Primary Marketing Landing
+  - host: www.013a.tech
+    http:
+      paths:
+      - path: /*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: primary-marketing-landing-service
+            port:
+              number: 80
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: intelligent-landing-service
+  namespace: aia-production
+  labels:
+    app: intelligent-landing
+    tier: frontend
+spec:
+  selector:
+    app: intelligent-landing
+  ports:
+  - name: http
+    port: 80
+    targetPort: 3000
+    protocol: TCP
+  type: ClusterIP
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: primary-marketing-landing-service
+  namespace: aia-production
+  labels:
+    app: primary-marketing-landing
+    tier: frontend
+spec:
+  selector:
+    app: primary-marketing-landing
+  ports:
+  - name: http
+    port: 80
+    targetPort: 3000
+    protocol: TCP
+  type: ClusterIP
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: intelligent-landing
+  namespace: aia-production
+  labels:
+    app: intelligent-landing
+    tier: frontend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: intelligent-landing
+  template:
+    metadata:
+      labels:
+        app: intelligent-landing
+    spec:
+      containers:
+      - name: intelligent-landing
+        image: nginx:alpine
+        ports:
+        - containerPort: 3000
+        env:
+        - name: ENVIRONMENT
+          value: "production"
+        - name: API_ENDPOINT
+          value: "https://api.013a.tech"
+        volumeMounts:
+        - name: landing-config
+          mountPath: /etc/nginx/conf.d
+        - name: landing-content
+          mountPath: /usr/share/nginx/html
+      volumes:
+      - name: landing-config
+        configMap:
+          name: intelligent-landing-config
+      - name: landing-content
+        configMap:
+          name: intelligent-landing-content
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: intelligent-landing-config
+  namespace: aia-production
+data:
+  default.conf: |
+    server {
+        listen 3000;
+        server_name 013a.tech;
+
+        location / {
+            root /usr/share/nginx/html;
+            index index.html;
+            try_files $uri $uri/ /index.html;
+
+            # Intelligent Journey Routing
+            add_header X-Journey-Router "AIA Intelligent Landing" always;
+            add_header X-Powered-By "013a Analytics" always;
+        }
+
+        location /health {
+            return 200 '{"status":"healthy","service":"intelligent-landing"}';
+            add_header Content-Type application/json;
+        }
+    }
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: intelligent-landing-content
+  namespace: aia-production
+data:
+  index.html: |
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>013a Analytics - Neural Intelligence Platform</title>
+        <style>
+            body {
+                background: #1E1E1E;
+                color: #F5F5DC;
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui;
+                margin: 0;
+                padding: 0;
+                min-height: 100vh;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+            .container {
+                text-align: center;
+                max-width: 800px;
+                padding: 40px;
+            }
+
+            .gradient-text {
+                background: linear-gradient(45deg, #00FFFF, #FFFF00);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                font-size: 3rem;
+                font-weight: 700;
+                margin-bottom: 20px;
+            }
+
+            .subtitle {
+                font-size: 1.5rem;
+                margin-bottom: 40px;
+                opacity: 0.9;
+            }
+
+            .cta-button {
+                background: linear-gradient(45deg, #00FFFF, #FFFF00);
+                border: none;
+                padding: 15px 40px;
+                border-radius: 50px;
+                color: #1E1E1E;
+                font-weight: 600;
+                font-size: 1.1rem;
+                cursor: pointer;
+                text-decoration: none;
+                display: inline-block;
+                margin: 10px;
+                transition: transform 0.3s ease;
+            }
+
+            .cta-button:hover {
+                transform: translateY(-2px);
+            }
+
+            .features {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                gap: 20px;
+                margin-top: 60px;
+            }
+
+            .feature {
+                padding: 20px;
+                border-radius: 10px;
+                background: rgba(255, 255, 255, 0.05);
+            }
+        </style>
+        <script>
+            // Intelligent Journey Router
+            function detectUserType() {
+                const userAgent = navigator.userAgent.toLowerCase();
+                const referrer = document.referrer.toLowerCase();
+                const urlParams = new URLSearchParams(window.location.search);
+
+                // Enterprise detection
+                if (userAgent.includes('linkedin') || referrer.includes('linkedin') ||
+                    urlParams.get('source') === 'enterprise') {
+                    return 'enterprise';
+                }
+
+                // Developer detection
+                if (userAgent.includes('postman') || urlParams.get('type') === 'api') {
+                    return 'developer';
+                }
+
+                // Industry-specific detection
+                const industry = urlParams.get('industry');
+                if (industry) {
+                    return industry;
+                }
+
+                // Demo request
+                if (urlParams.get('action') === 'demo') {
+                    return 'demo';
+                }
+
+                // Trial request
+                if (urlParams.get('action') === 'trial') {
+                    return 'trial';
+                }
+
+                return 'consumer';
+            }
+
+            function routeUser() {
+                const userType = detectUserType();
+                const urlParams = new URLSearchParams(window.location.search);
+
+                const routes = {
+                    'enterprise': 'https://enterprise.013a.tech',
+                    'developer': 'https://developers.013a.tech',
+                    'finance': 'https://finance.013a.tech',
+                    'healthcare': 'https://healthcare.013a.tech',
+                    'retail': 'https://retail.013a.tech',
+                    'manufacturing': 'https://manufacturing.013a.tech',
+                    'demo': 'https://demo.013a.tech',
+                    'trial': 'https://trial.013a.tech',
+                    'consumer': 'https://get.013a.tech'
+                };
+
+                // Auto-route after 3 seconds if not manually clicked
+                setTimeout(() => {
+                    if (routes[userType]) {
+                        window.location.href = routes[userType] + window.location.search;
+                    }
+                }, 3000);
+            }
+
+            window.onload = routeUser;
+        </script>
+    </head>
+    <body>
+        <div class="container">
+            <h1 class="gradient-text">013a Analytics</h1>
+            <p class="subtitle">Neural Intelligence Platform for Enterprise</p>
+
+            <div style="margin: 40px 0;">
+                <a href="https://get.013a.tech" class="cta-button">Get Started</a>
+                <a href="https://demo.013a.tech" class="cta-button">See Demo</a>
+                <a href="https://enterprise.013a.tech" class="cta-button">Enterprise</a>
+            </div>
+
+            <div class="features">
+                <div class="feature">
+                    <h3>🧠 Neural Intelligence</h3>
+                    <p>2,472 knowledge atoms with AI coordination</p>
+                </div>
+                <div class="feature">
+                    <h3>🎮 Immersive 3D</h3>
+                    <p>WebXR analytics with physics-based interactions</p>
+                </div>
+                <div class="feature">
+                    <h3>🏢 Enterprise Ready</h3>
+                    <p>Fortune 500 trusted with quantum security</p>
+                </div>
+                <div class="feature">
+                    <h3>🌐 Global Scale</h3>
+                    <p>45 domains covering $46T market opportunity</p>
+                </div>
+            </div>
+
+            <p style="margin-top: 40px; opacity: 0.7; font-size: 0.9rem;">
+                Redirecting to optimal experience in 3 seconds...
+            </p>
+        </div>
+    </body>
+    </html>

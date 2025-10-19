@@ -1,0 +1,57 @@
+# Working Production Ingress for 013a Analytics
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: aia-working-ingress
+  namespace: aia-ultimate-production
+  annotations:
+    kubernetes.io/ingress.class: "gce"
+    kubernetes.io/ingress.global-static-ip-name: "aia-ultimate-ip"
+    networking.gke.io/managed-certificates: "aia-ultimate-ssl-cert"
+    kubernetes.io/ingress.allow-http: "false"
+spec:
+  rules:
+  - host: 013a.tech
+    http:
+      paths:
+      - path: /api
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-ultimate-backend-service
+            port:
+              number: 8000
+      - path: /orchestration
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-ultimate-orchestrator-service
+            port:
+              number: 9000
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-ultimate-frontend-service
+            port:
+              number: 80
+  - host: api.013a.tech
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-ultimate-backend-service
+            port:
+              number: 8000
+  - host: app.013a.tech
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-ultimate-frontend-service
+            port:
+              number: 80

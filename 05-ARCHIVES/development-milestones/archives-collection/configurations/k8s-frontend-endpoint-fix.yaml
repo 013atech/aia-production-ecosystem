@@ -1,0 +1,31 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-frontend-service
+  namespace: aia-working-production
+  labels:
+    app: aia-frontend
+    service: frontend
+spec:
+  type: ClusterIP
+  ports:
+  - name: http
+    protocol: TCP
+    port: 80
+    targetPort: 80
+  # No selector - we'll create manual endpoints
+---
+apiVersion: v1
+kind: Endpoints
+metadata:
+  name: aia-frontend-service
+  namespace: aia-working-production
+subsets:
+- addresses:
+  - ip: 10.28.0.57  # From working frontend pods in aia-comprehensive-platform
+  - ip: 10.28.3.223
+  - ip: 10.28.4.2
+  ports:
+  - name: http
+    port: 80
+    protocol: TCP

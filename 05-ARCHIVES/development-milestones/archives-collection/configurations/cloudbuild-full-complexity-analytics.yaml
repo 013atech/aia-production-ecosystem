@@ -1,0 +1,500 @@
+# TEMPORARILY DISABLED FOR QUOTA COMPLIANCE
+# This deployment has been temporarily disabled to meet GCP quota requirements
+# Original content below (commented out):
+#
+# # Cloud Build Configuration for Full-Complexity 013a Analytics System
+# # GCP Deployment Orchestrator - No Simplifications, All Features
+# ---
+# steps:
+# # Step 1: Build Backend API with all components
+# - name: 'gcr.io/cloud-builders/docker'
+#   id: 'build-backend'
+#   args:
+#   - 'build'
+#   - '-t'
+#   - 'gcr.io/$PROJECT_ID/aia-backend:latest'
+#   - '-t'
+#   - 'gcr.io/$PROJECT_ID/aia-backend:$BUILD_ID'
+#   - '-f'
+#   - 'aia/Dockerfile'
+#   - '.'
+#   env:
+#   - 'DOCKER_BUILDKIT=1'
+# 
+# # Step 2: Build Frontend with all 3D/WebXR features
+# - name: 'gcr.io/cloud-builders/docker'
+#   id: 'build-frontend'
+#   args:
+#   - 'build'
+#   - '-t'
+#   - 'gcr.io/$PROJECT_ID/aia-frontend:latest'
+#   - '-t'
+#   - 'gcr.io/$PROJECT_ID/aia-frontend:$BUILD_ID'
+#   - '-f'
+#   - 'frontend/Dockerfile'
+#   - '--build-arg'
+#   - 'REACT_APP_ENABLE_3D=true'
+#   - '--build-arg'
+#   - 'REACT_APP_ENABLE_WEBXR=true'
+#   - '--build-arg'
+#   - 'REACT_APP_ENABLE_IMMERSIVE_ANALYTICS=true'
+#   - '--build-arg'
+#   - 'REACT_APP_API_BASE_URL=https://013a.tech/api'
+#   - 'frontend'
+#   env:
+#   - 'DOCKER_BUILDKIT=1'
+# 
+# # Step 3: Build ML Engine with GPU support
+# - name: 'gcr.io/cloud-builders/docker'
+#   id: 'build-ml-engine'
+#   args:
+#   - 'build'
+#   - '-t'
+#   - 'gcr.io/$PROJECT_ID/aia-ml-engine:latest'
+#   - '-t'
+#   - 'gcr.io/$PROJECT_ID/aia-ml-engine:$BUILD_ID'
+#   - '-f'
+#   - 'Dockerfile.ml-engine'
+#   - '.'
+#   env:
+#   - 'DOCKER_BUILDKIT=1'
+# 
+# # Step 4: Build WebSocket Server
+# - name: 'gcr.io/cloud-builders/docker'
+#   id: 'build-websocket'
+#   args:
+#   - 'build'
+#   - '-t'
+#   - 'gcr.io/$PROJECT_ID/aia-websocket:latest'
+#   - '-t'
+#   - 'gcr.io/$PROJECT_ID/aia-websocket:$BUILD_ID'
+#   - '-f'
+#   - 'Dockerfile.websocket'
+#   - '.'
+#   env:
+#   - 'DOCKER_BUILDKIT=1'
+# 
+# # Step 5: Build Data Processor
+# - name: 'gcr.io/cloud-builders/docker'
+#   id: 'build-data-processor'
+#   args:
+#   - 'build'
+#   - '-t'
+#   - 'gcr.io/$PROJECT_ID/aia-data-processor:latest'
+#   - '-t'
+#   - 'gcr.io/$PROJECT_ID/aia-data-processor:$BUILD_ID'
+#   - '-f'
+#   - 'Dockerfile.data-processor'
+#   - '.'
+#   env:
+#   - 'DOCKER_BUILDKIT=1'
+# 
+# # Step 6: Build Business Intelligence Engine
+# - name: 'gcr.io/cloud-builders/docker'
+#   id: 'build-business-intelligence'
+#   args:
+#   - 'build'
+#   - '-t'
+#   - 'gcr.io/$PROJECT_ID/aia-business-intelligence:latest'
+#   - '-t'
+#   - 'gcr.io/$PROJECT_ID/aia-business-intelligence:$BUILD_ID'
+#   - '-f'
+#   - 'Dockerfile.business-intelligence'
+#   - '.'
+#   env:
+#   - 'DOCKER_BUILDKIT=1'
+# 
+# # Step 7: Build Revenue Intelligence System
+# - name: 'gcr.io/cloud-builders/docker'
+#   id: 'build-revenue-intelligence'
+#   args:
+#   - 'build'
+#   - '-t'
+#   - 'gcr.io/$PROJECT_ID/aia-revenue-intelligence:latest'
+#   - '-t'
+#   - 'gcr.io/$PROJECT_ID/aia-revenue-intelligence:$BUILD_ID'
+#   - '-f'
+#   - 'Dockerfile.revenue-intelligence'
+#   - '.'
+#   env:
+#   - 'DOCKER_BUILDKIT=1'
+# 
+# # Step 8: Build Payment Processor
+# - name: 'gcr.io/cloud-builders/docker'
+#   id: 'build-payment-processor'
+#   args:
+#   - 'build'
+#   - '-t'
+#   - 'gcr.io/$PROJECT_ID/aia-payment-processor:latest'
+#   - '-t'
+#   - 'gcr.io/$PROJECT_ID/aia-payment-processor:$BUILD_ID'
+#   - '-f'
+#   - 'Dockerfile.payment-processor'
+#   - '.'
+#   env:
+#   - 'DOCKER_BUILDKIT=1'
+# 
+# # Step 9: Build Enterprise Partners System
+# - name: 'gcr.io/cloud-builders/docker'
+#   id: 'build-enterprise-partners'
+#   args:
+#   - 'build'
+#   - '-t'
+#   - 'gcr.io/$PROJECT_ID/aia-enterprise-partners:latest'
+#   - '-t'
+#   - 'gcr.io/$PROJECT_ID/aia-enterprise-partners:$BUILD_ID'
+#   - '-f'
+#   - 'Dockerfile.enterprise-partners'
+#   - '.'
+#   env:
+#   - 'DOCKER_BUILDKIT=1'
+# 
+# # Step 10: Push all images to Container Registry
+# - name: 'gcr.io/cloud-builders/docker'
+#   id: 'push-images'
+#   args:
+#   - 'push'
+#   - '--all-tags'
+#   - 'gcr.io/$PROJECT_ID/aia-backend'
+#   waitFor: ['build-backend']
+# 
+# - name: 'gcr.io/cloud-builders/docker'
+#   args:
+#   - 'push'
+#   - '--all-tags'
+#   - 'gcr.io/$PROJECT_ID/aia-frontend'
+#   waitFor: ['build-frontend']
+# 
+# - name: 'gcr.io/cloud-builders/docker'
+#   args:
+#   - 'push'
+#   - '--all-tags'
+#   - 'gcr.io/$PROJECT_ID/aia-ml-engine'
+#   waitFor: ['build-ml-engine']
+# 
+# - name: 'gcr.io/cloud-builders/docker'
+#   args:
+#   - 'push'
+#   - '--all-tags'
+#   - 'gcr.io/$PROJECT_ID/aia-websocket'
+#   waitFor: ['build-websocket']
+# 
+# - name: 'gcr.io/cloud-builders/docker'
+#   args:
+#   - 'push'
+#   - '--all-tags'
+#   - 'gcr.io/$PROJECT_ID/aia-data-processor'
+#   waitFor: ['build-data-processor']
+# 
+# - name: 'gcr.io/cloud-builders/docker'
+#   args:
+#   - 'push'
+#   - '--all-tags'
+#   - 'gcr.io/$PROJECT_ID/aia-business-intelligence'
+#   waitFor: ['build-business-intelligence']
+# 
+# - name: 'gcr.io/cloud-builders/docker'
+#   args:
+#   - 'push'
+#   - '--all-tags'
+#   - 'gcr.io/$PROJECT_ID/aia-revenue-intelligence'
+#   waitFor: ['build-revenue-intelligence']
+# 
+# - name: 'gcr.io/cloud-builders/docker'
+#   args:
+#   - 'push'
+#   - '--all-tags'
+#   - 'gcr.io/$PROJECT_ID/aia-payment-processor'
+#   waitFor: ['build-payment-processor']
+# 
+# - name: 'gcr.io/cloud-builders/docker'
+#   args:
+#   - 'push'
+#   - '--all-tags'
+#   - 'gcr.io/$PROJECT_ID/aia-enterprise-partners'
+#   waitFor: ['build-enterprise-partners']
+# 
+# # Step 11: Deploy to GKE with optimized resource allocation
+# - name: 'gcr.io/cloud-builders/gke-deploy'
+#   id: 'deploy-to-gke'
+#   args:
+#   - 'run'
+#   - '--filename=full-complexity-013a-analytics-deployment.yaml'
+#   - '--cluster=aia-production-optimal'
+#   - '--location=europe-west4'
+#   - '--namespace=013a-analytics-production'
+#   - '--timeout=1800s'
+#   env:
+#   - 'CLOUDSDK_COMPUTE_ZONE=europe-west4'
+#   - 'CLOUDSDK_CONTAINER_CLUSTER=aia-production-optimal'
+#   waitFor: ['push-images']
+# 
+# # Step 12: Apply knowledge graph configuration
+# - name: 'gcr.io/cloud-builders/kubectl'
+#   id: 'apply-knowledge-graph'
+#   args:
+#   - 'apply'
+#   - '-f'
+#   - 'knowledge-graph-configmap.yaml'
+#   env:
+#   - 'CLOUDSDK_COMPUTE_ZONE=europe-west4'
+#   - 'CLOUDSDK_CONTAINER_CLUSTER=aia-production-optimal'
+#   waitFor: ['deploy-to-gke']
+# 
+# # Step 13: Scale up GKE cluster for full complexity
+# - name: 'gcr.io/cloud-builders/gcloud'
+#   id: 'scale-cluster'
+#   args:
+#   - 'container'
+#   - 'clusters'
+#   - 'resize'
+#   - 'aia-production-optimal'
+#   - '--num-nodes=6'
+#   - '--zone=europe-west4'
+#   - '--quiet'
+#   waitFor: ['deploy-to-gke']
+# 
+# # Step 14: Create Cloud SQL database if not exists
+# - name: 'gcr.io/cloud-builders/gcloud'
+#   id: 'setup-cloud-sql'
+#   entrypoint: 'bash'
+#   args:
+#   - '-c'
+#   - |
+#     set -e
+#     echo "Setting up Cloud SQL for full-complexity deployment..."
+# 
+#     # Check if instance exists
+#     if ! gcloud sql instances describe aia-analytics-db --quiet 2>/dev/null; then
+#       echo "Creating Cloud SQL instance..."
+#       gcloud sql instances create aia-analytics-db \
+#         --database-version=POSTGRES_15 \
+#         --tier=db-custom-4-16384 \
+#         --region=europe-west4 \
+#         --storage-size=500GB \
+#         --storage-type=SSD \
+#         --storage-auto-increase \
+#         --backup-start-time=03:00 \
+#         --maintenance-window-day=SUN \
+#         --maintenance-window-hour=04 \
+#         --enable-bin-log \
+#         --deletion-protection
+# 
+#       echo "Creating database..."
+#       gcloud sql databases create analytics_production \
+#         --instance=aia-analytics-db
+# 
+#       echo "Creating database user..."
+#       gcloud sql users create analytics_user \
+#         --instance=aia-analytics-db \
+#         --password=$(openssl rand -base64 32)
+#     else
+#       echo "Cloud SQL instance already exists"
+#     fi
+#   waitFor: ['deploy-to-gke']
+# 
+# # Step 15: Setup Cloud Storage buckets for data storage
+# - name: 'gcr.io/cloud-builders/gcloud'
+#   id: 'setup-storage'
+#   entrypoint: 'bash'
+#   args:
+#   - '-c'
+#   - |
+#     set -e
+#     echo "Setting up Cloud Storage buckets..."
+# 
+#     # Analytics data bucket
+#     gsutil mb -p $PROJECT_ID -c STANDARD -l europe-west4 gs://$PROJECT_ID-analytics-data || echo "Bucket already exists"
+#     gsutil lifecycle set lifecycle-config.json gs://$PROJECT_ID-analytics-data || echo "Lifecycle policy not set"
+# 
+#     # ML models bucket
+#     gsutil mb -p $PROJECT_ID -c STANDARD -l europe-west4 gs://$PROJECT_ID-ml-models || echo "Bucket already exists"
+# 
+#     # Backup bucket
+#     gsutil mb -p $PROJECT_ID -c NEARLINE -l europe-west4 gs://$PROJECT_ID-backups || echo "Bucket already exists"
+# 
+#     echo "Storage buckets configured"
+#   waitFor: ['deploy-to-gke']
+# 
+# # Step 16: Setup BigQuery dataset for analytics
+# - name: 'gcr.io/cloud-builders/gcloud'
+#   id: 'setup-bigquery'
+#   entrypoint: 'bash'
+#   args:
+#   - '-c'
+#   - |
+#     set -e
+#     echo "Setting up BigQuery dataset..."
+# 
+#     # Create analytics dataset
+#     bq mk --location=europe-west4 --dataset $PROJECT_ID:analytics_data || echo "Dataset already exists"
+# 
+#     # Create tables for business intelligence
+#     bq mk --table $PROJECT_ID:analytics_data.user_events \
+#       user_id:STRING,event_type:STRING,timestamp:TIMESTAMP,properties:JSON || echo "Table exists"
+# 
+#     bq mk --table $PROJECT_ID:analytics_data.revenue_metrics \
+#       date:DATE,mrr:NUMERIC,customers:INTEGER,churn_rate:FLOAT || echo "Table exists"
+# 
+#     echo "BigQuery setup complete"
+#   waitFor: ['deploy-to-gke']
+# 
+# # Step 17: Configure monitoring and alerting
+# - name: 'gcr.io/cloud-builders/gcloud'
+#   id: 'setup-monitoring'
+#   entrypoint: 'bash'
+#   args:
+#   - '-c'
+#   - |
+#     set -e
+#     echo "Setting up Cloud Monitoring..."
+# 
+#     # Create notification channels
+#     gcloud alpha monitoring channels create \
+#       --display-name="013a-analytics-alerts" \
+#       --type="email" \
+#       --channel-labels="email_address=alerts@013a.tech" || echo "Channel exists"
+# 
+#     # Create uptime checks
+#     gcloud monitoring uptime create \
+#       --display-name="013a-analytics-frontend" \
+#       --hostname="013a.tech" \
+#       --path="/" \
+#       --period="60s" || echo "Uptime check exists"
+# 
+#     gcloud monitoring uptime create \
+#       --display-name="013a-analytics-api" \
+#       --hostname="013a.tech" \
+#       --path="/api/health" \
+#       --period="60s" || echo "Uptime check exists"
+# 
+#     echo "Monitoring configured"
+#   waitFor: ['deploy-to-gke']
+# 
+# # Step 18: Run comprehensive deployment validation
+# - name: 'gcr.io/cloud-builders/kubectl'
+#   id: 'validate-deployment'
+#   entrypoint: 'bash'
+#   args:
+#   - '-c'
+#   - |
+#     set -e
+#     echo "Validating full-complexity deployment..."
+# 
+#     # Wait for all deployments to be ready
+#     echo "Waiting for deployments..."
+#     kubectl wait --for=condition=available --timeout=900s deployment/analytics-backend -n 013a-analytics-production
+#     kubectl wait --for=condition=available --timeout=900s deployment/analytics-frontend -n 013a-analytics-production
+#     kubectl wait --for=condition=available --timeout=900s deployment/analytics-ml-engine -n 013a-analytics-production
+#     kubectl wait --for=condition=available --timeout=900s deployment/analytics-business-intelligence -n 013a-analytics-production
+#     kubectl wait --for=condition=available --timeout=900s deployment/analytics-revenue-intelligence -n 013a-analytics-production
+#     kubectl wait --for=condition=available --timeout=900s deployment/analytics-payment-processor -n 013a-analytics-production
+#     kubectl wait --for=condition=available --timeout=900s deployment/analytics-enterprise-partners -n 013a-analytics-production
+# 
+#     # Check pod status
+#     echo "Checking pod status..."
+#     kubectl get pods -n 013a-analytics-production -o wide
+# 
+#     # Verify services are running
+#     echo "Verifying services..."
+#     kubectl get services -n 013a-analytics-production
+# 
+#     # Check ingress status
+#     echo "Checking ingress..."
+#     kubectl get ingress -n 013a-analytics-production
+# 
+#     # Test API endpoints
+#     echo "Testing API endpoints..."
+#     kubectl exec -n 013a-analytics-production deployment/analytics-backend -- curl -f http://localhost:8000/health || echo "Health check pending"
+# 
+#     echo "Deployment validation complete"
+#   env:
+#   - 'CLOUDSDK_COMPUTE_ZONE=europe-west4'
+#   - 'CLOUDSDK_CONTAINER_CLUSTER=aia-production-optimal'
+#   waitFor: ['setup-monitoring']
+# 
+# # Step 19: Generate deployment report
+# - name: 'gcr.io/cloud-builders/gcloud'
+#   id: 'generate-report'
+#   entrypoint: 'bash'
+#   args:
+#   - '-c'
+#   - |
+#     set -e
+#     echo "Generating deployment report..."
+# 
+#     cat > deployment_report.json << EOF
+#     {
+#       "deployment_id": "$BUILD_ID",
+#       "deployment_time": "$(date -Iseconds)",
+#       "project_id": "$PROJECT_ID",
+#       "cluster": "aia-production-optimal",
+#       "region": "europe-west4",
+#       "components": {
+#         "backend": "gcr.io/$PROJECT_ID/aia-backend:$BUILD_ID",
+#         "frontend": "gcr.io/$PROJECT_ID/aia-frontend:$BUILD_ID",
+#         "ml_engine": "gcr.io/$PROJECT_ID/aia-ml-engine:$BUILD_ID",
+#         "websocket": "gcr.io/$PROJECT_ID/aia-websocket:$BUILD_ID",
+#         "data_processor": "gcr.io/$PROJECT_ID/aia-data-processor:$BUILD_ID",
+#         "business_intelligence": "gcr.io/$PROJECT_ID/aia-business-intelligence:$BUILD_ID",
+#         "revenue_intelligence": "gcr.io/$PROJECT_ID/aia-revenue-intelligence:$BUILD_ID",
+#         "payment_processor": "gcr.io/$PROJECT_ID/aia-payment-processor:$BUILD_ID",
+#         "enterprise_partners": "gcr.io/$PROJECT_ID/aia-enterprise-partners:$BUILD_ID"
+#       },
+#       "infrastructure": {
+#         "cloud_sql": "aia-analytics-db",
+#         "storage_buckets": [
+#           "$PROJECT_ID-analytics-data",
+#           "$PROJECT_ID-ml-models",
+#           "$PROJECT_ID-backups"
+#         ],
+#         "bigquery_dataset": "analytics_data"
+#       },
+#       "urls": {
+#         "frontend": "https://013a.tech",
+#         "api": "https://013a.tech/api",
+#         "monitoring": "https://013a.tech/monitoring"
+#       },
+#       "status": "DEPLOYED"
+#     }
+#     EOF
+# 
+#     echo "Deployment report generated"
+#     cat deployment_report.json
+# 
+#     # Upload report to Cloud Storage
+#     gsutil cp deployment_report.json gs://$PROJECT_ID-analytics-data/deployments/$BUILD_ID/
+#   waitFor: ['validate-deployment']
+# 
+# # Machine type configuration for high-performance builds
+# options:
+#   machineType: 'E2_HIGHCPU_32'
+#   diskSizeGb: 100
+#   dynamic_substitutions: true
+#   logging: CLOUD_LOGGING_ONLY
+# 
+# # Timeout for complete deployment
+# timeout: '3600s'
+# 
+# # Substitutions for flexible deployment
+# substitutions:
+#   _CLUSTER_NAME: 'aia-production-optimal'
+#   _CLUSTER_ZONE: 'europe-west4'
+#   _NAMESPACE: '013a-analytics-production'
+#   _DOMAIN: '013a.tech'
+# 
+# # Tags for build identification
+# tags:
+#   - 'full-complexity'
+#   - '013a-analytics'
+#   - 'production'
+#   - 'gcp-deployment-orchestrator'
+# 
+# # Artifacts to store
+# artifacts:
+#   objects:
+#     location: 'gs://$PROJECT_ID-analytics-data/build-artifacts/$BUILD_ID/'
+#     paths:
+#       - 'deployment_report.json'
+#       - 'full-complexity-013a-analytics-deployment.yaml'
+#       - 'knowledge-graph-configmap.yaml'

@@ -1,0 +1,1258 @@
+# AIA MLOps Grafana Dashboards Configuration
+# ==========================================
+# Comprehensive dashboard configurations for different stakeholder views
+# Executive, Technical, Operations, and Business Intelligence dashboards
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-mlops-dashboards
+  namespace: aia-mlops-monitoring
+data:
+  # Executive Dashboard - High-level business metrics and ROI
+  executive-dashboard.json: |
+    {
+      "dashboard": {
+        "id": null,
+        "title": "AIA MLOps Executive Dashboard",
+        "tags": ["mlops", "executive", "business"],
+        "timezone": "browser",
+        "refresh": "5m",
+        "time": {
+          "from": "now-24h",
+          "to": "now"
+        },
+        "panels": [
+          {
+            "id": 1,
+            "title": "Business Performance Overview",
+            "type": "stat",
+            "gridPos": {"h": 8, "w": 24, "x": 0, "y": 0},
+            "targets": [
+              {
+                "expr": "executive:roi_score",
+                "refId": "A",
+                "legendFormat": "ROI %"
+              },
+              {
+                "expr": "business:revenue_per_minute * 1440 * 30",
+                "refId": "B",
+                "legendFormat": "Monthly Revenue"
+              },
+              {
+                "expr": "executive:efficiency_score * 100",
+                "refId": "C",
+                "legendFormat": "Efficiency Score %"
+              },
+              {
+                "expr": "avg(stakeholder_satisfaction_score{stakeholder_type=\"executive\"})",
+                "refId": "D",
+                "legendFormat": "Executive Satisfaction"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "mappings": [],
+                "thresholds": {
+                  "steps": [
+                    {"color": "red", "value": 0},
+                    {"color": "yellow", "value": 50},
+                    {"color": "green", "value": 80}
+                  ]
+                },
+                "color": {"mode": "thresholds"},
+                "unit": "percent"
+              }
+            }
+          },
+          {
+            "id": 2,
+            "title": "Revenue Impact from ML Operations",
+            "type": "timeseries",
+            "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
+            "targets": [
+              {
+                "expr": "business:revenue_per_minute",
+                "refId": "A",
+                "legendFormat": "Revenue per Minute"
+              },
+              {
+                "expr": "rate(ml_platform_costs_total[5m])",
+                "refId": "B",
+                "legendFormat": "Platform Costs per Minute"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "color": {"mode": "palette-classic"},
+                "unit": "currencyUSD"
+              }
+            }
+          },
+          {
+            "id": 3,
+            "title": "System Health & Reliability",
+            "type": "gauge",
+            "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
+            "targets": [
+              {
+                "expr": "avg(up{job=~\"aia-.*\"})",
+                "refId": "A",
+                "legendFormat": "System Uptime"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "thresholds": {
+                  "steps": [
+                    {"color": "red", "value": 0},
+                    {"color": "yellow", "value": 0.95},
+                    {"color": "green", "value": 0.99}
+                  ]
+                },
+                "min": 0,
+                "max": 1,
+                "unit": "percentunit"
+              }
+            }
+          },
+          {
+            "id": 4,
+            "title": "Business Impact Alerts",
+            "type": "table",
+            "gridPos": {"h": 8, "w": 24, "x": 0, "y": 16},
+            "targets": [
+              {
+                "expr": "ALERTS{business_impact=\"critical\"}",
+                "refId": "A"
+              }
+            ],
+            "transformations": [
+              {
+                "id": "organize",
+                "options": {
+                  "excludeByName": {},
+                  "indexByName": {},
+                  "renameByName": {
+                    "alertname": "Alert",
+                    "revenue_impact": "Revenue Impact",
+                    "business_impact": "Business Impact"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "id": 5,
+            "title": "Stakeholder Satisfaction Trends",
+            "type": "timeseries",
+            "gridPos": {"h": 8, "w": 24, "x": 0, "y": 24},
+            "targets": [
+              {
+                "expr": "stakeholder_satisfaction_score{stakeholder_type=\"executive\"}",
+                "refId": "A",
+                "legendFormat": "Executive Satisfaction"
+              },
+              {
+                "expr": "stakeholder_satisfaction_score{stakeholder_type=\"business\"}",
+                "refId": "B",
+                "legendFormat": "Business Stakeholder Satisfaction"
+              },
+              {
+                "expr": "avg(stakeholder_satisfaction_score)",
+                "refId": "C",
+                "legendFormat": "Overall Satisfaction"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "thresholds": {
+                  "steps": [
+                    {"color": "red", "value": 0},
+                    {"color": "yellow", "value": 0.7},
+                    {"color": "green", "value": 0.8}
+                  ]
+                },
+                "min": 0,
+                "max": 1,
+                "unit": "percentunit"
+              }
+            }
+          }
+        ],
+        "templating": {
+          "list": [
+            {
+              "name": "time_range",
+              "type": "interval",
+              "query": "1h,6h,12h,24h,7d,30d",
+              "current": {"text": "24h", "value": "24h"}
+            }
+          ]
+        }
+      }
+    }
+
+  # Technical Dashboard - Model performance and system metrics
+  technical-dashboard.json: |
+    {
+      "dashboard": {
+        "id": null,
+        "title": "AIA MLOps Technical Dashboard",
+        "tags": ["mlops", "technical", "engineering"],
+        "timezone": "browser",
+        "refresh": "30s",
+        "time": {
+          "from": "now-1h",
+          "to": "now"
+        },
+        "panels": [
+          {
+            "id": 1,
+            "title": "Model Performance Metrics",
+            "type": "timeseries",
+            "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+            "targets": [
+              {
+                "expr": "model:accuracy:avg5m",
+                "refId": "A",
+                "legendFormat": "Model Accuracy - {{model_name}}"
+              },
+              {
+                "expr": "model:response_time:p95_5m",
+                "refId": "B",
+                "legendFormat": "Response Time P95 - {{model_name}}"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "color": {"mode": "palette-classic"},
+                "thresholds": {
+                  "steps": [
+                    {"color": "red", "value": 0},
+                    {"color": "yellow", "value": 0.8},
+                    {"color": "green", "value": 0.9}
+                  ]
+                }
+              },
+              "overrides": [
+                {
+                  "matcher": {"id": "byRegexp", "options": "Response Time.*"},
+                  "properties": [
+                    {"id": "unit", "value": "s"},
+                    {"id": "custom.axisPlacement", "value": "right"}
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "id": 2,
+            "title": "Model Drift Detection",
+            "type": "timeseries",
+            "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+            "targets": [
+              {
+                "expr": "model_drift_score",
+                "refId": "A",
+                "legendFormat": "Drift Score - {{model_name}}"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "thresholds": {
+                  "steps": [
+                    {"color": "green", "value": 0},
+                    {"color": "yellow", "value": 0.1},
+                    {"color": "red", "value": 0.2}
+                  ]
+                },
+                "max": 0.5
+              }
+            }
+          },
+          {
+            "id": 3,
+            "title": "ML Pipeline Status",
+            "type": "stat",
+            "gridPos": {"h": 6, "w": 24, "x": 0, "y": 8},
+            "targets": [
+              {
+                "expr": "pipeline:success_rate:5m",
+                "refId": "A",
+                "legendFormat": "Success Rate - {{pipeline_name}}"
+              },
+              {
+                "expr": "pipeline:duration:avg5m",
+                "refId": "B",
+                "legendFormat": "Avg Duration - {{pipeline_name}}"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "thresholds": {
+                  "steps": [
+                    {"color": "red", "value": 0},
+                    {"color": "yellow", "value": 0.9},
+                    {"color": "green", "value": 0.95}
+                  ]
+                }
+              },
+              "overrides": [
+                {
+                  "matcher": {"id": "byRegexp", "options": "Avg Duration.*"},
+                  "properties": [{"id": "unit", "value": "s"}]
+                }
+              ]
+            }
+          },
+          {
+            "id": 4,
+            "title": "System Resource Utilization",
+            "type": "timeseries",
+            "gridPos": {"h": 8, "w": 12, "x": 0, "y": 14},
+            "targets": [
+              {
+                "expr": "nvidia_gpu_utilization_percent",
+                "refId": "A",
+                "legendFormat": "GPU Utilization - {{gpu_name}}"
+              },
+              {
+                "expr": "nvidia_gpu_memory_usage_percent",
+                "refId": "B",
+                "legendFormat": "GPU Memory - {{gpu_name}}"
+              },
+              {
+                "expr": "rate(container_cpu_usage_seconds_total{container=~\".*model.*\"}[5m]) * 100",
+                "refId": "C",
+                "legendFormat": "CPU Usage - {{container}}"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "unit": "percent",
+                "thresholds": {
+                  "steps": [
+                    {"color": "green", "value": 0},
+                    {"color": "yellow", "value": 70},
+                    {"color": "red", "value": 90}
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "id": 5,
+            "title": "Error Rates and Alerts",
+            "type": "timeseries",
+            "gridPos": {"h": 8, "w": 12, "x": 12, "y": 14},
+            "targets": [
+              {
+                "expr": "rate(model_errors_total[5m])",
+                "refId": "A",
+                "legendFormat": "Model Errors - {{model_name}}"
+              },
+              {
+                "expr": "rate(pipeline_execution_failures_total[5m])",
+                "refId": "B",
+                "legendFormat": "Pipeline Failures - {{pipeline_name}}"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "unit": "reqps",
+                "color": {"mode": "palette-classic"}
+              }
+            }
+          },
+          {
+            "id": 6,
+            "title": "Active Technical Alerts",
+            "type": "logs",
+            "gridPos": {"h": 8, "w": 24, "x": 0, "y": 22},
+            "targets": [
+              {
+                "expr": "ALERTS{category=~\"model_performance|pipeline_health|model_drift\"}",
+                "refId": "A"
+              }
+            ]
+          }
+        ],
+        "templating": {
+          "list": [
+            {
+              "name": "model",
+              "type": "query",
+              "query": "label_values(model_accuracy, model_name)",
+              "refresh": 1,
+              "includeAll": true
+            },
+            {
+              "name": "pipeline",
+              "type": "query",
+              "query": "label_values(pipeline_execution_duration_seconds, pipeline_name)",
+              "refresh": 1,
+              "includeAll": true
+            }
+          ]
+        }
+      }
+    }
+
+  # Operations Dashboard - Infrastructure and automation metrics
+  operations-dashboard.json: |
+    {
+      "dashboard": {
+        "id": null,
+        "title": "AIA MLOps Operations Dashboard",
+        "tags": ["mlops", "operations", "infrastructure"],
+        "timezone": "browser",
+        "refresh": "1m",
+        "time": {
+          "from": "now-1h",
+          "to": "now"
+        },
+        "panels": [
+          {
+            "id": 1,
+            "title": "Infrastructure Health Overview",
+            "type": "stat",
+            "gridPos": {"h": 6, "w": 24, "x": 0, "y": 0},
+            "targets": [
+              {
+                "expr": "up{job=\"kubernetes-nodes\"}",
+                "refId": "A",
+                "legendFormat": "Nodes Online"
+              },
+              {
+                "expr": "up{job=\"aia-mlops-backend\"}",
+                "refId": "B",
+                "legendFormat": "Backend Services"
+              },
+              {
+                "expr": "up{job=\"ml-model-endpoints\"}",
+                "refId": "C",
+                "legendFormat": "Model Endpoints"
+              },
+              {
+                "expr": "operations:automation_success_rate",
+                "refId": "D",
+                "legendFormat": "Automation Success Rate"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "thresholds": {
+                  "steps": [
+                    {"color": "red", "value": 0},
+                    {"color": "yellow", "value": 0.8},
+                    {"color": "green", "value": 0.95}
+                  ]
+                },
+                "unit": "short"
+              },
+              "overrides": [
+                {
+                  "matcher": {"id": "byRegexp", "options": ".*Success Rate"},
+                  "properties": [{"id": "unit", "value": "percentunit"}]
+                }
+              ]
+            }
+          },
+          {
+            "id": 2,
+            "title": "Resource Utilization",
+            "type": "timeseries",
+            "gridPos": {"h": 8, "w": 12, "x": 0, "y": 6},
+            "targets": [
+              {
+                "expr": "100 - (avg by (instance) (irate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)",
+                "refId": "A",
+                "legendFormat": "CPU Usage - {{instance}}"
+              },
+              {
+                "expr": "(1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100",
+                "refId": "B",
+                "legendFormat": "Memory Usage - {{instance}}"
+              },
+              {
+                "expr": "100 - ((node_filesystem_avail_bytes{mountpoint=\"/\"} * 100) / node_filesystem_size_bytes{mountpoint=\"/\"})",
+                "refId": "C",
+                "legendFormat": "Disk Usage - {{instance}}"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "unit": "percent",
+                "thresholds": {
+                  "steps": [
+                    {"color": "green", "value": 0},
+                    {"color": "yellow", "value": 70},
+                    {"color": "red", "value": 90}
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "id": 3,
+            "title": "Container Orchestration",
+            "type": "timeseries",
+            "gridPos": {"h": 8, "w": 12, "x": 12, "y": 6},
+            "targets": [
+              {
+                "expr": "kube_pod_status_phase{phase=\"Running\"}",
+                "refId": "A",
+                "legendFormat": "Running Pods"
+              },
+              {
+                "expr": "kube_pod_status_phase{phase=\"Failed\"}",
+                "refId": "B",
+                "legendFormat": "Failed Pods"
+              },
+              {
+                "expr": "kube_deployment_status_replicas_available",
+                "refId": "C",
+                "legendFormat": "Available Replicas - {{deployment}}"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "unit": "short",
+                "color": {"mode": "palette-classic"}
+              }
+            }
+          },
+          {
+            "id": 4,
+            "title": "Automated Operations",
+            "type": "stat",
+            "gridPos": {"h": 6, "w": 12, "x": 0, "y": 14},
+            "targets": [
+              {
+                "expr": "increase(automated_retraining_triggered_total[1h])",
+                "refId": "A",
+                "legendFormat": "Auto Retraining (1h)"
+              },
+              {
+                "expr": "increase(incident_response_activated_total[1h])",
+                "refId": "B",
+                "legendFormat": "Incident Response (1h)"
+              },
+              {
+                "expr": "increase(automated_scaling_events_total[1h])",
+                "refId": "C",
+                "legendFormat": "Auto Scaling (1h)"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "thresholds": {
+                  "steps": [
+                    {"color": "green", "value": 0},
+                    {"color": "yellow", "value": 5},
+                    {"color": "red", "value": 10}
+                  ]
+                },
+                "unit": "short"
+              }
+            }
+          },
+          {
+            "id": 5,
+            "title": "Incident Resolution Time",
+            "type": "gauge",
+            "gridPos": {"h": 6, "w": 12, "x": 12, "y": 14},
+            "targets": [
+              {
+                "expr": "operations:incident_resolution_time / 60",
+                "refId": "A",
+                "legendFormat": "Avg Resolution Time"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "thresholds": {
+                  "steps": [
+                    {"color": "green", "value": 0},
+                    {"color": "yellow", "value": 30},
+                    {"color": "red", "value": 60}
+                  ]
+                },
+                "unit": "min",
+                "max": 120
+              }
+            }
+          },
+          {
+            "id": 6,
+            "title": "Cost Optimization",
+            "type": "timeseries",
+            "gridPos": {"h": 8, "w": 24, "x": 0, "y": 20},
+            "targets": [
+              {
+                "expr": "rate(infrastructure_costs_total[1h])",
+                "refId": "A",
+                "legendFormat": "Infrastructure Costs per Hour"
+              },
+              {
+                "expr": "resource:cost_efficiency_score",
+                "refId": "B",
+                "legendFormat": "Cost Efficiency Score"
+              },
+              {
+                "expr": "business:cost_per_prediction * 1000",
+                "refId": "C",
+                "legendFormat": "Cost per 1000 Predictions"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "color": {"mode": "palette-classic"}
+              },
+              "overrides": [
+                {
+                  "matcher": {"id": "byRegexp", "options": ".*Costs.*"},
+                  "properties": [{"id": "unit", "value": "currencyUSD"}]
+                }
+              ]
+            }
+          }
+        ],
+        "templating": {
+          "list": [
+            {
+              "name": "namespace",
+              "type": "query",
+              "query": "label_values(kube_pod_info, namespace)",
+              "refresh": 1,
+              "includeAll": true
+            }
+          ]
+        }
+      }
+    }
+
+  # Business Intelligence Dashboard - Revenue and business metrics
+  business-dashboard.json: |
+    {
+      "dashboard": {
+        "id": null,
+        "title": "AIA MLOps Business Intelligence Dashboard",
+        "tags": ["mlops", "business", "revenue", "roi"],
+        "timezone": "browser",
+        "refresh": "5m",
+        "time": {
+          "from": "now-7d",
+          "to": "now"
+        },
+        "panels": [
+          {
+            "id": 1,
+            "title": "Revenue Generation Overview",
+            "type": "stat",
+            "gridPos": {"h": 8, "w": 24, "x": 0, "y": 0},
+            "targets": [
+              {
+                "expr": "business:revenue_per_minute * 1440 * 7",
+                "refId": "A",
+                "legendFormat": "Weekly Revenue"
+              },
+              {
+                "expr": "rate(ml_platform_costs_total[1h]) * 24 * 7",
+                "refId": "B",
+                "legendFormat": "Weekly Costs"
+              },
+              {
+                "expr": "executive:roi_score",
+                "refId": "C",
+                "legendFormat": "ROI Percentage"
+              },
+              {
+                "expr": "avg(stakeholder_satisfaction_score{stakeholder_type=\"business\"})",
+                "refId": "D",
+                "legendFormat": "Business Satisfaction"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "thresholds": {
+                  "steps": [
+                    {"color": "red", "value": 0},
+                    {"color": "yellow", "value": 50},
+                    {"color": "green", "value": 100}
+                  ]
+                }
+              },
+              "overrides": [
+                {
+                  "matcher": {"id": "byRegexp", "options": "Weekly.*"},
+                  "properties": [{"id": "unit", "value": "currencyUSD"}]
+                },
+                {
+                  "matcher": {"id": "byRegexp", "options": "ROI.*|.*Satisfaction"},
+                  "properties": [{"id": "unit", "value": "percent"}]
+                }
+              ]
+            }
+          },
+          {
+            "id": 2,
+            "title": "Revenue Trends",
+            "type": "timeseries",
+            "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
+            "targets": [
+              {
+                "expr": "business:revenue_per_minute * 1440",
+                "refId": "A",
+                "legendFormat": "Daily Revenue"
+              },
+              {
+                "expr": "predict_linear(business:revenue_per_minute[7d], 86400) * 1440",
+                "refId": "B",
+                "legendFormat": "Revenue Forecast"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "unit": "currencyUSD",
+                "color": {"mode": "palette-classic"}
+              }
+            }
+          },
+          {
+            "id": 3,
+            "title": "Cost Breakdown",
+            "type": "piechart",
+            "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
+            "targets": [
+              {
+                "expr": "rate(infrastructure_costs_total{component=\"compute\"}[1h]) * 24",
+                "refId": "A",
+                "legendFormat": "Compute"
+              },
+              {
+                "expr": "rate(infrastructure_costs_total{component=\"storage\"}[1h]) * 24",
+                "refId": "B",
+                "legendFormat": "Storage"
+              },
+              {
+                "expr": "rate(infrastructure_costs_total{component=\"networking\"}[1h]) * 24",
+                "refId": "C",
+                "legendFormat": "Networking"
+              },
+              {
+                "expr": "rate(infrastructure_costs_total{component=\"ml_services\"}[1h]) * 24",
+                "refId": "D",
+                "legendFormat": "ML Services"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "unit": "currencyUSD"
+              }
+            }
+          },
+          {
+            "id": 4,
+            "title": "Customer Impact Metrics",
+            "type": "timeseries",
+            "gridPos": {"h": 8, "w": 24, "x": 0, "y": 16},
+            "targets": [
+              {
+                "expr": "customer_satisfaction_score",
+                "refId": "A",
+                "legendFormat": "Customer Satisfaction"
+              },
+              {
+                "expr": "rate(customer_retention_events_total[1h])",
+                "refId": "B",
+                "legendFormat": "Customer Retention Rate"
+              },
+              {
+                "expr": "avg_over_time(customer_lifetime_value[24h])",
+                "refId": "C",
+                "legendFormat": "Customer Lifetime Value"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "color": {"mode": "palette-classic"}
+              },
+              "overrides": [
+                {
+                  "matcher": {"id": "byRegexp", "options": ".*Value"},
+                  "properties": [
+                    {"id": "unit", "value": "currencyUSD"},
+                    {"id": "custom.axisPlacement", "value": "right"}
+                  ]
+                },
+                {
+                  "matcher": {"id": "byRegexp", "options": ".*Satisfaction|.*Retention.*"},
+                  "properties": [{"id": "unit", "value": "percentunit"}]
+                }
+              ]
+            }
+          },
+          {
+            "id": 5,
+            "title": "Market Position & Growth",
+            "type": "timeseries",
+            "gridPos": {"h": 8, "w": 12, "x": 0, "y": 24},
+            "targets": [
+              {
+                "expr": "market_share_percentage",
+                "refId": "A",
+                "legendFormat": "Market Share"
+              },
+              {
+                "expr": "rate(new_customer_acquisition_total[24h])",
+                "refId": "B",
+                "legendFormat": "Daily Customer Acquisition"
+              },
+              {
+                "expr": "competitive_advantage_score",
+                "refId": "C",
+                "legendFormat": "Competitive Advantage"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "color": {"mode": "palette-classic"}
+              }
+            }
+          },
+          {
+            "id": 6,
+            "title": "Revenue Impact from ML Performance",
+            "type": "xy",
+            "gridPos": {"h": 8, "w": 12, "x": 12, "y": 24},
+            "targets": [
+              {
+                "expr": "model:accuracy:avg5m",
+                "refId": "A"
+              },
+              {
+                "expr": "business:revenue_per_minute",
+                "refId": "B"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "custom": {
+                  "scatterplot": {
+                    "x": "A",
+                    "y": "B"
+                  }
+                }
+              }
+            }
+          }
+        ],
+        "templating": {
+          "list": [
+            {
+              "name": "time_period",
+              "type": "interval",
+              "query": "1d,7d,30d,90d",
+              "current": {"text": "7d", "value": "7d"}
+            },
+            {
+              "name": "business_unit",
+              "type": "query",
+              "query": "label_values(revenue_by_business_unit, unit)",
+              "refresh": 1,
+              "includeAll": true
+            }
+          ]
+        }
+      }
+    }
+
+  # Model Monitoring Dashboard - Specific model performance and drift
+  model-monitoring-dashboard.json: |
+    {
+      "dashboard": {
+        "id": null,
+        "title": "AIA MLOps Model Monitoring Dashboard",
+        "tags": ["mlops", "models", "monitoring", "drift"],
+        "timezone": "browser",
+        "refresh": "1m",
+        "time": {
+          "from": "now-6h",
+          "to": "now"
+        },
+        "panels": [
+          {
+            "id": 1,
+            "title": "Model Performance Overview",
+            "type": "table",
+            "gridPos": {"h": 8, "w": 24, "x": 0, "y": 0},
+            "targets": [
+              {
+                "expr": "model_accuracy",
+                "refId": "A",
+                "format": "table",
+                "instant": true
+              },
+              {
+                "expr": "model:response_time:p95_5m",
+                "refId": "B",
+                "format": "table",
+                "instant": true
+              },
+              {
+                "expr": "model_drift_score",
+                "refId": "C",
+                "format": "table",
+                "instant": true
+              },
+              {
+                "expr": "rate(model_requests_total[5m])",
+                "refId": "D",
+                "format": "table",
+                "instant": true
+              }
+            ],
+            "transformations": [
+              {
+                "id": "merge",
+                "options": {}
+              },
+              {
+                "id": "organize",
+                "options": {
+                  "excludeByName": {"Time": true},
+                  "renameByName": {
+                    "model_name": "Model",
+                    "Value #A": "Accuracy",
+                    "Value #B": "Response Time (P95)",
+                    "Value #C": "Drift Score",
+                    "Value #D": "Request Rate"
+                  }
+                }
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "custom": {
+                  "displayMode": "color-background"
+                },
+                "thresholds": {
+                  "steps": [
+                    {"color": "red", "value": 0},
+                    {"color": "yellow", "value": 0.8},
+                    {"color": "green", "value": 0.9}
+                  ]
+                }
+              },
+              "overrides": [
+                {
+                  "matcher": {"id": "byName", "options": "Response Time (P95)"},
+                  "properties": [
+                    {"id": "unit", "value": "s"},
+                    {"id": "thresholds", "value": {
+                      "steps": [
+                        {"color": "green", "value": 0},
+                        {"color": "yellow", "value": 1},
+                        {"color": "red", "value": 3}
+                      ]
+                    }}
+                  ]
+                },
+                {
+                  "matcher": {"id": "byName", "options": "Drift Score"},
+                  "properties": [
+                    {"id": "thresholds", "value": {
+                      "steps": [
+                        {"color": "green", "value": 0},
+                        {"color": "yellow", "value": 0.1},
+                        {"color": "red", "value": 0.2}
+                      ]
+                    }}
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "id": 2,
+            "title": "Model Accuracy Trends",
+            "type": "timeseries",
+            "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
+            "targets": [
+              {
+                "expr": "model_accuracy{model_name=~\"$model\"}",
+                "refId": "A",
+                "legendFormat": "{{model_name}} - {{version}}"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "thresholds": {
+                  "steps": [
+                    {"color": "red", "value": 0},
+                    {"color": "yellow", "value": 0.8},
+                    {"color": "green", "value": 0.9}
+                  ]
+                },
+                "unit": "percentunit",
+                "min": 0,
+                "max": 1
+              }
+            }
+          },
+          {
+            "id": 3,
+            "title": "Drift Detection Analysis",
+            "type": "timeseries",
+            "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
+            "targets": [
+              {
+                "expr": "model_drift_score{model_name=~\"$model\"}",
+                "refId": "A",
+                "legendFormat": "{{model_name}} Drift Score"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "thresholds": {
+                  "steps": [
+                    {"color": "green", "value": 0},
+                    {"color": "yellow", "value": 0.1},
+                    {"color": "red", "value": 0.2}
+                  ]
+                },
+                "max": 0.5
+              }
+            }
+          },
+          {
+            "id": 4,
+            "title": "Feature Importance Changes",
+            "type": "heatmap",
+            "gridPos": {"h": 8, "w": 12, "x": 0, "y": 16},
+            "targets": [
+              {
+                "expr": "model_feature_importance{model_name=~\"$model\"}",
+                "refId": "A",
+                "legendFormat": "{{feature_name}}"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "custom": {
+                  "hideFrom": {
+                    "legend": false,
+                    "tooltip": false,
+                    "vis": false
+                  }
+                }
+              }
+            }
+          },
+          {
+            "id": 5,
+            "title": "Prediction Distribution",
+            "type": "histogram",
+            "gridPos": {"h": 8, "w": 12, "x": 12, "y": 16},
+            "targets": [
+              {
+                "expr": "histogram_quantile(0.1, rate(model_prediction_values_bucket{model_name=~\"$model\"}[5m]))",
+                "refId": "A",
+                "legendFormat": "P10"
+              },
+              {
+                "expr": "histogram_quantile(0.5, rate(model_prediction_values_bucket{model_name=~\"$model\"}[5m]))",
+                "refId": "B",
+                "legendFormat": "P50"
+              },
+              {
+                "expr": "histogram_quantile(0.9, rate(model_prediction_values_bucket{model_name=~\"$model\"}[5m]))",
+                "refId": "C",
+                "legendFormat": "P90"
+              }
+            ]
+          },
+          {
+            "id": 6,
+            "title": "Model Version Comparison",
+            "type": "table",
+            "gridPos": {"h": 8, "w": 24, "x": 0, "y": 24},
+            "targets": [
+              {
+                "expr": "group by (model_name, version) (model_accuracy)",
+                "refId": "A",
+                "format": "table"
+              }
+            ],
+            "transformations": [
+              {
+                "id": "organize",
+                "options": {
+                  "renameByName": {
+                    "model_name": "Model",
+                    "version": "Version",
+                    "Value": "Accuracy"
+                  }
+                }
+              }
+            ]
+          }
+        ],
+        "templating": {
+          "list": [
+            {
+              "name": "model",
+              "type": "query",
+              "query": "label_values(model_accuracy, model_name)",
+              "refresh": 1,
+              "includeAll": true,
+              "allValue": ".*"
+            }
+          ]
+        }
+      }
+    }
+
+---
+# Grafana Deployment with Enhanced Configuration
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grafana-mlops
+  namespace: aia-mlops-monitoring
+  labels:
+    app: grafana-mlops
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: grafana-mlops
+  template:
+    metadata:
+      labels:
+        app: grafana-mlops
+    spec:
+      containers:
+      - name: grafana
+        image: grafana/grafana:10.4.0
+        ports:
+        - containerPort: 3000
+        env:
+        - name: GF_SECURITY_ADMIN_USER
+          value: "admin"
+        - name: GF_SECURITY_ADMIN_PASSWORD
+          value: "aia_mlops_grafana_2025"
+        - name: GF_INSTALL_PLUGINS
+          value: "grafana-piechart-panel,grafana-worldmap-panel,grafana-clock-panel,grafana-simple-json-datasource"
+        volumeMounts:
+        - name: grafana-storage
+          mountPath: /var/lib/grafana
+        - name: dashboards-config
+          mountPath: /etc/grafana/provisioning/dashboards
+        - name: dashboard-files
+          mountPath: /var/lib/grafana/dashboards
+        - name: datasource-config
+          mountPath: /etc/grafana/provisioning/datasources
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        livenessProbe:
+          httpGet:
+            path: /api/health
+            port: 3000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /api/health
+            port: 3000
+          initialDelaySeconds: 30
+          periodSeconds: 5
+      volumes:
+      - name: grafana-storage
+        emptyDir: {}
+      - name: dashboards-config
+        configMap:
+          name: grafana-dashboards-config
+      - name: dashboard-files
+        configMap:
+          name: grafana-mlops-dashboards
+      - name: datasource-config
+        configMap:
+          name: grafana-datasources-config
+---
+# Grafana Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: grafana-mlops
+  namespace: aia-mlops-monitoring
+  labels:
+    app: grafana-mlops
+spec:
+  selector:
+    app: grafana-mlops
+  ports:
+  - name: http
+    port: 3000
+    targetPort: 3000
+  type: ClusterIP
+---
+# Dashboard Provisioning Configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboards-config
+  namespace: aia-mlops-monitoring
+data:
+  dashboards.yaml: |
+    apiVersion: 1
+    providers:
+    - name: 'MLOps Dashboards'
+      orgId: 1
+      folder: 'MLOps'
+      type: file
+      disableDeletion: false
+      updateIntervalSeconds: 10
+      allowUiUpdates: true
+      options:
+        path: /var/lib/grafana/dashboards
+---
+# Datasource Configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-datasources-config
+  namespace: aia-mlops-monitoring
+data:
+  datasources.yaml: |
+    apiVersion: 1
+    datasources:
+    - name: Prometheus MLOps
+      type: prometheus
+      access: proxy
+      url: http://prometheus-mlops:9090
+      isDefault: true
+      editable: true
+    - name: Google Cloud Monitoring
+      type: stackdriver
+      access: proxy
+      jsonData:
+        authenticationType: gce
+        defaultProject: ${GCP_PROJECT}
+    - name: MLflow
+      type: grafana-simple-json-datasource
+      access: proxy
+      url: http://mlflow-server:5000/api/2.0/mlflow
+    - name: Business Intelligence
+      type: postgres
+      access: proxy
+      url: aia-postgresql-service:5432
+      database: aia_business_intelligence
+      user: readonly_user

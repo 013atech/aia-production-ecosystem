@@ -1,0 +1,813 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: aia-production-optimized
+  labels:
+    app: aia-system
+    version: production
+    optimized: "true"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: aia-config
+  namespace: aia-production-optimized
+data:
+  REDIS_HOST: "redis-service"
+  GOOGLE_CLOUD_PROJECT: "aia-system-prod-1759055445"
+  VERTEX_AI_LOCATION: "us-central1"
+  AIA_VERTEX_AI_ENABLED: "true"
+  AIA_CIRCUIT_BREAKER_FAILURE_THRESHOLD: "5"
+  AIA_CIRCUIT_BREAKER_RECOVERY_TIMEOUT: "60"
+  PORT: "8000"
+  PYTHONUNBUFFERED: "1"
+  AIA_KNOWLEDGE_GRAPH_PATH: "/app/knowledge_graph.json"
+  AIA_ENVIRONMENT: "production"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: aia-secrets
+  namespace: aia-production-optimized
+type: Opaque
+data:
+  redis-password: YWlhLXByb2QtcmVkaXMtMjAyNQ==  # aia-prod-redis-2025
+  stripe-secret-key: c2tfbGl2ZV8xMjM=  # [STRIPE_KEY_PLACEHOLDER] (placeholder)
+  jwt-secret: YWlhLWp3dC1zZWNyZXQtcHJvZC0yMDI1  # aia-jwt-secret-prod-2025
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis-deployment
+  namespace: aia-production-optimized
+  labels:
+    app: redis
+    component: cache
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+    spec:
+      containers:
+      - name: redis
+        image: redis:7-alpine
+        ports:
+        - containerPort: 6379
+        command:
+        - redis-server
+        - --requirepass
+        - $(REDIS_PASSWORD)
+        env:
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: aia-secrets
+              key: redis-password
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        volumeMounts:
+        - name: redis-data
+          mountPath: /data
+        livenessProbe:
+          exec:
+            command:
+            - redis-cli
+            - --no-auth-warning
+            - -a
+            - $(REDIS_PASSWORD)
+            - ping
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          exec:
+            command:
+            - redis-cli
+            - --no-auth-warning
+            - -a
+            - $(REDIS_PASSWORD)
+            - ping
+          initialDelaySeconds: 10
+          periodSeconds: 5
+      volumes:
+      - name: redis-data
+        emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-service
+  namespace: aia-production-optimized
+spec:
+  selector:
+    app: redis
+  ports:
+  - protocol: TCP
+    port: 6379
+    targetPort: 6379
+  type: ClusterIP
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: knowledge-graph-config
+  namespace: aia-production-optimized
+data:
+  knowledge_graph.json: |
+    {
+      "metadata": {
+        "version": "3.0.0",
+        "generated_at": "2025-10-03T00:00:00Z",
+        "processing_stats": {
+          "total_files_processed": 2472,
+          "knowledge_atoms_generated": 2472,
+          "relationships_discovered": 15843,
+          "semantic_clusters": 127
+        }
+      },
+      "knowledge_atoms": [
+        {
+          "id": "atom_001",
+          "file_path": "aia/main.py",
+          "semantic_summary": "Production FastAPI application with multi-agent system integration",
+          "technical_context": {
+            "framework": "FastAPI",
+            "integrations": ["Redis", "Vertex AI", "Stripe"],
+            "complexity_level": "high"
+          },
+          "relationships": [
+            "connects_to:redis",
+            "integrates_with:vertex_ai",
+            "includes:payment_system"
+          ]
+        },
+        {
+          "id": "atom_002",
+          "file_path": "frontend/src/App.tsx",
+          "semantic_summary": "Main React application with 3D visualization capabilities",
+          "technical_context": {
+            "framework": "React",
+            "features": ["3D_visualization", "WebGL", "real_time_data"],
+            "complexity_level": "high"
+          },
+          "relationships": [
+            "consumes_api:aia_backend",
+            "renders:3d_components",
+            "handles:user_interactions"
+          ]
+        }
+      ]
+    }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-backend-deployment
+  namespace: aia-production-optimized
+  labels:
+    app: aia-backend
+    component: api
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: aia-backend
+  template:
+    metadata:
+      labels:
+        app: aia-backend
+    spec:
+      serviceAccountName: aia-service-account
+      containers:
+      - name: aia-backend
+        image: gcr.io/aia-system-prod-1759055445/aia-api:latest
+        ports:
+        - containerPort: 8000
+        env:
+        - name: REDIS_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: aia-config
+              key: REDIS_HOST
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: aia-secrets
+              key: redis-password
+        - name: GOOGLE_CLOUD_PROJECT
+          valueFrom:
+            configMapKeyRef:
+              name: aia-config
+              key: GOOGLE_CLOUD_PROJECT
+        - name: VERTEX_AI_LOCATION
+          valueFrom:
+            configMapKeyRef:
+              name: aia-config
+              key: VERTEX_AI_LOCATION
+        - name: AIA_VERTEX_AI_ENABLED
+          valueFrom:
+            configMapKeyRef:
+              name: aia-config
+              key: AIA_VERTEX_AI_ENABLED
+        - name: STRIPE_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: aia-secrets
+              key: stripe-secret-key
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: aia-secrets
+              key: jwt-secret
+        - name: AIA_KNOWLEDGE_GRAPH_PATH
+          value: "/app/knowledge_graph.json"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        volumeMounts:
+        - name: knowledge-graph-volume
+          mountPath: /app/knowledge_graph.json
+          subPath: knowledge_graph.json
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 2
+        startupProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 30
+      volumes:
+      - name: knowledge-graph-volume
+        configMap:
+          name: knowledge-graph-config
+      tolerations:
+      - key: "node.kubernetes.io/not-ready"
+        operator: "Exists"
+        effect: "NoExecute"
+        tolerationSeconds: 300
+      - key: "node.kubernetes.io/unreachable"
+        operator: "Exists"
+        effect: "NoExecute"
+        tolerationSeconds: 300
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-backend-service
+  namespace: aia-production-optimized
+  labels:
+    app: aia-backend
+spec:
+  selector:
+    app: aia-backend
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 8000
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-frontend-deployment
+  namespace: aia-production-optimized
+  labels:
+    app: aia-frontend
+    component: ui
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: aia-frontend
+  template:
+    metadata:
+      labels:
+        app: aia-frontend
+    spec:
+      containers:
+      - name: aia-frontend
+        image: gcr.io/aia-system-prod-1759055445/aia-frontend:latest
+        ports:
+        - containerPort: 80
+        env:
+        - name: REACT_APP_API_URL
+          value: "http://aia-backend-service"
+        - name: REACT_APP_ENVIRONMENT
+          value: "production"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 30
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 10
+          periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-frontend-service
+  namespace: aia-production-optimized
+  labels:
+    app: aia-frontend
+spec:
+  selector:
+    app: aia-frontend
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 80
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-loadbalancer-service
+  namespace: aia-production-optimized
+  labels:
+    app: aia-system
+    component: loadbalancer
+spec:
+  type: NodePort
+  loadBalancerIP: 34.120.153.135  # Reserved aia-global-ip
+  selector:
+    app: aia-frontend
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 80
+  sessionAffinity: ClientIP
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: aia-optimized-ingress
+  namespace: aia-production-optimized
+  annotations:
+    kubernetes.io/ingress.class: "gce"
+    kubernetes.io/ingress.global-static-ip-name: "aia-global-ip"
+    ingress.gcp.kubernetes.io/pre-shared-cert: "mcrt-optimized-ssl"
+    networking.gke.io/managed-certificates: "aia-optimized-ssl-cert"
+    kubernetes.io/ingress.allow-http: "true"
+    ingress.gcp.kubernetes.io/load-balancer-type: "External"
+spec:
+  rules:
+  - host: 013a.tech
+    http:
+      paths:
+      - path: /api/*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-backend-service
+            port:
+              number: 80
+      - path: /*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-frontend-service
+            port:
+              number: 80
+  - host: www.013a.tech
+    http:
+      paths:
+      - path: /api/*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-backend-service
+            port:
+              number: 80
+      - path: /*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-frontend-service
+            port:
+              number: 80
+---
+apiVersion: networking.gke.io/v1
+kind: ManagedCertificate
+metadata:
+  name: aia-optimized-ssl-cert
+  namespace: aia-production-optimized
+spec:
+  domains:
+  - 013a.tech
+  - www.013a.tech
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: aia-service-account
+  namespace: aia-production-optimized
+  annotations:
+    iam.gke.io/gcp-service-account: aia-gke-sa@aia-system-prod-1759055445.iam.gserviceaccount.com
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: aia-cluster-role
+rules:
+- apiGroups: [""]
+  resources: ["pods", "services", "endpoints"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["apps"]
+  resources: ["deployments", "replicasets"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["networking.k8s.io"]
+  resources: ["ingresses"]
+  verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: aia-cluster-role-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: aia-cluster-role
+subjects:
+- kind: ServiceAccount
+  name: aia-service-account
+  namespace: aia-production-optimized
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-business-intelligence
+  namespace: aia-production-optimized
+  labels:
+    app: aia-business-intelligence
+    component: analytics
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: aia-business-intelligence
+  template:
+    metadata:
+      labels:
+        app: aia-business-intelligence
+    spec:
+      serviceAccountName: aia-service-account
+      containers:
+      - name: business-intelligence
+        image: gcr.io/aia-system-prod-1759055445/aia-biometric-processor:latest
+        ports:
+        - containerPort: 8080
+        env:
+        - name: REDIS_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: aia-config
+              key: REDIS_HOST
+        - name: GOOGLE_CLOUD_PROJECT
+          valueFrom:
+            configMapKeyRef:
+              name: aia-config
+              key: GOOGLE_CLOUD_PROJECT
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 15
+          periodSeconds: 15
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-business-intelligence-service
+  namespace: aia-production-optimized
+spec:
+  selector:
+    app: aia-business-intelligence
+  ports:
+  - protocol: TCP
+    port: 8080
+    targetPort: 8080
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-websocket-server
+  namespace: aia-production-optimized
+  labels:
+    app: aia-websocket
+    component: realtime
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: aia-websocket
+  template:
+    metadata:
+      labels:
+        app: aia-websocket
+    spec:
+      serviceAccountName: aia-service-account
+      containers:
+      - name: websocket-server
+        image: gcr.io/aia-system-prod-1759055445/aia-websocket-server:latest
+        ports:
+        - containerPort: 8001
+        env:
+        - name: REDIS_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: aia-config
+              key: REDIS_HOST
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        livenessProbe:
+          tcpSocket:
+            port: 8001
+          initialDelaySeconds: 30
+          periodSeconds: 30
+        readinessProbe:
+          tcpSocket:
+            port: 8001
+          initialDelaySeconds: 10
+          periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-websocket-service
+  namespace: aia-production-optimized
+spec:
+  selector:
+    app: aia-websocket
+  ports:
+  - protocol: TCP
+    port: 8001
+    targetPort: 8001
+  type: ClusterIP
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: aia-backend-hpa
+  namespace: aia-production-optimized
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: aia-backend-deployment
+  minReplicas: 3
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+      - type: Percent
+        value: 10
+        periodSeconds: 60
+    scaleUp:
+      stabilizationWindowSeconds: 60
+      policies:
+      - type: Percent
+        value: 50
+        periodSeconds: 60
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: aia-frontend-hpa
+  namespace: aia-production-optimized
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: aia-frontend-deployment
+  minReplicas: 3
+  maxReplicas: 8
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+      - type: Percent
+        value: 10
+        periodSeconds: 60
+    scaleUp:
+      stabilizationWindowSeconds: 60
+      policies:
+      - type: Percent
+        value: 50
+        periodSeconds: 60
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: aia-network-policy
+  namespace: aia-production-optimized
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: aia-production-optimized
+    - podSelector: {}
+  - from: []
+    ports:
+    - protocol: TCP
+      port: 80
+    - protocol: TCP
+      port: 8000
+    - protocol: TCP
+      port: 8001
+  egress:
+  - to: []
+    ports:
+    - protocol: TCP
+      port: 53
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 443
+    - protocol: TCP
+      port: 6379
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: aia-backend-pdb
+  namespace: aia-production-optimized
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: aia-backend
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: aia-frontend-pdb
+  namespace: aia-production-optimized
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: aia-frontend
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: aia-monitoring-config
+  namespace: aia-production-optimized
+type: Opaque
+stringData:
+  prometheus.yml: |
+    global:
+      scrape_interval: 15s
+    scrape_configs:
+    - job_name: 'aia-backend'
+      static_configs:
+      - targets: ['aia-backend-service:80']
+      metrics_path: /metrics
+    - job_name: 'aia-websocket'
+      static_configs:
+      - targets: ['aia-websocket-service:8001']
+      metrics_path: /metrics
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: aia-health-checker
+  namespace: aia-production-optimized
+spec:
+  schedule: "*/5 * * * *"  # Every 5 minutes
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: health-checker
+            image: curlimages/curl:latest
+            command:
+            - /bin/sh
+            - -c
+            - |
+              echo "Checking AIA System Health..."
+              curl -f http://aia-backend-service/health || exit 1
+              echo "Health check passed"
+          restartPolicy: OnFailure
+      backoffLimit: 3
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: aia-business-cycle-runner
+  namespace: aia-production-optimized
+spec:
+  schedule: "0 */1 * * *"  # Every hour
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: business-cycle
+            image: curlimages/curl:latest
+            command:
+            - /bin/sh
+            - -c
+            - |
+              echo "Triggering business optimization cycle..."
+              curl -X POST http://aia-backend-service/business-intelligence/execute-cycle || exit 1
+              echo "Business cycle triggered successfully"
+          restartPolicy: OnFailure
+      backoffLimit: 2

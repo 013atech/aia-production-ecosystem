@@ -1,0 +1,524 @@
+# AIA Codebase Analysis System - Kubernetes Deployment
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: aia-analysis
+  labels:
+    name: aia-analysis
+
+---
+# ConfigMap for application configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: aia-analysis-config
+  namespace: aia-analysis
+data:
+  AIA_LOG_LEVEL: "INFO"
+  AIA_ANALYSIS_MODE: "production"
+  OLLAMA_URL: "http://ollama-service:11434"
+  POLKADOT_NODE: "wss://rpc.polkadot.io"
+  REDIS_HOST: "redis-service"
+  REDIS_PORT: "6379"
+  DATABASE_PATH: "/app/data/aia_knowledge.db"
+  ENABLE_METRICS: "true"
+  METRICS_PORT: "9090"
+
+---
+# Secret for sensitive configuration
+apiVersion: v1
+kind: Secret
+metadata:
+  name: aia-analysis-secrets
+  namespace: aia-analysis
+type: Opaque
+stringData:
+  postgres-password: "aia_secure_password_2024"
+  grafana-password: "admin_secure_2024"
+  jupyter-token: "aia_analysis_token_secure"
+
+---
+# Persistent Volume Claim for knowledge data
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: aia-knowledge-data-pvc
+  namespace: aia-analysis
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: fast-ssd
+  resources:
+    requests:
+      storage: 10Gi
+
+---
+# Persistent Volume Claim for knowledge notes
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: aia-knowledge-notes-pvc
+  namespace: aia-analysis
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: standard
+  resources:
+    requests:
+      storage: 5Gi
+
+---
+# Deployment for main AIA Analysis Service
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-analysis-deployment
+  namespace: aia-analysis
+  labels:
+    app: aia-analysis
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app: aia-analysis
+  template:
+    metadata:
+      labels:
+        app: aia-analysis
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+      containers:
+      - name: aia-analysis
+        image: aia/codebase-analysis:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8000
+          name: http
+        - containerPort: 9090
+          name: metrics
+        envFrom:
+        - configMapRef:
+            name: aia-analysis-config
+        - secretRef:
+            name: aia-analysis-secrets
+        volumeMounts:
+        - name: knowledge-data
+          mountPath: /app/data
+        - name: knowledge-notes
+          mountPath: /app/knowledge_notes
+        - name: project-source
+          mountPath: /app/project
+          readOnly: true
+        - name: config-volume
+          mountPath: /app/config
+          readOnly: true
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "2"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+      volumes:
+      - name: knowledge-data
+        persistentVolumeClaim:
+          claimName: aia-knowledge-data-pvc
+      - name: knowledge-notes
+        persistentVolumeClaim:
+          claimName: aia-knowledge-notes-pvc
+      - name: project-source
+        gitRepo:
+          repository: "https://github.com/your-org/project"
+          revision: "main"
+      - name: config-volume
+        configMap:
+          name: aia-analysis-config
+
+---
+# Service for AIA Analysis
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-analysis-service
+  namespace: aia-analysis
+  labels:
+    app: aia-analysis
+spec:
+  selector:
+    app: aia-analysis
+  ports:
+  - name: http
+    port: 80
+    targetPort: 8000
+    protocol: TCP
+  - name: metrics
+    port: 9090
+    targetPort: 9090
+    protocol: TCP
+  type: ClusterIP
+
+---
+# Deployment for Ollama LLM Service
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ollama-deployment
+  namespace: aia-analysis
+  labels:
+    app: ollama
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ollama
+  template:
+    metadata:
+      labels:
+        app: ollama
+    spec:
+      containers:
+      - name: ollama
+        image: ollama/ollama:latest
+        ports:
+        - containerPort: 11434
+        env:
+        - name: OLLAMA_ORIGINS
+          value: "*"
+        - name: OLLAMA_HOST
+          value: "0.0.0.0"
+        volumeMounts:
+        - name: ollama-data
+          mountPath: /root/.ollama
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "1"
+          limits:
+            memory: "128Mi"
+            cpu: "4"
+        # Uncomment for GPU support
+        # resources:
+        #   limits:
+        #     nvidia.com/gpu: 1
+      volumes:
+      - name: ollama-data
+        persistentVolumeClaim:
+          claimName: ollama-data-pvc
+
+---
+# PVC for Ollama data
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ollama-data-pvc
+  namespace: aia-analysis
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: fast-ssd
+  resources:
+    requests:
+      storage: 20Gi
+
+---
+# Service for Ollama
+apiVersion: v1
+kind: Service
+metadata:
+  name: ollama-service
+  namespace: aia-analysis
+  labels:
+    app: ollama
+spec:
+  selector:
+    app: ollama
+  ports:
+  - port: 11434
+    targetPort: 11434
+  type: ClusterIP
+
+---
+# Deployment for Redis
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis-deployment
+  namespace: aia-analysis
+  labels:
+    app: redis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+    spec:
+      containers:
+      - name: redis
+        image: redis:7-alpine
+        ports:
+        - containerPort: 6379
+        command:
+        - redis-server
+        - --appendonly
+        - "yes"
+        - --maxmemory
+        - "512mb"
+        - --maxmemory-policy
+        - allkeys-lru
+        volumeMounts:
+        - name: redis-data
+          mountPath: /data
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+      volumes:
+      - name: redis-data
+        persistentVolumeClaim:
+          claimName: redis-data-pvc
+
+---
+# PVC for Redis data
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: redis-data-pvc
+  namespace: aia-analysis
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: standard
+  resources:
+    requests:
+      storage: 2Gi
+
+---
+# Service for Redis
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-service
+  namespace: aia-analysis
+  labels:
+    app: redis
+spec:
+  selector:
+    app: redis
+  ports:
+  - port: 6379
+    targetPort: 6379
+  type: ClusterIP
+
+---
+# Ingress for external access
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: aia-analysis-ingress
+  namespace: aia-analysis
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+spec:
+  tls:
+  - hosts:
+    - analysis.aia.tech
+    secretName: aia-analysis-tls
+  rules:
+  - host: analysis.aia.tech
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-analysis-service
+            port:
+              number: 80
+
+---
+# HorizontalPodAutoscaler for automatic scaling
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: aia-analysis-hpa
+  namespace: aia-analysis
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: aia-analysis-deployment
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+      - type: Percent
+        value: 25
+        periodSeconds: 60
+    scaleUp:
+      stabilizationWindowSeconds: 60
+      policies:
+      - type: Percent
+        value: 50
+        periodSeconds: 60
+
+---
+# ServiceMonitor for Prometheus monitoring
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: aia-analysis-metrics
+  namespace: aia-analysis
+  labels:
+    app: aia-analysis
+spec:
+  selector:
+    matchLabels:
+      app: aia-analysis
+  endpoints:
+  - port: metrics
+    interval: 30s
+    path: /metrics
+
+---
+# CronJob for periodic maintenance
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: aia-analysis-maintenance
+  namespace: aia-analysis
+spec:
+  schedule: "0 2 * * *"  # Daily at 2 AM
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: maintenance
+            image: aia/codebase-analysis:latest
+            command:
+            - /bin/sh
+            - -c
+            - |
+              echo "Running maintenance tasks..."
+              python -c "
+              from aia_codebase_analysis_system import DatabaseManager
+              import sqlite3
+              import os
+
+              db_path = '/app/data/aia_knowledge.db'
+              if os.path.exists(db_path):
+                  conn = sqlite3.connect(db_path)
+                  conn.execute('VACUUM;')
+                  conn.execute('REINDEX;')
+                  conn.close()
+                  print('Database maintenance completed')
+              else:
+                  print('Database not found, skipping maintenance')
+              "
+            volumeMounts:
+            - name: knowledge-data
+              mountPath: /app/data
+          volumes:
+          - name: knowledge-data
+            persistentVolumeClaim:
+              claimName: aia-knowledge-data-pvc
+          restartPolicy: OnFailure
+
+---
+# NetworkPolicy for security
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: aia-analysis-network-policy
+  namespace: aia-analysis
+spec:
+  podSelector:
+    matchLabels:
+      app: aia-analysis
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: ingress-nginx
+    - podSelector:
+        matchLabels:
+          app: prometheus
+    ports:
+    - protocol: TCP
+      port: 8000
+    - protocol: TCP
+      port: 9090
+  egress:
+  - to:
+    - podSelector:
+        matchLabels:
+          app: ollama
+    ports:
+    - protocol: TCP
+      port: 11434
+  - to:
+    - podSelector:
+        matchLabels:
+          app: redis
+    ports:
+    - protocol: TCP
+      port: 6379
+  - to: []  # Allow external egress for Polkadot and other services
+    ports:
+    - protocol: TCP
+      port: 443
+    - protocol: TCP
+      port: 80

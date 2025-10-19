@@ -1,0 +1,275 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: aia-founder-dashboard
+  labels:
+    security.level: "maximum"
+    access.restriction: "founder-only"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: founder-dashboard-secrets
+  namespace: aia-founder-dashboard
+type: Opaque
+data:
+  jwt-secret: <base64-encoded-jwt-secret>  # Set via deployment script
+  encryption-key: <base64-encoded-encryption-key>  # Set via deployment script
+  audit-encryption-key: <base64-encoded-audit-key>  # Set via deployment script
+  emergency-access-key: <base64-encoded-emergency-key>  # Set via deployment script
+  google-client-id: <base64-encoded-client-id>  # Set via deployment script
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: founder-dashboard-config
+  namespace: aia-founder-dashboard
+data:
+  AUTHORIZED_EMAIL: "yannickwill08@gmail.com"
+  JWT_ACCESS_TOKEN_EXPIRE_MINUTES: "15"
+  JWT_REFRESH_TOKEN_EXPIRE_DAYS: "7"
+  DATABASE_URL: "postgresql://aia_user:aia_password@aia-postgres.aia-production-secure.svc.cluster.local:5432/aia_founder"
+  REDIS_URL: "redis://aia-redis.aia-production-secure.svc.cluster.local:6379/1"
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: founder-dashboard-network-policy
+  namespace: aia-founder-dashboard
+spec:
+  podSelector:
+    matchLabels:
+      app: founder-dashboard
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: kube-system  # Allow load balancer
+    ports:
+    - protocol: TCP
+      port: 8080
+  egress:
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: aia-production-secure  # Allow database access
+    ports:
+    - protocol: TCP
+      port: 5432  # PostgreSQL
+    - protocol: TCP
+      port: 6379  # Redis
+  - to: []  # Allow external Google OAuth
+    ports:
+    - protocol: TCP
+      port: 443
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: founder-dashboard
+  namespace: aia-founder-dashboard
+  labels:
+    app: founder-dashboard
+    security.level: "maximum"
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: founder-dashboard
+  template:
+    metadata:
+      labels:
+        app: founder-dashboard
+        security.level: "maximum"
+    spec:
+      serviceAccountName: founder-dashboard-sa
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        runAsGroup: 1001
+        fsGroup: 1001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: founder-dashboard
+        image: gcr.io/aia-system-prod-1759055445/founder-dashboard:latest
+        ports:
+        - containerPort: 8080
+          name: http
+        env:
+        - name: AUTHORIZED_EMAIL
+          valueFrom:
+            configMapKeyRef:
+              name: founder-dashboard-config
+              key: AUTHORIZED_EMAIL
+        - name: JWT_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: founder-dashboard-secrets
+              key: jwt-secret
+        - name: ENCRYPTION_KEY
+          valueFrom:
+            secretKeyRef:
+              name: founder-dashboard-secrets
+              key: encryption-key
+        - name: AUDIT_LOG_ENCRYPTION_KEY
+          valueFrom:
+            secretKeyRef:
+              name: founder-dashboard-secrets
+              key: audit-encryption-key
+        - name: EMERGENCY_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              name: founder-dashboard-secrets
+              key: emergency-access-key
+        - name: GOOGLE_CLIENT_ID
+          valueFrom:
+            secretKeyRef:
+              name: founder-dashboard-secrets
+              key: google-client-id
+        - name: DATABASE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: founder-dashboard-config
+              key: DATABASE_URL
+        - name: REDIS_URL
+          valueFrom:
+            configMapKeyRef:
+              name: founder-dashboard-config
+              key: REDIS_URL
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+            - ALL
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        volumeMounts:
+        - name: tmp-volume
+          mountPath: /tmp
+        - name: app-logs
+          mountPath: /app/logs
+      volumes:
+      - name: tmp-volume
+        emptyDir: {}
+      - name: app-logs
+        emptyDir: {}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: founder-dashboard-sa
+  namespace: aia-founder-dashboard
+  annotations:
+    iam.gke.io/gcp-service-account: founder-dashboard@aia-system-prod-1759055445.iam.gserviceaccount.com
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: founder-dashboard-service
+  namespace: aia-founder-dashboard
+  labels:
+    app: founder-dashboard
+spec:
+  type: ClusterIP
+  ports:
+  - port: 80
+    targetPort: 8080
+    protocol: TCP
+    name: http
+  selector:
+    app: founder-dashboard
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: founder-dashboard-loadbalancer
+  namespace: aia-founder-dashboard
+  annotations:
+    cloud.google.com/load-balancer-type: "External"
+    cloud.google.com/backend-config: '{"default": "founder-dashboard-backendconfig"}'
+spec:
+  type: NodePort
+  loadBalancerSourceRanges:
+  - 0.0.0.0/0  # In production, restrict to known IP ranges
+  ports:
+  - port: 80
+    targetPort: 8080
+    protocol: TCP
+    name: http
+  - port: 443
+    targetPort: 8080
+    protocol: TCP
+    name: https
+  selector:
+    app: founder-dashboard
+---
+apiVersion: cloud.google.com/v1
+kind: BackendConfig
+metadata:
+  name: founder-dashboard-backendconfig
+  namespace: aia-founder-dashboard
+spec:
+  securityPolicy:
+    name: "founder-dashboard-security-policy"
+  healthCheck:
+    checkIntervalSec: 10
+    port: 8080
+    type: HTTP
+    requestPath: /health
+  timeoutSec: 30
+  connectionDraining:
+    drainingTimeoutSec: 60
+---
+apiVersion: networking.gke.io/v1
+kind: ManagedCertificate
+metadata:
+  name: founder-dashboard-ssl-cert
+  namespace: aia-founder-dashboard
+spec:
+  domains:
+  - founder.013a.tech
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: founder-dashboard-ingress
+  namespace: aia-founder-dashboard
+  annotations:
+    kubernetes.io/ingress.global-static-ip-name: "founder-dashboard-ip"
+    networking.gke.io/managed-certificates: "founder-dashboard-ssl-cert"
+    kubernetes.io/ingress.class: "gce"
+    cloud.google.com/backend-config: '{"default": "founder-dashboard-backendconfig"}'
+spec:
+  rules:
+  - host: founder.013a.tech
+    http:
+      paths:
+      - path: /*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: founder-dashboard-service
+            port:
+              number: 80

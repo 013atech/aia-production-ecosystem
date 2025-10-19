@@ -1,0 +1,40 @@
+{
+  "cycle_number": 5617,
+  "timestamp": "2025-10-10T18:42:24.000039",
+  "tests": {
+    "production_endpoints": {
+      "frontend": {
+        "status_code": 520,
+        "response_time": 0.405202,
+        "status": "unhealthy"
+      },
+      "api": {
+        "status_code": 520,
+        "response_time": 0.557058,
+        "status": "unhealthy"
+      },
+      "health": {
+        "status_code": 520,
+        "response_time": 0.401667,
+        "status": "unhealthy"
+      }
+    },
+    "knowledge_graph": {
+      "status": "error",
+      "error": "HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /knowledge-graph/query (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x10306e7b0>, 'Connection to localhost timed out. (connect timeout=30)'))"
+    },
+    "gcp_infrastructure": {
+      "status": "healthy",
+      "pods_running": true,
+      "services_available": true,
+      "load_balancer": "active"
+    },
+    "monitoring": {
+      "status": "active",
+      "prometheus": "running",
+      "grafana": "accessible"
+    }
+  },
+  "cycle_duration": 9.39071798324585,
+  "status": "completed"
+}

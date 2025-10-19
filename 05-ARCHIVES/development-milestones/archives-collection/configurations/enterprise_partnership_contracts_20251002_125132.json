@@ -1,0 +1,136 @@
+{
+  "portfolio_summary": {
+    "total_contract_value": 27000000.0,
+    "weighted_avg_revenue_share": 1022500.0,
+    "contract_count": 4,
+    "avg_contract_duration": 42.0
+  },
+  "contracts": {
+    "ey_global": {
+      "contract_id": "EY-AIA-D8D66A3F",
+      "partner_company": "Ernst & Young Global Limited",
+      "contract_value": 2500000.0,
+      "duration_months": 36,
+      "revenue_share_percentage": 15.0,
+      "payment_terms": "Net 30 days, quarterly payments",
+      "termination_clause": "90-day notice period with cause provisions",
+      "intellectual_property_terms": "\n            Joint Development Agreement:\n            - AIA technology remains proprietary to 013a Analytics\n            - EY retains rights to client-specific implementations\n            - Co-developed workflows shared under joint ownership\n            - Trade secrets and proprietary algorithms protected\n            - Client data sovereignty maintained by EY\n            ",
+      "liability_limits": 10000000.0,
+      "performance_sla": {
+        "system_uptime": 99.9,
+        "response_time_api_calls": "< 500ms",
+        "workflow_completion_rate": 98.0,
+        "client_satisfaction_minimum": 4.2,
+        "consultant_productivity_increase": 35.0
+      },
+      "compliance_requirements": [
+        "SOC 2 Type II Certification",
+        "ISO 27001 Information Security",
+        "GDPR Data Protection Compliance",
+        "SOX Financial Controls",
+        "EY Global Security Framework Alignment"
+      ],
+      "dispute_resolution": "International Commercial Arbitration (ICC Rules, London)",
+      "renewal_terms": "Automatic 12-month renewals unless terminated with 180-day notice",
+      "created_at": "2025-10-02T12:51:32.968015"
+    },
+    "jpmorgan_chase": {
+      "contract_id": "JPMC-AIA-B0A97EB0",
+      "partner_company": "JPMorgan Chase & Co.",
+      "contract_value": 8000000.0,
+      "duration_months": 48,
+      "revenue_share_percentage": 8.0,
+      "payment_terms": "Net 15 days, monthly payments with performance adjustments",
+      "termination_clause": "120-day notice period with regulatory approval requirements",
+      "intellectual_property_terms": "\n            Licensed Technology Agreement:\n            - AIA Financial AI Engine licensed to JPMorgan Chase\n            - Proprietary trading algorithms remain 013a property\n            - Client portfolio optimization models jointly developed\n            - Financial data models protected under trade secret\n            - Regulatory model validation shared responsibility\n            ",
+      "liability_limits": 50000000.0,
+      "performance_sla": {
+        "system_uptime": 99.99,
+        "response_time_trading_signals": "< 50ms",
+        "portfolio_optimization_accuracy": 95.0,
+        "ri[STRIPE_KEY_PLACEHOLDER]": 99.5,
+        "regulatory_compliance_score": 100.0,
+        "benchmark_outperformance_target": 15.0
+      },
+      "compliance_requirements": [
+        "SEC Investment Advisor Registration",
+        "FINRA Regulatory Compliance",
+        "Basel III Capital Requirements",
+        "Federal Reserve Supervision",
+        "Office of the Comptroller (OCC) Guidelines",
+        "Anti-Money Laundering (AML) Compliance",
+        "Know Your Customer (KYC) Integration"
+      ],
+      "dispute_resolution": "Financial Industry Regulatory Authority (FINRA) Arbitration",
+      "renewal_terms": "Performance-based renewal with 12-month evaluation cycles",
+      "created_at": "2025-10-02T12:51:32.968023"
+    },
+    "google_cloud": {
+      "contract_id": "GCP-AIA-87B924F3",
+      "partner_company": "Google Cloud Platform",
+      "contract_value": 4500000.0,
+      "duration_months": 24,
+      "revenue_share_percentage": 15.0,
+      "payment_terms": "Net 30 days, monthly marketplace revenue sharing",
+      "termination_clause": "60-day notice period with marketplace transition support",
+      "intellectual_property_terms": "\n            Platform Distribution Agreement:\n            - AIA Agent Framework licensed for GCP Marketplace\n            - Google Workspace integration co-developed\n            - Vertex AI model integration shared development\n            - PyPAIA SDK distributed under Apache 2.0 license\n            - Cloud infrastructure optimization jointly owned\n            ",
+      "liability_limits": 25000000.0,
+      "performance_sla": {
+        "marketplace_availability": 99.95,
+        "api_response_time": "< 200ms",
+        "customer_onboarding_time": "< 24 hours",
+        "marketplace_rating_minimum": 4.5,
+        "enterprise_adoption_rate": 25.0,
+        "workspace_integration_success": 95.0
+      },
+      "compliance_requirements": [
+        "Google Cloud Security Standards",
+        "Marketplace Partner Requirements",
+        "Workspace Developer Policy Compliance",
+        "European Cloud Code of Conduct",
+        "ISO/IEC 27001 Certification",
+        "SOC 2+ Attestation"
+      ],
+      "dispute_resolution": "California State Courts with Google Cloud Arbitration Protocol",
+      "renewal_terms": "Performance-based with marketplace success metrics evaluation",
+      "created_at": "2025-10-02T12:51:32.968027"
+    },
+    "apple_inc": {
+      "contract_id": "AAPL-AIA-6BD54D19",
+      "partner_company": "Apple Inc.",
+      "contract_value": 12000000.0,
+      "duration_months": 60,
+      "revenue_share_percentage": 20.0,
+      "payment_terms": "Net 45 days, quarterly with device sales performance bonuses",
+      "termination_clause": "180-day notice period with App Store transition requirements",
+      "intellectual_property_terms": "\n            Ecosystem Development Agreement:\n            - Vision Pro spatial analytics applications co-developed\n            - iPad Pro productivity workflows jointly owned\n            - macOS system integration shared development\n            - App Store distribution rights for AIA applications\n            - Device optimization algorithms proprietary to each party\n            ",
+      "liability_limits": 100000000.0,
+      "performance_sla": {
+        "app_store_availability": 99.9,
+        "vision_pro_performance_60fps": 95.0,
+        "ipad_pro_workflow_completion": 98.0,
+        "macos_system_integration": 99.0,
+        "user_experience_rating": 4.8,
+        "enterprise_device_adoption_target": 100000
+      },
+      "compliance_requirements": [
+        "App Store Review Guidelines Compliance",
+        "Apple Developer Program Requirements",
+        "Privacy Nutrition Label Standards",
+        "Accessibility Guidelines (WCAG 2.1 AA)",
+        "International Trade Regulation Compliance",
+        "Device Security Framework Integration"
+      ],
+      "dispute_resolution": "Delaware State Courts with expedited commercial arbitration",
+      "renewal_terms": "Long-term strategic partnership with 5-year renewal cycles",
+      "created_at": "2025-10-02T12:51:32.968030"
+    }
+  },
+  "generation_metadata": {
+    "generated_at": "2025-10-02T12:51:32.968048",
+    "generator_version": "1.0.0",
+    "legal_review_required": true,
+    "estimated_annual_revenue": 27000000.0,
+    "contract_negotiation_timeline": "3-6 months per partnership"
+  }
+}

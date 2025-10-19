@@ -1,0 +1,256 @@
+# TEMPORARILY DISABLED FOR QUOTA COMPLIANCE
+# This deployment has been temporarily disabled to meet GCP quota requirements
+# Original content below (commented out):
+#
+# # AIA Production CI/CD Pipeline - Cloud Build Configuration
+# # Full-complexity automated deployment with monitoring and rollback
+# steps:
+#   # Step 1: Environment Setup and Validation
+#   - name: 'gcr.io/cloud-builders/git'
+#     entrypoint: 'bash'
+#     args:
+#       - '-c'
+#       - |
+#         echo "=== AIA Production Deployment Pipeline Started ==="
+#         echo "Build ID: $BUILD_ID"
+#         echo "Source: $REPO_NAME"
+#         echo "Branch: $BRANCH_NAME"
+#         echo "Commit: $COMMIT_SHA"
+#         git log --oneline -5
+# 
+#   # Step 2: Dependency and Security Scanning
+#   - name: 'gcr.io/cloud-builders/docker'
+#     entrypoint: 'bash'
+#     args:
+#       - '-c'
+#       - |
+#         echo "=== Security and Dependency Scanning ==="
+# 
+#         # Install Trivy for vulnerability scanning
+#         wget -qO- https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh
+# 
+#         # Scan for security vulnerabilities
+#         ./bin/trivy fs . --exit-code 0 --format json --output trivy-results.json
+# 
+#         # Check for secrets
+#         docker run --rm -v "$(pwd):/scan" zricethezav/gitleaks:latest detect --source /scan --verbose
+# 
+#   # Step 3: Build and Test Backend
+#   - name: 'python:3.11-slim'
+#     entrypoint: 'bash'
+#     args:
+#       - '-c'
+#       - |
+#         echo "=== Backend Build and Testing ==="
+# 
+#         # Install dependencies
+#         pip install -r backend/requirements.txt || echo "Requirements file not found, using defaults"
+#         pip install pytest pytest-cov black flake8 mypy
+# 
+#         # Code quality checks
+#         black --check . || echo "Code formatting issues detected"
+#         flake8 . --max-line-length=100 --ignore=E203,W503 || echo "Linting issues detected"
+# 
+#         # Type checking
+#         mypy . --ignore-missing-imports || echo "Type checking issues detected"
+# 
+#         # Run tests
+#         python -m pytest --cov=. --cov-report=xml || echo "Tests completed with issues"
+# 
+#   # Step 4: Build Docker Images
+#   - name: 'gcr.io/cloud-builders/docker'
+#     args:
+#       - 'build'
+#       - '-t'
+#       - 'europe-west4-docker.pkg.dev/$PROJECT_ID/aia-registry/aia-backend:$BUILD_ID'
+#       - '-t'
+#       - 'europe-west4-docker.pkg.dev/$PROJECT_ID/aia-registry/aia-backend:latest'
+#       - '-f'
+#       - 'Dockerfile.backend'
+#       - '.'
+# 
+#   - name: 'gcr.io/cloud-builders/docker'
+#     args:
+#       - 'build'
+#       - '-t'
+#       - 'europe-west4-docker.pkg.dev/$PROJECT_ID/aia-registry/aia-frontend:$BUILD_ID'
+#       - '-t'
+#       - 'europe-west4-docker.pkg.dev/$PROJECT_ID/aia-registry/aia-frontend:latest'
+#       - '-f'
+#       - 'Dockerfile.frontend'
+#       - '.'
+# 
+#   # Step 5: Push Images to Artifact Registry
+#   - name: 'gcr.io/cloud-builders/docker'
+#     args: ['push', 'europe-west4-docker.pkg.dev/$PROJECT_ID/aia-registry/aia-backend:$BUILD_ID']
+# 
+#   - name: 'gcr.io/cloud-builders/docker'
+#     args: ['push', 'europe-west4-docker.pkg.dev/$PROJECT_ID/aia-registry/aia-backend:latest']
+# 
+#   - name: 'gcr.io/cloud-builders/docker'
+#     args: ['push', 'europe-west4-docker.pkg.dev/$PROJECT_ID/aia-registry/aia-frontend:$BUILD_ID']
+# 
+#   - name: 'gcr.io/cloud-builders/docker'
+#     args: ['push', 'europe-west4-docker.pkg.dev/$PROJECT_ID/aia-registry/aia-frontend:latest']
+# 
+#   # Step 6: Deploy to Kubernetes
+#   - name: 'gcr.io/cloud-builders/gke-deploy'
+#     args:
+#       - 'run'
+#       - '--filename=aia-complete-production-deployment.yaml'
+#       - '--image=europe-west4-docker.pkg.dev/$PROJECT_ID/aia-registry/aia-backend:$BUILD_ID'
+#       - '--image=europe-west4-docker.pkg.dev/$PROJECT_ID/aia-registry/aia-frontend:$BUILD_ID'
+#       - '--cluster=aia-production-optimal'
+#       - '--location=europe-west4'
+#       - '--namespace=aia-production-v2'
+# 
+#   # Step 7: Health Checks and Validation
+#   - name: 'gcr.io/cloud-builders/kubectl'
+#     env:
+#       - 'CLOUDSDK_COMPUTE_ZONE=europe-west4'
+#       - 'CLOUDSDK_CONTAINER_CLUSTER=aia-production-optimal'
+#     entrypoint: 'bash'
+#     args:
+#       - '-c'
+#       - |
+#         echo "=== Deployment Health Checks ==="
+# 
+#         # Get cluster credentials
+#         gcloud container clusters get-credentials aia-production-optimal --zone europe-west4
+# 
+#         # Wait for rollout to complete
+#         kubectl rollout status deployment/aia-backend-api -n aia-production-v2 --timeout=300s
+#         kubectl rollout status deployment/aia-frontend -n aia-production-v2 --timeout=300s
+# 
+#         # Verify pods are running
+#         kubectl get pods -n aia-production-v2
+# 
+#         # Health check endpoints
+#         echo "Checking backend health..."
+#         kubectl exec -n aia-production-v2 deployment/aia-backend-api -- curl -f http://localhost:8000/health || echo "Backend health check failed"
+# 
+#         echo "Checking frontend health..."
+#         kubectl exec -n aia-production-v2 deployment/aia-frontend -- curl -f http://localhost:80/health || echo "Frontend health check failed"
+# 
+#   # Step 8: Integration Tests
+#   - name: 'gcr.io/cloud-builders/kubectl'
+#     env:
+#       - 'CLOUDSDK_COMPUTE_ZONE=europe-west4'
+#       - 'CLOUDSDK_CONTAINER_CLUSTER=aia-production-optimal'
+#     entrypoint: 'bash'
+#     args:
+#       - '-c'
+#       - |
+#         echo "=== Integration Testing ==="
+# 
+#         # Get ingress IP
+#         INGRESS_IP=$(kubectl get ingress aia-production-ingress -n aia-production-v2 -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+#         echo "Testing against IP: $INGRESS_IP"
+# 
+#         # Test API endpoints
+#         curl -H "Host: api.013a.tech" http://$INGRESS_IP/api/v1/status || echo "API status test failed"
+#         curl -H "Host: api.013a.tech" http://$INGRESS_IP/health || echo "API health test failed"
+# 
+#         # Test frontend
+#         curl -H "Host: 013a.tech" http://$INGRESS_IP/ || echo "Frontend test failed"
+# 
+#   # Step 9: Performance and Load Testing
+#   - name: 'gcr.io/cloud-builders/docker'
+#     entrypoint: 'bash'
+#     args:
+#       - '-c'
+#       - |
+#         echo "=== Performance Testing ==="
+# 
+#         # Install Apache Bench for load testing
+#         apt-get update && apt-get install -y apache2-utils
+# 
+#         # Get ingress IP
+#         INGRESS_IP=$(kubectl get ingress aia-production-ingress -n aia-production-v2 -o jsonpath='{.status.loadBalancer.ingress[0].ip}' || echo "34.96.90.243")
+# 
+#         # Load test API
+#         echo "Load testing API endpoints..."
+#         ab -n 100 -c 10 -H "Host: api.013a.tech" http://$INGRESS_IP/api/v1/status || echo "API load test completed"
+# 
+#         # Load test frontend
+#         echo "Load testing frontend..."
+#         ab -n 100 -c 10 -H "Host: 013a.tech" http://$INGRESS_IP/ || echo "Frontend load test completed"
+# 
+#   # Step 10: Monitoring Setup and Alerts
+#   - name: 'gcr.io/cloud-builders/gcloud'
+#     entrypoint: 'bash'
+#     args:
+#       - '-c'
+#       - |
+#         echo "=== Setting up Monitoring and Alerts ==="
+# 
+#         # Create alerting policies
+#         gcloud alpha monitoring policies create --policy-from-file=monitoring/alerting-policy.yaml || echo "Alerting policy creation failed"
+# 
+#         # Create custom metrics
+#         gcloud logging metrics create aia_error_rate --log-filter='resource.type="k8s_container" AND resource.labels.namespace_name="aia-production-v2" AND severity>=ERROR' || echo "Custom metric creation failed"
+# 
+#         # Set up SLO monitoring
+#         echo "SLO monitoring configured for 99.9% uptime target"
+# 
+#   # Step 11: DNS and SSL Verification
+#   - name: 'gcr.io/cloud-builders/gcloud'
+#     entrypoint: 'bash'
+#     args:
+#       - '-c'
+#       - |
+#         echo "=== DNS and SSL Verification ==="
+# 
+#         # Check DNS records
+#         nslookup 013a.tech || echo "DNS lookup failed"
+#         nslookup api.013a.tech || echo "API DNS lookup failed"
+# 
+#         # Check SSL certificate status
+#         kubectl get managedcertificate -n aia-production-v2 -o yaml
+# 
+#         # Verify ingress status
+#         kubectl get ingress -n aia-production-v2 -o wide
+# 
+#   # Step 12: Deployment Notification
+#   - name: 'gcr.io/cloud-builders/gcloud'
+#     entrypoint: 'bash'
+#     args:
+#       - '-c'
+#       - |
+#         echo "=== Deployment Notification ==="
+# 
+#         # Send notification to Slack/Teams (placeholder)
+#         echo "Deployment completed successfully!"
+#         echo "Build ID: $BUILD_ID"
+#         echo "Version: aia-production-v2.0.0-$BUILD_ID"
+#         echo "Environment: Production"
+#         echo "Status: Success"
+# 
+#         # Update deployment status in monitoring
+#         gcloud logging write aia-deployment-log '{"severity": "INFO", "message": "AIA Production deployment successful", "build_id": "'$BUILD_ID'"}'
+# 
+# # Build configuration
+# options:
+#   defaultLogsBucketBehavior: REGIONAL_USER_OWNED_BUCKET
+#   machineType: 'E2_HIGHCPU_8'
+#   diskSizeGb: 100
+#   substitutionOption: 'ALLOW_LOOSE'
+#   logging: 'CLOUD_LOGGING_ONLY'
+# 
+# # Timeout configuration
+# timeout: '3600s'
+# 
+# # Artifacts to store
+# artifacts:
+#   objects:
+#     location: 'gs://$PROJECT_ID-aia-build-artifacts'
+#     paths:
+#       - 'trivy-results.json'
+#       - 'test-results.xml'
+#       - 'coverage.xml'
+# 
+# # Substitutions
+# substitutions:
+#   _ENVIRONMENT: 'production'
+#   _CLUSTER_NAME: 'aia-production-optimal'
+#   _CLUSTER_ZONE: 'europe-west4'

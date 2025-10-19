@@ -1,0 +1,262 @@
+---
+# Sprint 1: Critical Infrastructure Fix - Complete Ingress Configuration
+# This configuration fixes the 404 API routing issues and ensures proper SSL
+apiVersion: networking.gke.io/v1
+kind: ManagedCertificate
+metadata:
+  name: aia-comprehensive-ssl
+  namespace: aia-production-v2
+spec:
+  domains:
+    - 013a.tech
+    - www.013a.tech
+    - api.013a.tech
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: aia-comprehensive-ingress
+  namespace: aia-production-v2
+  annotations:
+    kubernetes.io/ingress.global-static-ip-name: "aia-production-ip"
+    networking.gke.io/managed-certificates: "aia-comprehensive-ssl"
+    ingress.gcp.kubernetes.io/load-balancer-type: "External"
+    kubernetes.io/ingress.allow-http: "true"
+    kubernetes.io/ingress.class: "gce"
+    cloud.google.com/armor-config: '{"default-rule": {"action": "allow"}}'
+    cloud.google.com/backend-config: '{"default": "aia-backend-config"}'
+spec:
+  rules:
+  # Main domain routing
+  - host: 013a.tech
+    http:
+      paths:
+      # Backend API routes (highest priority)
+      - path: /api/*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-backend-service
+            port:
+              number: 8000
+      # Payment API routes
+      - path: /payments/*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-backend-service
+            port:
+              number: 8000
+      # Health and metrics routes
+      - path: /health
+        pathType: Exact
+        backend:
+          service:
+            name: aia-backend-service
+            port:
+              number: 8000
+      - path: /metrics
+        pathType: Exact
+        backend:
+          service:
+            name: aia-backend-service
+            port:
+              number: 8000
+      - path: /docs
+        pathType: Exact
+        backend:
+          service:
+            name: aia-backend-service
+            port:
+              number: 8000
+      - path: /openapi.json
+        pathType: Exact
+        backend:
+          service:
+            name: aia-backend-service
+            port:
+              number: 8000
+      # Frontend routes (catch-all, lowest priority)
+      - path: /*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-frontend-service
+            port:
+              number: 80
+  # WWW domain routing (same as main)
+  - host: www.013a.tech
+    http:
+      paths:
+      - path: /api/*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-backend-service
+            port:
+              number: 8000
+      - path: /payments/*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-backend-service
+            port:
+              number: 8000
+      - path: /health
+        pathType: Exact
+        backend:
+          service:
+            name: aia-backend-service
+            port:
+              number: 8000
+      - path: /metrics
+        pathType: Exact
+        backend:
+          service:
+            name: aia-backend-service
+            port:
+              number: 8000
+      - path: /*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-frontend-service
+            port:
+              number: 80
+  # API subdomain routing
+  - host: api.013a.tech
+    http:
+      paths:
+      - path: /*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-backend-service
+            port:
+              number: 8000
+---
+apiVersion: cloud.google.com/v1
+kind: BackendConfig
+metadata:
+  name: aia-backend-config
+  namespace: aia-production-v2
+spec:
+  timeoutSec: 300
+  connectionDraining:
+    drainingTimeoutSec: 300
+  healthCheck:
+    checkIntervalSec: 30
+    timeoutSec: 10
+    healthyThreshold: 2
+    unhealthyThreshold: 3
+    type: HTTP
+    requestPath: /health
+    port: 8000
+  sessionAffinity:
+    affinityType: "CLIENT_IP"
+    affinityCookieTtlSec: 3600
+  logging:
+    enable: true
+    sampleRate: 1.0
+  customRequestHeaders:
+    headers:
+    - "X-Client-Region:{client_region}"
+    - "X-Client-City:{client_city}"
+    - "X-Forwarded-Proto:https"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-backend-service
+  namespace: aia-production-v2
+  annotations:
+    cloud.google.com/neg: '{"ingress": true}'
+    cloud.google.com/backend-config: '{"default": "aia-backend-config"}'
+spec:
+  type: NodePort  # Changed from ClusterIP to NodePort for better ingress compatibility
+  selector:
+    app: aia-backend
+  ports:
+  - port: 8000
+    targetPort: 8000
+    protocol: TCP
+    name: http
+---
+apiVersion: cloud.google.com/v1
+kind: BackendConfig
+metadata:
+  name: aia-frontend-backend-config
+  namespace: aia-production-v2
+spec:
+  timeoutSec: 30
+  connectionDraining:
+    drainingTimeoutSec: 60
+  healthCheck:
+    checkIntervalSec: 30
+    timeoutSec: 5
+    healthyThreshold: 2
+    unhealthyThreshold: 3
+    type: HTTP
+    requestPath: /
+    port: 80
+  logging:
+    enable: true
+    sampleRate: 0.5
+  customRequestHeaders:
+    headers:
+    - "X-Forwarded-Proto:https"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-backend
+  namespace: aia-production-v2
+  labels:
+    app: aia-backend
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: aia-backend
+  template:
+    metadata:
+      labels:
+        app: aia-backend
+    spec:
+      containers:
+      - name: aia-backend
+        image: gcr.io/aia-system-production-2025/aia-backend:latest
+        ports:
+        - containerPort: 8000
+        env:
+        - name: ENVIRONMENT
+          value: "production"
+        - name: REDIS_HOST
+          value: "aia-redis-service"
+        - name: GOOGLE_CLOUD_PROJECT
+          value: "aia-system-production-2025"
+        - name: AIA_VERTEX_AI_ENABLED
+          value: "true"
+        - name: PORT
+          value: "8000"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5

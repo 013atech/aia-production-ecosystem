@@ -1,0 +1,519 @@
+# Customer Acquisition Services
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-acquisition-service
+  namespace: aia-comprehensive-platform
+spec:
+  selector:
+    app: aia-acquisition
+  ports:
+  - port: 80
+    targetPort: 3000
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-acquisition-deployment
+  namespace: aia-comprehensive-platform
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: aia-acquisition
+  template:
+    metadata:
+      labels:
+        app: aia-acquisition
+    spec:
+      containers:
+      - name: acquisition
+        image: nginx:alpine
+        ports:
+        - containerPort: 3000
+        volumeMounts:
+        - name: acquisition-content
+          mountPath: /usr/share/nginx/html
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "200m"
+      volumes:
+      - name: acquisition-content
+        configMap:
+          name: aia-acquisition-content
+---
+# Demo Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-demo-service
+  namespace: aia-comprehensive-platform
+spec:
+  selector:
+    app: aia-demo
+  ports:
+  - port: 80
+    targetPort: 3000
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-demo-deployment
+  namespace: aia-comprehensive-platform
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: aia-demo
+  template:
+    metadata:
+      labels:
+        app: aia-demo
+    spec:
+      containers:
+      - name: demo
+        image: gcr.io/aia-system-prod-1759055445/aia-demo:latest
+        ports:
+        - containerPort: 3000
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+---
+# Enterprise Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-enterprise-service
+  namespace: aia-comprehensive-platform
+spec:
+  selector:
+    app: aia-enterprise
+  ports:
+  - port: 80
+    targetPort: 3000
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-enterprise-deployment
+  namespace: aia-comprehensive-platform
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: aia-enterprise
+  template:
+    metadata:
+      labels:
+        app: aia-enterprise
+    spec:
+      containers:
+      - name: enterprise
+        image: gcr.io/aia-system-prod-1759055445/aia-enterprise:latest
+        ports:
+        - containerPort: 3000
+        env:
+        - name: ENTERPRISE_FEATURES
+          value: "enabled"
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+---
+# Finance Vertical Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-finance-service
+  namespace: aia-comprehensive-platform
+spec:
+  selector:
+    app: aia-finance
+  ports:
+  - port: 80
+    targetPort: 8080
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-finance-deployment
+  namespace: aia-comprehensive-platform
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: aia-finance
+  template:
+    metadata:
+      labels:
+        app: aia-finance
+    spec:
+      containers:
+      - name: finance
+        image: gcr.io/aia-system-prod-1759055445/aia-finance:latest
+        ports:
+        - containerPort: 8080
+        env:
+        - name: VERTICAL_TYPE
+          value: "finance"
+        - name: COMPLIANCE_MODE
+          value: "sox_pci_gdpr"
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+---
+# Healthcare Vertical Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-healthcare-service
+  namespace: aia-comprehensive-platform
+spec:
+  selector:
+    app: aia-healthcare
+  ports:
+  - port: 80
+    targetPort: 8080
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-healthcare-deployment
+  namespace: aia-comprehensive-platform
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: aia-healthcare
+  template:
+    metadata:
+      labels:
+        app: aia-healthcare
+    spec:
+      containers:
+      - name: healthcare
+        image: gcr.io/aia-system-prod-1759055445/aia-healthcare:latest
+        ports:
+        - containerPort: 8080
+        env:
+        - name: VERTICAL_TYPE
+          value: "healthcare"
+        - name: COMPLIANCE_MODE
+          value: "hipaa_gdpr"
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+---
+# Immersive 3D Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-immersive-service
+  namespace: aia-comprehensive-platform
+spec:
+  selector:
+    app: aia-immersive
+  ports:
+  - port: 80
+    targetPort: 3000
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-immersive-deployment
+  namespace: aia-comprehensive-platform
+spec:
+  replicas: 4
+  selector:
+    matchLabels:
+      app: aia-immersive
+  template:
+    metadata:
+      labels:
+        app: aia-immersive
+    spec:
+      containers:
+      - name: immersive
+        image: gcr.io/aia-system-prod-1759055445/aia-immersive:latest
+        ports:
+        - containerPort: 3000
+        env:
+        - name: THREE_JS_OPTIMIZATION
+          value: "enabled"
+        - name: WEBXR_FEATURES
+          value: "enabled"
+        resources:
+          requests:
+            memory: "2Gi"
+            cpu: "1000m"
+          limits:
+            memory: "4Gi"
+            cpu: "2000m"
+---
+# Analytics Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-analytics-service
+  namespace: aia-comprehensive-platform
+spec:
+  selector:
+    app: aia-analytics
+  ports:
+  - port: 80
+    targetPort: 8080
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-analytics-deployment
+  namespace: aia-comprehensive-platform
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: aia-analytics
+  template:
+    metadata:
+      labels:
+        app: aia-analytics
+    spec:
+      containers:
+      - name: analytics
+        image: gcr.io/aia-system-prod-1759055445/aia-analytics:latest
+        ports:
+        - containerPort: 8080
+        env:
+        - name: ANALYTICS_MODE
+          value: "enterprise"
+        - name: REAL_TIME_PROCESSING
+          value: "enabled"
+        resources:
+          requests:
+            memory: "2Gi"
+            cpu: "1000m"
+          limits:
+            memory: "4Gi"
+            cpu: "2000m"
+---
+# Payments Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-payments-service
+  namespace: aia-comprehensive-platform
+spec:
+  selector:
+    app: aia-payments
+  ports:
+  - port: 80
+    targetPort: 8080
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-payments-deployment
+  namespace: aia-comprehensive-platform
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: aia-payments
+  template:
+    metadata:
+      labels:
+        app: aia-payments
+    spec:
+      containers:
+      - name: payments
+        image: gcr.io/aia-system-prod-1759055445/aia-payments:latest
+        ports:
+        - containerPort: 8080
+        env:
+        - name: STRIPE_MODE
+          value: "live"
+        - name: QUANTUM_SECURITY
+          value: "enabled"
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+---
+# AI/ML Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-ai-service
+  namespace: aia-comprehensive-platform
+spec:
+  selector:
+    app: aia-ai
+  ports:
+  - port: 80
+    targetPort: 8080
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-ai-deployment
+  namespace: aia-comprehensive-platform
+spec:
+  replicas: 5
+  selector:
+    matchLabels:
+      app: aia-ai
+  template:
+    metadata:
+      labels:
+        app: aia-ai
+    spec:
+      containers:
+      - name: ai-service
+        image: gcr.io/aia-system-prod-1759055445/aia-ai:latest
+        ports:
+        - containerPort: 8080
+        env:
+        - name: VERTEX_AI_INTEGRATION
+          value: "enabled"
+        - name: AUTOML_FEATURES
+          value: "enabled"
+        - name: KNOWLEDGE_GRAPH_PROCESSING
+          value: "enabled"
+        resources:
+          requests:
+            memory: "4Gi"
+            cpu: "2000m"
+          limits:
+            memory: "8Gi"
+            cpu: "4000m"
+---
+# Monitoring Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-monitoring-service
+  namespace: aia-comprehensive-platform
+spec:
+  selector:
+    app: aia-monitoring
+  ports:
+  - port: 80
+    targetPort: 3000
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-monitoring-deployment
+  namespace: aia-comprehensive-platform
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: aia-monitoring
+  template:
+    metadata:
+      labels:
+        app: aia-monitoring
+    spec:
+      containers:
+      - name: monitoring
+        image: grafana/grafana:latest
+        ports:
+        - containerPort: 3000
+        env:
+        - name: GF_SECURITY_ADMIN_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: aia-monitoring-secret
+              key: grafana-password
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+---
+# Workload Identity Service Account
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: aia-workload-identity
+  namespace: aia-comprehensive-platform
+  annotations:
+    iam.gke.io/gcp-service-account: aia-gke-service@aia-system-prod-1759055445.iam.gserviceaccount.com
+---
+# Redis Cache Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-redis-service
+  namespace: aia-comprehensive-platform
+spec:
+  selector:
+    app: aia-redis
+  ports:
+  - port: 6379
+    targetPort: 6379
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-redis-deployment
+  namespace: aia-comprehensive-platform
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: aia-redis
+  template:
+    metadata:
+      labels:
+        app: aia-redis
+    spec:
+      containers:
+      - name: redis
+        image: redis:7-alpine
+        ports:
+        - containerPort: 6379
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"

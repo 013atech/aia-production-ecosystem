@@ -1,0 +1,253 @@
+---
+# Namespace for production deployment
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: aia-production-optimized
+  labels:
+    name: aia-production-optimized
+---
+# Global Ingress with SSL termination
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: aia-global-production-ingress
+  namespace: aia-production-optimized
+  annotations:
+    kubernetes.io/ingress.global-static-ip-name: "aia-global-ip"
+    networking.gke.io/managed-certificates: "aia-ssl-cert"
+    kubernetes.io/ingress.class: "gce"
+    kubernetes.io/ingress.allow-http: "false"
+spec:
+  rules:
+  - host: 013a.tech
+    http:
+      paths:
+      - path: /api/*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-backend-service
+            port:
+              number: 80
+      - path: /*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-frontend-service
+            port:
+              number: 80
+  - host: www.013a.tech
+    http:
+      paths:
+      - path: /*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-frontend-service
+            port:
+              number: 80
+  - host: app.013a.tech
+    http:
+      paths:
+      - path: /*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-enhanced-frontend-service
+            port:
+              number: 80
+---
+# SSL Certificate
+apiVersion: networking.gke.io/v1
+kind: ManagedCertificate
+metadata:
+  name: aia-ssl-cert
+  namespace: aia-production-optimized
+spec:
+  domains:
+    - 013a.tech
+    - www.013a.tech
+    - app.013a.tech
+---
+# AIA Backend ClusterIP Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-backend-service
+  namespace: aia-production-optimized
+spec:
+  type: ClusterIP
+  ports:
+  - port: 80
+    targetPort: 8000
+    protocol: TCP
+    name: http
+  selector:
+    app: aia-backend
+---
+# AIA Frontend ClusterIP Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-frontend-service
+  namespace: aia-production-optimized
+spec:
+  type: ClusterIP
+  ports:
+  - port: 80
+    targetPort: 80
+    protocol: TCP
+  selector:
+    app: aia-frontend
+---
+# AIA Enhanced Frontend ClusterIP Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-enhanced-frontend-service
+  namespace: aia-production-optimized
+spec:
+  type: ClusterIP
+  ports:
+  - port: 80
+    targetPort: 3000
+    protocol: TCP
+  selector:
+    app: aia-enhanced-frontend
+---
+# AIA Backend Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-backend
+  namespace: aia-production-optimized
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: aia-backend
+  template:
+    metadata:
+      labels:
+        app: aia-backend
+    spec:
+      containers:
+      - name: aia-backend
+        image: gcr.io/aia-system-prod-1759055445/aia-global-backend@sha256:ce2a08c036d6
+        ports:
+        - containerPort: 8000
+        env:
+        - name: ENVIRONMENT
+          value: "production"
+        - name: GCP_PROJECT
+          value: "aia-system-prod-1759055445"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 60
+          periodSeconds: 15
+---
+# AIA Frontend Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-frontend
+  namespace: aia-production-optimized
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: aia-frontend
+  template:
+    metadata:
+      labels:
+        app: aia-frontend
+    spec:
+      containers:
+      - name: aia-frontend
+        image: gcr.io/aia-system-prod-1759055445/aia-global-frontend@sha256:61432b3255e3
+        ports:
+        - containerPort: 80
+        env:
+        - name: REACT_APP_API_URL
+          value: "https://013a.tech/api"
+        - name: NODE_ENV
+          value: "production"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 15
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 30
+          periodSeconds: 15
+---
+# AIA Enhanced Frontend Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-enhanced-frontend
+  namespace: aia-production-optimized
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: aia-enhanced-frontend
+  template:
+    metadata:
+      labels:
+        app: aia-enhanced-frontend
+    spec:
+      containers:
+      - name: aia-enhanced-frontend
+        image: gcr.io/aia-system-prod-1759055445/aia-frontend@sha256:96901bbc1641
+        ports:
+        - containerPort: 3000
+        env:
+        - name: NODE_ENV
+          value: "production"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 3000
+          initialDelaySeconds: 15
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 3000
+          initialDelaySeconds: 30
+          periodSeconds: 15

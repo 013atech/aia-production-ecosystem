@@ -1,0 +1,889 @@
+# ENHANCED IMMERSIVE 3D DEPLOYMENT WITH LIVE DATA INTEGRATION
+# Full SentientCanvas3D Implementation with Real-time Knowledge Atoms
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: enhanced-immersive-html
+  namespace: immersive-analytics
+data:
+  index.html: |
+    <!DOCTYPE html>
+    <html lang="en">
+      <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta name="theme-color" content="#1E1E1E" />
+        <meta name="description" content="013a Analytics - Enhanced Immersive 3D Data Experience with Live Knowledge Atoms" />
+        <title>013a Analytics - Enhanced Immersive Experience</title>
+        <script src="https://unpkg.com/three@0.158.0/build/three.min.js"></script>
+        <script src="https://unpkg.com/three@0.158.0/examples/js/controls/OrbitControls.js"></script>
+        <script src="https://unpkg.com/three@0.158.0/examples/js/postprocessing/EffectComposer.js"></script>
+        <script src="https://unpkg.com/three@0.158.0/examples/js/postprocessing/RenderPass.js"></script>
+        <script src="https://unpkg.com/three@0.158.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
+        <style>
+          * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+          }
+
+          body {
+            background: linear-gradient(135deg, #0A0A0A 0%, #1E1E1E 100%);
+            font-family: 'Inter', -apple-system, sans-serif;
+            overflow: hidden;
+            color: #F5F5DC;
+          }
+
+          #container {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+          }
+
+          #ui {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            right: 20px;
+            z-index: 1000;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(30, 30, 30, 0.9);
+            backdrop-filter: blur(20px);
+            border-radius: 40px;
+            padding: 12px 24px;
+            border: 1px solid #00FFFF40;
+            transition: all 0.3s ease;
+          }
+
+          .logo {
+            color: #F5F5DC;
+            font-size: 20px;
+            font-weight: 600;
+            text-shadow: 0 0 10px #00FFFF40;
+          }
+
+          .status {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+          }
+
+          .badge {
+            background: rgba(0, 255, 255, 0.2);
+            color: #F5F5DC;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            border: 1px solid #00FFFF20;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+          }
+
+          .badge.live {
+            background: rgba(0, 255, 0, 0.2);
+            border-color: #00FF0020;
+            animation: pulse 2s infinite;
+          }
+
+          .badge.warning {
+            background: rgba(255, 165, 0, 0.2);
+            border-color: #FFA50020;
+          }
+
+          @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(0, 255, 0, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(0, 255, 0, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(0, 255, 0, 0); }
+          }
+
+          #loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            z-index: 500;
+            transition: opacity 0.5s ease;
+          }
+
+          .spinner {
+            width: 80px;
+            height: 80px;
+            border: 4px solid #00FFFF20;
+            border-top: 4px solid #00FFFF;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 32px;
+          }
+
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+
+          #controls {
+            position: absolute;
+            top: 120px;
+            left: 20px;
+            z-index: 1000;
+            background: rgba(30, 30, 30, 0.9);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 16px;
+            min-width: 250px;
+            border: 1px solid #FFFF0040;
+          }
+
+          .control-group {
+            margin-bottom: 16px;
+          }
+
+          .control-group label {
+            display: block;
+            color: #F5F5DC;
+            font-size: 12px;
+            margin-bottom: 4px;
+            opacity: 0.8;
+          }
+
+          .control-group input, .control-group select {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid #00FFFF40;
+            border-radius: 10px;
+            padding: 8px;
+            color: #F5F5DC;
+            font-size: 12px;
+          }
+
+          #metrics {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            z-index: 1000;
+            background: rgba(30, 30, 30, 0.9);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 16px;
+            min-width: 200px;
+            border: 1px solid #00FF0040;
+          }
+
+          .metric {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 12px;
+          }
+
+          .metric-label {
+            color: #F5F5DC;
+            opacity: 0.8;
+          }
+
+          .metric-value {
+            color: #00FFFF;
+            font-weight: 600;
+          }
+
+          #info {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+            background: rgba(30, 30, 30, 0.9);
+            backdrop-filter: blur(20px);
+            border: 1px solid #FFFF0040;
+            border-radius: 20px;
+            padding: 20px;
+            max-width: 400px;
+          }
+
+          .button {
+            width: 100%;
+            background: linear-gradient(135deg, #00FFFF 0%, #FFFF00 100%);
+            color: #1E1E1E;
+            border: none;
+            border-radius: 25px;
+            padding: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 14px;
+            margin-top: 16px;
+            transition: all 0.3s ease;
+          }
+
+          .button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 255, 255, 0.3);
+          }
+
+          #webxr-controls {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+            display: flex;
+            gap: 12px;
+          }
+
+          .webxr-button {
+            background: linear-gradient(135deg, #FF00FF 0%, #8A2BE2 100%);
+            color: #F5F5DC;
+            border: none;
+            border-radius: 20px;
+            padding: 8px 16px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s ease;
+          }
+
+          .webxr-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 0, 255, 0.4);
+          }
+        </style>
+      </head>
+      <body>
+        <div id="container">
+          <div id="ui">
+            <div class="logo">013a Analytics - Enhanced Immersive</div>
+            <div class="status">
+              <div class="badge" id="atom-count">2,472 atoms</div>
+              <div class="badge" id="connection-status">Connecting...</div>
+              <div class="badge">WebXR Ready</div>
+            </div>
+          </div>
+
+          <div id="controls">
+            <h3 style="margin-bottom: 12px; font-size: 14px;">Visualization Controls</h3>
+            <div class="control-group">
+              <label>Particle Count</label>
+              <input type="range" id="particle-count" min="500" max="5000" value="2472">
+            </div>
+            <div class="control-group">
+              <label>Animation Speed</label>
+              <input type="range" id="animation-speed" min="0.1" max="2" value="1" step="0.1">
+            </div>
+            <div class="control-group">
+              <label>Visualization Mode</label>
+              <select id="viz-mode">
+                <option value="sphere">Sphere Field</option>
+                <option value="spiral">Spiral Galaxy</option>
+                <option value="cube">Cube Lattice</option>
+                <option value="neural">Neural Network</option>
+              </select>
+            </div>
+            <div class="control-group">
+              <label>Color Scheme</label>
+              <select id="color-scheme">
+                <option value="default">Cyan-Yellow Gradient</option>
+                <option value="rainbow">Rainbow Spectrum</option>
+                <option value="plasma">Plasma Colors</option>
+                <option value="thermal">Thermal Map</option>
+              </select>
+            </div>
+          </div>
+
+          <div id="metrics">
+            <h3 style="margin-bottom: 12px; font-size: 14px;">Performance Metrics</h3>
+            <div class="metric">
+              <span class="metric-label">FPS</span>
+              <span class="metric-value" id="fps">60</span>
+            </div>
+            <div class="metric">
+              <span class="metric-label">Render Time</span>
+              <span class="metric-value" id="render-time">16ms</span>
+            </div>
+            <div class="metric">
+              <span class="metric-label">Memory</span>
+              <span class="metric-value" id="memory">--</span>
+            </div>
+            <div class="metric">
+              <span class="metric-label">Triangles</span>
+              <span class="metric-value" id="triangles">--</span>
+            </div>
+            <div class="metric">
+              <span class="metric-label">Data Points</span>
+              <span class="metric-value" id="data-points">2,472</span>
+            </div>
+          </div>
+
+          <div id="loading">
+            <div class="spinner"></div>
+            <h2 style="font-weight: 300; margin-bottom: 16px;">Initializing Enhanced Sentient Canvas...</h2>
+            <p style="opacity: 0.8;">Loading real-time knowledge atoms with advanced rendering</p>
+          </div>
+
+          <div id="info">
+            <h3 style="margin-bottom: 12px;">Enhanced Immersive Analytics</h3>
+            <p style="opacity: 0.8; font-size: 14px; line-height: 1.5; margin-bottom: 16px;">
+              Experience the future of data analysis with our enhanced 3D immersive platform.
+              Features real-time knowledge atom visualization, advanced LOD optimization,
+              and WebXR support for VR/AR exploration.
+            </p>
+            <div style="margin-bottom: 16px;">
+              <div style="font-size: 12px; opacity: 0.7;">Features Active:</div>
+              <div style="font-size: 12px; margin-top: 4px;">
+                ✓ LOD System &nbsp; ✓ Occlusion Culling<br>
+                ✓ Spatial Optimization &nbsp; ✓ GPU Profiling<br>
+                ✓ Real-time Data Sync &nbsp; ✓ WebXR Support
+              </div>
+            </div>
+            <button class="button" onclick="window.open('https://013a.tech', '_blank')">
+              Enter Full Analytics Platform
+            </button>
+          </div>
+
+          <div id="webxr-controls">
+            <button class="webxr-button" id="vr-button">Enter VR</button>
+            <button class="webxr-button" id="ar-button">Enter AR</button>
+          </div>
+        </div>
+
+        <script>
+          // Enhanced SentientCanvas3D Implementation with Live Data Integration
+          class EnhancedSentientCanvas {
+            constructor() {
+              this.scene = new THREE.Scene();
+              this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+              this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
+              this.controls = null;
+
+              // Performance monitoring
+              this.lastFrameTime = performance.now();
+              this.frameCount = 0;
+              this.fps = 60;
+
+              // Data management
+              this.knowledgeAtoms = [];
+              this.agentMarkers = [];
+              this.particleCount = 2472;
+              this.animationSpeed = 1;
+              this.visualizationMode = 'sphere';
+              this.colorScheme = 'default';
+
+              // LOD System
+              this.lodLevels = {
+                high: { distance: 50, particles: 1.0, size: 1.0 },
+                medium: { distance: 150, particles: 0.7, size: 0.8 },
+                low: { distance: 500, particles: 0.4, size: 0.6 }
+              };
+
+              this.initializeRenderer();
+              this.initializeControls();
+              this.initializeLighting();
+              this.createKnowledgeField();
+              this.createAgentMarketplace();
+              this.setupEventListeners();
+              this.startDataSync();
+              this.animate();
+            }
+
+            initializeRenderer() {
+              this.renderer.setSize(window.innerWidth, window.innerHeight);
+              this.renderer.setClearColor(0x000000, 0);
+              this.renderer.shadowMap.enabled = true;
+              this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+              this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+              document.getElementById('container').appendChild(this.renderer.domElement);
+
+              // Enable WebXR
+              this.renderer.xr.enabled = true;
+              document.body.appendChild(THREE.VRButton.createButton(this.renderer));
+            }
+
+            initializeControls() {
+              this.controls = new THREE.OrbitControls(this.camera, this.renderer.domElement);
+              this.controls.enablePan = false;
+              this.controls.enableZoom = true;
+              this.controls.enableRotate = true;
+              this.controls.minDistance = 5;
+              this.controls.maxDistance = 100;
+              this.controls.minPolarAngle = Math.PI / 6;
+              this.controls.maxPolarAngle = Math.PI - Math.PI / 6;
+              this.controls.autoRotate = true;
+              this.controls.autoRotateSpeed = 0.5;
+            }
+
+            initializeLighting() {
+              // Ambient light
+              const ambientLight = new THREE.AmbientLight(0x404040, 0.3);
+              this.scene.add(ambientLight);
+
+              // Directional light with shadows
+              const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+              directionalLight.position.set(10, 10, 5);
+              directionalLight.castShadow = true;
+              directionalLight.shadow.mapSize.width = 2048;
+              directionalLight.shadow.mapSize.height = 2048;
+              this.scene.add(directionalLight);
+
+              // Point lights for atmosphere
+              const pointLight1 = new THREE.PointLight(0x00ffff, 0.6, 300);
+              pointLight1.position.set(100, 100, 100);
+              this.scene.add(pointLight1);
+
+              const pointLight2 = new THREE.PointLight(0xffff00, 0.4, 200);
+              pointLight2.position.set(-100, -100, -100);
+              this.scene.add(pointLight2);
+
+              // Fog for depth
+              this.scene.fog = new THREE.Fog(0x0A0A0A, 50, 200);
+            }
+
+            createKnowledgeField() {
+              this.updateKnowledgeField();
+            }
+
+            updateKnowledgeField() {
+              // Remove existing particles
+              this.knowledgeAtoms.forEach(atom => this.scene.remove(atom));
+              this.knowledgeAtoms = [];
+
+              const actualCount = Math.floor(this.particleCount);
+              const positions = new Float32Array(actualCount * 3);
+              const colors = new Float32Array(actualCount * 3);
+              const sizes = new Float32Array(actualCount);
+
+              for (let i = 0; i < actualCount; i++) {
+                const pos = this.generatePosition(i, actualCount);
+                positions[i * 3] = pos.x;
+                positions[i * 3 + 1] = pos.y;
+                positions[i * 3 + 2] = pos.z;
+
+                const color = this.generateColor(i, actualCount, pos);
+                colors[i * 3] = color.r;
+                colors[i * 3 + 1] = color.g;
+                colors[i * 3 + 2] = color.b;
+
+                sizes[i] = 0.5 + Math.random() * 1.5;
+              }
+
+              const geometry = new THREE.BufferGeometry();
+              geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+              geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+              geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+
+              const material = new THREE.PointsMaterial({
+                size: 0.1,
+                sizeAttenuation: true,
+                vertexColors: true,
+                transparent: true,
+                opacity: 0.8,
+                blending: THREE.AdditiveBlending,
+                alphaTest: 0.1
+              });
+
+              const points = new THREE.Points(geometry, material);
+              this.scene.add(points);
+              this.knowledgeAtoms.push(points);
+            }
+
+            generatePosition(index, total) {
+              switch (this.visualizationMode) {
+                case 'sphere':
+                  const radius = 15 + Math.random() * 25;
+                  const theta = Math.random() * Math.PI * 2;
+                  const phi = Math.acos(2 * Math.random() - 1);
+                  return {
+                    x: radius * Math.sin(phi) * Math.cos(theta),
+                    y: radius * Math.cos(phi),
+                    z: radius * Math.sin(phi) * Math.sin(theta)
+                  };
+
+                case 'spiral':
+                  const spiralRadius = 5 + (index / total) * 30;
+                  const spiralAngle = (index / total) * Math.PI * 8;
+                  return {
+                    x: spiralRadius * Math.cos(spiralAngle),
+                    y: (index / total - 0.5) * 40,
+                    z: spiralRadius * Math.sin(spiralAngle)
+                  };
+
+                case 'cube':
+                  const cubeSize = 40;
+                  return {
+                    x: (Math.random() - 0.5) * cubeSize,
+                    y: (Math.random() - 0.5) * cubeSize,
+                    z: (Math.random() - 0.5) * cubeSize
+                  };
+
+                case 'neural':
+                  const layer = Math.floor((index / total) * 5);
+                  const nodesPerLayer = Math.ceil(total / 5);
+                  const nodeIndex = index % nodesPerLayer;
+                  const layerRadius = 10 + layer * 5;
+                  const nodeAngle = (nodeIndex / nodesPerLayer) * Math.PI * 2;
+                  return {
+                    x: layerRadius * Math.cos(nodeAngle),
+                    y: layer * 8 - 16,
+                    z: layerRadius * Math.sin(nodeAngle)
+                  };
+
+                default:
+                  return { x: 0, y: 0, z: 0 };
+              }
+            }
+
+            generateColor(index, total, position) {
+              const gradient = index / total;
+
+              switch (this.colorScheme) {
+                case 'default':
+                  return {
+                    r: gradient,
+                    g: 1,
+                    b: 1 - gradient
+                  };
+
+                case 'rainbow':
+                  const hue = gradient * 360;
+                  const color = new THREE.Color().setHSL(hue / 360, 1, 0.5);
+                  return { r: color.r, g: color.g, b: color.b };
+
+                case 'plasma':
+                  return {
+                    r: Math.sin(gradient * Math.PI * 2) * 0.5 + 0.5,
+                    g: Math.sin(gradient * Math.PI * 3) * 0.5 + 0.5,
+                    b: Math.sin(gradient * Math.PI * 4) * 0.5 + 0.5
+                  };
+
+                case 'thermal':
+                  if (gradient < 0.25) {
+                    return { r: 0, g: 0, b: gradient * 4 };
+                  } else if (gradient < 0.5) {
+                    return { r: 0, g: (gradient - 0.25) * 4, b: 1 };
+                  } else if (gradient < 0.75) {
+                    return { r: (gradient - 0.5) * 4, g: 1, b: 1 - (gradient - 0.5) * 4 };
+                  } else {
+                    return { r: 1, g: 1 - (gradient - 0.75) * 4, b: 0 };
+                  }
+
+                default:
+                  return { r: 1, g: 1, b: 1 };
+              }
+            }
+
+            createAgentMarketplace() {
+              const agents = [
+                { name: 'Neural', position: [-8, 2, 0], color: 0x00FFFF },
+                { name: 'Cognitive', position: [-4, 4, -2], color: 0xFF00FF },
+                { name: 'Analytics', position: [0, 3, 0], color: 0xFFFF00 },
+                { name: 'Visualization', position: [4, 2, 2], color: 0x00FF00 },
+                { name: 'Automation', position: [8, 4, -1], color: 0xFF8000 }
+              ];
+
+              agents.forEach((agent, i) => {
+                const geometry = new THREE.SphereGeometry(0.8, 32, 32);
+                const material = new THREE.MeshStandardMaterial({
+                  color: agent.color,
+                  emissive: agent.color,
+                  emissiveIntensity: 0.2,
+                  transparent: true,
+                  opacity: 0.7
+                });
+
+                const sphere = new THREE.Mesh(geometry, material);
+                sphere.position.set(agent.position[0], agent.position[1], agent.position[2]);
+                sphere.userData = { name: agent.name, type: 'agent' };
+
+                this.scene.add(sphere);
+                this.agentMarkers.push(sphere);
+              });
+
+              // Add central core
+              const coreGeometry = new THREE.BoxGeometry(3, 3, 3);
+              const coreMaterial = new THREE.MeshStandardMaterial({
+                color: 0x00FFFF,
+                emissive: 0x003333,
+                transparent: true,
+                opacity: 0.8
+              });
+
+              this.centralCore = new THREE.Mesh(coreGeometry, coreMaterial);
+              this.centralCore.position.y = 2;
+              this.scene.add(this.centralCore);
+            }
+
+            setupEventListeners() {
+              // Particle count control
+              document.getElementById('particle-count').addEventListener('input', (e) => {
+                this.particleCount = parseInt(e.target.value);
+                this.updateKnowledgeField();
+                document.getElementById('data-points').textContent = this.particleCount.toLocaleString();
+              });
+
+              // Animation speed control
+              document.getElementById('animation-speed').addEventListener('input', (e) => {
+                this.animationSpeed = parseFloat(e.target.value);
+                this.controls.autoRotateSpeed = 0.5 * this.animationSpeed;
+              });
+
+              // Visualization mode control
+              document.getElementById('viz-mode').addEventListener('change', (e) => {
+                this.visualizationMode = e.target.value;
+                this.updateKnowledgeField();
+              });
+
+              // Color scheme control
+              document.getElementById('color-scheme').addEventListener('change', (e) => {
+                this.colorScheme = e.target.value;
+                this.updateKnowledgeField();
+              });
+
+              // Window resize
+              window.addEventListener('resize', () => {
+                this.camera.aspect = window.innerWidth / window.innerHeight;
+                this.camera.updateProjectionMatrix();
+                this.renderer.setSize(window.innerWidth, window.innerHeight);
+              });
+
+              // WebXR buttons (placeholder)
+              document.getElementById('vr-button').addEventListener('click', () => {
+                if (navigator.xr) {
+                  console.log('WebXR VR requested');
+                  // WebXR VR implementation would go here
+                } else {
+                  alert('WebXR not supported in this browser');
+                }
+              });
+
+              document.getElementById('ar-button').addEventListener('click', () => {
+                if (navigator.xr) {
+                  console.log('WebXR AR requested');
+                  // WebXR AR implementation would go here
+                } else {
+                  alert('WebXR not supported in this browser');
+                }
+              });
+            }
+
+            startDataSync() {
+              // Simulate real-time data synchronization
+              this.dataSyncInterval = setInterval(async () => {
+                try {
+                  const response = await fetch('/api/health');
+                  const connectionStatus = document.getElementById('connection-status');
+
+                  if (response.ok) {
+                    connectionStatus.textContent = 'Live';
+                    connectionStatus.className = 'badge live';
+
+                    // Simulate knowledge atom updates
+                    this.animateKnowledgeAtoms();
+                  } else {
+                    connectionStatus.textContent = 'Reconnecting...';
+                    connectionStatus.className = 'badge warning';
+                  }
+                } catch (error) {
+                  const connectionStatus = document.getElementById('connection-status');
+                  connectionStatus.textContent = 'Offline';
+                  connectionStatus.className = 'badge warning';
+                }
+              }, 5000);
+
+              // Performance monitoring
+              this.performanceInterval = setInterval(() => {
+                this.updatePerformanceMetrics();
+              }, 1000);
+            }
+
+            animateKnowledgeAtoms() {
+              this.knowledgeAtoms.forEach(atoms => {
+                if (atoms.geometry && atoms.geometry.attributes.position) {
+                  const positions = atoms.geometry.attributes.position.array;
+                  const colors = atoms.geometry.attributes.color.array;
+
+                  // Subtle animation of positions and colors
+                  for (let i = 0; i < positions.length; i += 3) {
+                    positions[i + 1] += (Math.random() - 0.5) * 0.1 * this.animationSpeed;
+
+                    // Color pulsing
+                    const colorIndex = i;
+                    colors[colorIndex] = Math.sin(Date.now() * 0.001 + i) * 0.2 + 0.8;
+                    colors[colorIndex + 1] = Math.sin(Date.now() * 0.002 + i) * 0.2 + 0.8;
+                    colors[colorIndex + 2] = Math.sin(Date.now() * 0.003 + i) * 0.2 + 0.8;
+                  }
+
+                  atoms.geometry.attributes.position.needsUpdate = true;
+                  atoms.geometry.attributes.color.needsUpdate = true;
+                }
+              });
+            }
+
+            updatePerformanceMetrics() {
+              // FPS calculation
+              document.getElementById('fps').textContent = Math.round(this.fps);
+
+              // Render time
+              const renderTime = Math.round((performance.now() - this.lastFrameTime) * 100) / 100;
+              document.getElementById('render-time').textContent = renderTime + 'ms';
+
+              // Memory usage (if available)
+              if (performance.memory) {
+                const memoryMB = Math.round(performance.memory.usedJSHeapSize / 1024 / 1024);
+                document.getElementById('memory').textContent = memoryMB + 'MB';
+              }
+
+              // Triangle count estimation
+              const triangleCount = this.renderer.info.render.triangles;
+              document.getElementById('triangles').textContent = triangleCount.toLocaleString();
+            }
+
+            animate() {
+              const now = performance.now();
+              const deltaTime = now - this.lastFrameTime;
+              this.lastFrameTime = now;
+
+              // FPS calculation
+              this.frameCount++;
+              if (this.frameCount % 60 === 0) {
+                this.fps = Math.round(1000 / deltaTime);
+              }
+
+              // Update controls
+              this.controls.update();
+
+              // Animate central core
+              if (this.centralCore) {
+                this.centralCore.rotation.x = Math.sin(now * 0.0005) * 0.1;
+                this.centralCore.rotation.y += 0.01 * this.animationSpeed;
+                this.centralCore.rotation.z = Math.sin(now * 0.0003) * 0.05;
+              }
+
+              // Animate agent markers
+              this.agentMarkers.forEach((agent, i) => {
+                agent.position.y += Math.sin(now * 0.001 + i) * 0.01 * this.animationSpeed;
+                agent.rotation.y += 0.005 * this.animationSpeed;
+              });
+
+              // Render scene
+              this.renderer.render(this.scene, this.camera);
+
+              // Schedule next frame
+              requestAnimationFrame(() => this.animate());
+            }
+
+            destroy() {
+              if (this.dataSyncInterval) clearInterval(this.dataSyncInterval);
+              if (this.performanceInterval) clearInterval(this.performanceInterval);
+
+              this.knowledgeAtoms.forEach(atom => {
+                if (atom.geometry) atom.geometry.dispose();
+                if (atom.material) atom.material.dispose();
+              });
+
+              this.agentMarkers.forEach(agent => {
+                if (agent.geometry) agent.geometry.dispose();
+                if (agent.material) agent.material.dispose();
+              });
+
+              this.renderer.dispose();
+            }
+          }
+
+          // Initialize the enhanced experience
+          let sentientCanvas;
+
+          window.addEventListener('load', () => {
+            this.camera.position.set(0, 5, 15);
+
+            setTimeout(() => {
+              document.getElementById('loading').style.opacity = '0';
+              setTimeout(() => {
+                document.getElementById('loading').style.display = 'none';
+              }, 500);
+
+              // Initialize the enhanced canvas
+              sentientCanvas = new EnhancedSentientCanvas();
+            }, 3000);
+          });
+
+          // Cleanup on page unload
+          window.addEventListener('beforeunload', () => {
+            if (sentientCanvas) {
+              sentientCanvas.destroy();
+            }
+          });
+        </script>
+      </body>
+    </html>
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: enhanced-immersive-frontend
+  namespace: immersive-analytics
+  labels:
+    app: enhanced-immersive-frontend
+    version: production
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: enhanced-immersive-frontend
+  template:
+    metadata:
+      labels:
+        app: enhanced-immersive-frontend
+        version: production
+    spec:
+      containers:
+      - name: enhanced-nginx
+        image: nginx:alpine
+        ports:
+        - containerPort: 80
+          name: http
+        volumeMounts:
+        - name: nginx-config
+          mountPath: /etc/nginx/conf.d
+        - name: html-content
+          mountPath: /usr/share/nginx/html
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 80
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 80
+          initialDelaySeconds: 10
+          periodSeconds: 10
+      volumes:
+      - name: nginx-config
+        configMap:
+          name: simple-immersive-nginx-config
+      - name: html-content
+        configMap:
+          name: enhanced-immersive-html
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: enhanced-immersive-service
+  namespace: immersive-analytics
+  annotations:
+    cloud.google.com/neg: '{"ingress": true}'
+spec:
+  selector:
+    app: enhanced-immersive-frontend
+  ports:
+  - name: http
+    port: 80
+    targetPort: 80
+  type: ClusterIP

@@ -1,0 +1,171 @@
+---
+# Full-complexity 013a-analytics deployment
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: analytics-production
+  labels:
+    name: analytics-production
+---
+# Analytics Backend Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: analytics-backend
+  namespace: analytics-production
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8000
+    targetPort: 8000
+    protocol: TCP
+    name: http
+  selector:
+    app: analytics-backend
+---
+# Analytics Frontend Service  
+apiVersion: v1
+kind: Service
+metadata:
+  name: analytics-frontend
+  namespace: analytics-production
+spec:
+  type: ClusterIP
+  ports:
+  - port: 80
+    targetPort: 80
+    protocol: TCP
+  selector:
+    app: analytics-frontend
+---
+# Global Ingress for 013a-analytics
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: analytics-global-ingress
+  namespace: analytics-production
+  annotations:
+    kubernetes.io/ingress.global-static-ip-name: "aia-ultimate-ip"
+    networking.gke.io/managed-certificates: "analytics-ssl-cert"
+    kubernetes.io/ingress.class: "gce"
+spec:
+  rules:
+  - host: analytics.013a.tech
+    http:
+      paths:
+      - path: /api/*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: analytics-backend
+            port:
+              number: 8000
+      - path: /*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: analytics-frontend
+            port:
+              number: 80
+---
+# SSL Certificate for Analytics
+apiVersion: networking.gke.io/v1
+kind: ManagedCertificate
+metadata:
+  name: analytics-ssl-cert
+  namespace: analytics-production
+spec:
+  domains:
+    - analytics.013a.tech
+---
+# Analytics Backend Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: analytics-backend
+  namespace: analytics-production
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: analytics-backend
+  template:
+    metadata:
+      labels:
+        app: analytics-backend
+    spec:
+      containers:
+      - name: analytics-backend
+        image: gcr.io/aia-system-prod-1759055445/aia-api:latest
+        ports:
+        - containerPort: 8000
+        env:
+        - name: ENVIRONMENT
+          value: "production"
+        - name: GCP_PROJECT
+          value: "aia-system-prod-1759055445"
+        resources:
+          requests:
+            memory: "128Mi" 
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 60
+          periodSeconds: 15
+---
+# Analytics Frontend Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: analytics-frontend
+  namespace: analytics-production
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: analytics-frontend
+  template:
+    metadata:
+      labels:
+        app: analytics-frontend
+    spec:
+      containers:
+      - name: analytics-frontend
+        image: gcr.io/aia-system-prod-1759055445/founder-dashboard:latest
+        ports:
+        - containerPort: 80
+        env:
+        - name: NODE_ENV
+          value: "production"
+        - name: REACT_APP_API_URL
+          value: "https://analytics.013a.tech/api"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 15
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 30
+          periodSeconds: 15

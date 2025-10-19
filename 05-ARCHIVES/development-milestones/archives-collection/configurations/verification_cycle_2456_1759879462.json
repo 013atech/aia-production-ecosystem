@@ -1,0 +1,38 @@
+{
+  "cycle_number": 2456,
+  "timestamp": "2025-10-08T01:24:22.112905",
+  "tests": {
+    "production_endpoints": {
+      "frontend": {
+        "status": "error",
+        "error": "HTTPSConnectionPool(host='013a.tech', port=443): Max retries exceeded with url: / (Caused by NameResolutionError(\"<urllib3.connection.HTTPSConnection object at 0x103080fe0>: Failed to resolve '013a.tech' ([Errno 8] nodename nor servname provided, or not known)\"))"
+      },
+      "api": {
+        "status": "error",
+        "error": "HTTPSConnectionPool(host='api.013a.tech', port=443): Max retries exceeded with url: / (Caused by NameResolutionError(\"<urllib3.connection.HTTPSConnection object at 0x103080680>: Failed to resolve 'api.013a.tech' ([Errno 8] nodename nor servname provided, or not known)\"))"
+      },
+      "health": {
+        "status": "error",
+        "error": "HTTPSConnectionPool(host='013a.tech', port=443): Max retries exceeded with url: /health (Caused by NameResolutionError(\"<urllib3.connection.HTTPSConnection object at 0x10306e240>: Failed to resolve '013a.tech' ([Errno 8] nodename nor servname provided, or not known)\"))"
+      }
+    },
+    "knowledge_graph": {
+      "status": "success",
+      "insights_count": 10,
+      "query_time": 0.00605
+    },
+    "gcp_infrastructure": {
+      "status": "healthy",
+      "pods_running": true,
+      "services_available": true,
+      "load_balancer": "active"
+    },
+    "monitoring": {
+      "status": "active",
+      "prometheus": "running",
+      "grafana": "accessible"
+    }
+  },
+  "cycle_duration": 0.019176006317138672,
+  "status": "completed"
+}

@@ -1,0 +1,352 @@
+# Use existing base images for quick deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-demo-deployment
+  namespace: aia-comprehensive-platform
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: aia-demo
+  template:
+    metadata:
+      labels:
+        app: aia-demo
+    spec:
+      containers:
+      - name: demo
+        image: nginx:alpine
+        ports:
+        - containerPort: 80
+        volumeMounts:
+        - name: demo-content
+          mountPath: /usr/share/nginx/html
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "50m"
+          limits:
+            memory: "256Mi"
+            cpu: "100m"
+      volumes:
+      - name: demo-content
+        configMap:
+          name: aia-demo-content
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: aia-demo-content
+  namespace: aia-comprehensive-platform
+data:
+  index.html: |
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>AIA Demo Platform</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+            body {
+                font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
+                margin: 0;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                padding: 40px 20px;
+                min-height: 100vh;
+            }
+            .container {
+                max-width: 1200px;
+                margin: 0 auto;
+                text-align: center;
+            }
+            .hero {
+                font-size: 3.5em;
+                margin-bottom: 20px;
+                font-weight: 700;
+                text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            }
+            .subtitle {
+                font-size: 1.3em;
+                margin-bottom: 50px;
+                opacity: 0.95;
+            }
+            .features {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+                gap: 30px;
+                margin: 60px 0;
+            }
+            .feature {
+                background: rgba(255, 255, 255, 0.15);
+                padding: 40px;
+                border-radius: 15px;
+                backdrop-filter: blur(10px);
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                transition: all 0.3s;
+            }
+            .feature:hover {
+                transform: translateY(-10px);
+                background: rgba(255, 255, 255, 0.2);
+            }
+            .btn {
+                display: inline-block;
+                padding: 18px 35px;
+                background: linear-gradient(45deg, #ff6b6b, #ff5252);
+                color: white;
+                text-decoration: none;
+                border-radius: 8px;
+                margin: 15px;
+                font-size: 1.1em;
+                font-weight: 600;
+                transition: all 0.3s;
+                border: none;
+                cursor: pointer;
+            }
+            .btn:hover {
+                transform: translateY(-3px);
+                box-shadow: 0 15px 35px rgba(255, 107, 107, 0.4);
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1 class="hero">AIA Demo Platform</h1>
+            <p class="subtitle">Experience Enterprise AI Intelligence in Action</p>
+
+            <a href="#" class="btn">🚀 Start Live Demo</a>
+            <a href="#" class="btn">📊 View Analytics</a>
+            <a href="#" class="btn">🔧 API Access</a>
+
+            <div class="features">
+                <div class="feature">
+                    <h3>🤖 Multi-Agent AI</h3>
+                    <p>Advanced multi-agent orchestration with real-time collaboration, intelligent task distribution, and autonomous decision-making.</p>
+                </div>
+                <div class="feature">
+                    <h3>📈 Real-Time Analytics</h3>
+                    <p>Comprehensive business intelligence with live dashboards, predictive analytics, and actionable insights.</p>
+                </div>
+                <div class="feature">
+                    <h3>🔒 Quantum Security</h3>
+                    <p>Military-grade security with quantum-resistant encryption, zero-trust architecture, and complete data sovereignty.</p>
+                </div>
+                <div class="feature">
+                    <h3>🌍 Global Infrastructure</h3>
+                    <p>Multi-region deployment with edge computing, auto-scaling, and 99.9% uptime SLA guarantee.</p>
+                </div>
+                <div class="feature">
+                    <h3>🎯 Industry Solutions</h3>
+                    <p>Specialized AI solutions for finance, healthcare, retail, and manufacturing with compliance frameworks.</p>
+                </div>
+                <div class="feature">
+                    <h3>⚡ Enterprise Scale</h3>
+                    <p>Fortune 500 ready platform with enterprise integrations, custom SLAs, and dedicated support.</p>
+                </div>
+            </div>
+        </div>
+    </body>
+    </html>
+---
+# Enterprise Platform using nginx
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-enterprise-deployment
+  namespace: aia-comprehensive-platform
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: aia-enterprise
+  template:
+    metadata:
+      labels:
+        app: aia-enterprise
+    spec:
+      containers:
+      - name: enterprise
+        image: nginx:alpine
+        ports:
+        - containerPort: 80
+        volumeMounts:
+        - name: enterprise-content
+          mountPath: /usr/share/nginx/html
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "50m"
+          limits:
+            memory: "512Mi"
+            cpu: "200m"
+      volumes:
+      - name: enterprise-content
+        configMap:
+          name: aia-enterprise-content
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: aia-enterprise-content
+  namespace: aia-comprehensive-platform
+data:
+  index.html: |
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>AIA Enterprise Platform</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+            body {
+                font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
+                margin: 0;
+                background: #0f172a;
+                color: #e2e8f0;
+            }
+            .header {
+                background: linear-gradient(135deg, #1e40af, #3b82f6);
+                padding: 80px 20px;
+                text-align: center;
+            }
+            .container {
+                max-width: 1400px;
+                margin: 0 auto;
+                padding: 50px 20px;
+            }
+            .title {
+                font-size: 4em;
+                margin-bottom: 20px;
+                font-weight: 700;
+                color: white;
+            }
+            .subtitle {
+                font-size: 1.4em;
+                opacity: 0.95;
+                margin-bottom: 50px;
+                color: white;
+            }
+            .features {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+                gap: 40px;
+                margin: 70px 0;
+            }
+            .feature {
+                background: #1e293b;
+                padding: 40px;
+                border-radius: 15px;
+                border-left: 5px solid #3b82f6;
+                transition: all 0.3s;
+            }
+            .feature:hover {
+                transform: translateY(-5px);
+                background: #334155;
+            }
+            .feature h3 {
+                color: #3b82f6;
+                font-size: 1.4em;
+                margin-bottom: 20px;
+            }
+            .metrics {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+                gap: 30px;
+                margin: 60px 0;
+                text-align: center;
+            }
+            .metric {
+                background: rgba(59, 130, 246, 0.1);
+                padding: 30px;
+                border-radius: 12px;
+                border: 1px solid rgba(59, 130, 246, 0.3);
+            }
+            .metric-value {
+                font-size: 2.5em;
+                font-weight: bold;
+                color: #3b82f6;
+                margin-bottom: 10px;
+            }
+            .metric-label {
+                font-size: 1.1em;
+                opacity: 0.8;
+            }
+            .btn {
+                background: linear-gradient(45deg, #1e40af, #3b82f6);
+                color: white;
+                padding: 18px 35px;
+                border: none;
+                border-radius: 8px;
+                font-size: 1.2em;
+                cursor: pointer;
+                margin: 15px 10px;
+                transition: all 0.3s;
+                text-transform: uppercase;
+                letter-spacing: 1px;
+                font-weight: 600;
+            }
+            .btn:hover {
+                transform: translateY(-3px);
+                box-shadow: 0 15px 40px rgba(59, 130, 246, 0.4);
+            }
+        </style>
+    </head>
+    <body>
+        <div class="header">
+            <div class="container">
+                <h1 class="title">AIA Enterprise</h1>
+                <p class="subtitle">Fortune 500 AI Solutions for Global Scale</p>
+                <button class="btn">Request Enterprise Demo</button>
+                <button class="btn">Contact Sales Team</button>
+                <button class="btn">Schedule C-Suite Briefing</button>
+            </div>
+        </div>
+
+        <div class="container">
+            <div class="metrics">
+                <div class="metric">
+                    <div class="metric-value">$46T</div>
+                    <div class="metric-label">Addressable Market</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-value">500+</div>
+                    <div class="metric-label">Fortune 500 Clients</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-value">99.99%</div>
+                    <div class="metric-label">Enterprise SLA</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-value">45</div>
+                    <div class="metric-label">Global Regions</div>
+                </div>
+            </div>
+
+            <div class="features">
+                <div class="feature">
+                    <h3>🏢 Enterprise AI Infrastructure</h3>
+                    <p>Complete AI platform designed for Fortune 500 companies with enterprise-grade compliance, security, and scalability. Supports thousands of concurrent users with guaranteed performance.</p>
+                </div>
+                <div class="feature">
+                    <h3>👔 C-Suite Intelligence Dashboard</h3>
+                    <p>Executive-level insights with real-time business intelligence, strategic AI recommendations, and ROI tracking. Custom dashboards for board presentations and investor relations.</p>
+                </div>
+                <div class="feature">
+                    <h3>🛡️ Zero-Trust Security Architecture</h3>
+                    <p>Military-grade security with quantum-resistant encryption, complete data sovereignty, and comprehensive audit trails. SOX, GDPR, HIPAA, and Basel III compliant.</p>
+                </div>
+                <div class="feature">
+                    <h3>📊 Advanced Analytics & ML</h3>
+                    <p>Comprehensive analytics suite with predictive modeling, automated insights, and custom AI model deployment. Real-time data processing with sub-millisecond latency.</p>
+                </div>
+                <div class="feature">
+                    <h3>🌍 Global Multi-Region Deployment</h3>
+                    <p>Multi-region infrastructure with edge computing, automatic failover, and local compliance. 99.99% uptime SLA with dedicated support and account management.</p>
+                </div>
+                <div class="feature">
+                    <h3>🔗 Enterprise Integrations</h3>
+                    <p>Seamless integration with existing enterprise systems including SAP, Oracle, Microsoft, Salesforce, and custom APIs. White-label solutions available.</p>
+                </div>
+            </div>
+        </div>
+    </body>
+    </html>

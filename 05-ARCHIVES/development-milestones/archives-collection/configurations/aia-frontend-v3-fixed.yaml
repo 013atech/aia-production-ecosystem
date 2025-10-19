@@ -1,0 +1,62 @@
+# TEMPORARILY DISABLED FOR QUOTA COMPLIANCE
+# This deployment has been temporarily disabled to meet GCP quota requirements
+# Original content below (commented out):
+#
+# apiVersion: apps/v1
+# kind: Deployment
+# metadata:
+#   name: aia-frontend-v3
+#   namespace: aia-production-v3
+#   labels:
+#     app: aia-frontend
+#     version: v3
+#     tier: frontend
+# spec:
+#   replicas: 3
+#   selector:
+#     matchLabels:
+#       app: aia-frontend
+#       version: v3
+#   template:
+#     metadata:
+#       labels:
+#         app: aia-frontend
+#         version: v3
+#         tier: frontend
+#     spec:
+#       containers:
+#       - name: aia-frontend
+#         image: gcr.io/a-467519/aia-frontend:v2.1.0
+#         ports:
+#         - containerPort: 80
+#           name: http
+#         env:
+#         - name: REACT_APP_API_BASE_URL
+#           value: "https://013a.tech/api"
+#         - name: REACT_APP_ENVIRONMENT
+#           value: "production"
+#         - name: REACT_APP_VERSION
+#           value: "v3"
+#         - name: REACT_APP_KNOWLEDGE_GRAPH_ENABLED
+#           value: "true"
+#         - name: REACT_APP_ATOM_COUNT
+#           value: "20362"
+#         resources:
+#           requests:
+#             memory: "128Mi"
+#             cpu: "100m"
+#           limits:
+#             memory: "128Mi"
+#             cpu: "100m"
+#         livenessProbe:
+#           httpGet:
+#             path: /
+#             port: 80
+#           initialDelaySeconds: 30
+#           periodSeconds: 10
+#         readinessProbe:
+#           httpGet:
+#             path: /
+#             port: 80
+#           initialDelaySeconds: 15
+#           periodSeconds: 5

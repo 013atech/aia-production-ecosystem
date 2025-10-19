@@ -1,0 +1,54 @@
+{
+  "apiConfig": {
+    "baseURL": "https://013a.tech",
+    "endpoints": {
+      "health": "/health",
+      "dkg": {
+        "health": "/dkg-v3/health",
+        "query": "/dkg-v3/intelligence/query",
+        "opportunities": "/dkg-v3/fortune500/opportunities",
+        "visualization": "/dkg-v3/3d-visualization"
+      },
+      "neural": {
+        "process": "/api/v1/neural/process-intelligence",
+        "agents": "/api/v2/neural-agents/status"
+      },
+      "tasks": {
+        "submit": "/tasks/submit",
+        "status": "/tasks/{task_id}",
+        "process": "/process-with-dkg"
+      },
+      "analytics": {
+        "udkgStatus": "/api/analytics/udkg-v3/status",
+        "insights": "/api/analytics/udkg-v3/insights",
+        "ventures": "/api/analytics/udkg-v3/venture-opportunities",
+        "visualization": "/api/analytics/udkg-v3/3d-visualization"
+      },
+      "agents": {
+        "discover": "/api/v1/a2a/discover-agents"
+      },
+      "payments": {
+        "config": "/api/v1/payments/config",
+        "create": "/api/v1/payments/create-payment-intent",
+        "subscribe": "/api/v1/payments/create-subscription"
+      },
+      "enterprise": {
+        "auth": "/api/enterprise/auth/partner",
+        "workflow": "/api/enterprise/workflow/execute",
+        "analytics": "/api/enterprise/analytics/{partner_id}"
+      }
+    }
+  },
+  "featureFlags": {
+    "dkgEnabled": true,
+    "neuralProcessing": true,
+    "3dVisualization": true,
+    "multiAgentSystem": true,
+    "enterpriseIntegration": true
+  },
+  "performance": {
+    "requestTimeout": 30000,
+    "retryAttempts": 3,
+    "batchSize": 100
+  }
+}

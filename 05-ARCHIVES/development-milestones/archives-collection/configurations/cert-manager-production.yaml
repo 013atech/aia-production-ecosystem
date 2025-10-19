@@ -1,0 +1,59 @@
+# Production SSL Certificate Management
+# Cryptography Agent Lead - Full Complexity Enterprise Implementation
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: cert-manager
+  labels:
+    name: cert-manager
+
+---
+# Certificate Manager Deployment
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-production
+spec:
+  acme:
+    server: https://acme-v02.api.letsencrypt.org/directory
+    email: hello@013a.tech
+    privateKeySecretRef:
+      name: letsencrypt-production
+    solvers:
+    - http01:
+        ingress:
+          class: gce
+    - dns01:
+        cloudflare:
+          apiTokenSecretRef:
+            name: cloudflare-api-token
+            key: api-token
+
+---
+# Google Managed Certificate Alternative
+apiVersion: networking.gke.io/v1
+kind: ManagedCertificate
+metadata:
+  name: aia-enterprise-ssl-cert
+  namespace: aia-working-production
+spec:
+  domains:
+    - 013a.tech
+    - www.013a.tech
+    - api.013a.tech
+    - fortune500.013a.tech
+    - xr.013a.tech
+    - payments.013a.tech
+    - analytics.013a.tech
+    - immersive.013a.tech
+
+---
+# Production SSL Secret
+apiVersion: v1
+kind: Secret
+metadata:
+  name: cloudflare-api-token
+  namespace: cert-manager
+type: Opaque
+stringData:
+  api-token: "nPYl1jYR2JZDws1DPkkG9mXGDSJwosDEiRrZo3u3"

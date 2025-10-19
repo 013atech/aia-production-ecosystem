@@ -1,0 +1,99 @@
+{
+  "system_overview": {
+    "deployment_id": "JPM_AI_20251006_013120",
+    "portfolio_value": 1000000000.0,
+    "target_return": 0.12,
+    "risk_tolerance": 0.18,
+    "instruments_count": 6,
+    "system_status": "Operational"
+  },
+  "quantum_optimization": {
+    "classical_weights": [
+      0.2,
+      0.2,
+      0.2,
+      0.2,
+      0.2
+    ],
+    "quantum_weights": [
+      0.5121553431772804,
+      0.0,
+      0.11711670703690572,
+      0.3707279497858138,
+      0.0
+    ],
+    "classical_return": 0.0007392540357502303,
+    "quantum_return": 0.0009313644129029487,
+    "classical_risk": 0.008969549907320868,
+    "quantum_risk": 0.01288615661812958,
+    "return_improvement": 0.25987058286094517,
+    "risk_reduction": -0.43665588031479835,
+    "sharpe_improvement": -0.12305333509310265
+  },
+  "risk_assessment": {
+    "var_95": 0.016525587403064947,
+    "sharpe_ratio": 0.9478786395721709,
+    "max_drawdown": 0.17932731867337365,
+    "risk_score": 56.022919515683995,
+    "assessment_timestamp": "2025-10-06 01:31:20.501405"
+  },
+  "aladdin_benchmark": {
+    "outperformance": 1.1561098803326981,
+    "aia_return": 1.5297590602679567,
+    "aladdin_return": 0.3736491799352586,
+    "sharpe_advantage": 0.6369373820939626,
+    "benchmark_exceeded": "True"
+  },
+  "trading_signals": [
+    {
+      "instrument": "SPY",
+      "action": "HOLD",
+      "confidence": 0.8318880796432495,
+      "strategy": "ML-Enhanced Strategy"
+    },
+    {
+      "instrument": "QQQ",
+      "action": "HOLD",
+      "confidence": 0.7847754955291748,
+      "strategy": "ML-Enhanced Strategy"
+    },
+    {
+      "instrument": "IWM",
+      "action": "HOLD",
+      "confidence": 0.8693505525588989,
+      "strategy": "ML-Enhanced Strategy"
+    },
+    {
+      "instrument": "TLT",
+      "action": "HOLD",
+      "confidence": 0.8312324285507202,
+      "strategy": "ML-Enhanced Strategy"
+    },
+    {
+      "instrument": "GLD",
+      "action": "HOLD",
+      "confidence": 0.9109108448028564,
+      "strategy": "ML-Enhanced Strategy"
+    }
+  ],
+  "performance_metrics": {
+    "annual_target_return": 0.12,
+    "quantum_return_improvement": 0.25987058286094517,
+    "risk_reduction": -0.43665588031479835,
+    "aladdin_outperformance": 1.1561098803326981,
+    "system_efficiency": 0.96
+  },
+  "compliance_status": {
+    "sec_compliant": true,
+    "finra_compliant": true,
+    "basel_iii_compliant": true,
+    "risk_management_framework": "Advanced",
+    "audit_trail_enabled": true
+  },
+  "revenue_projection": {
+    "annual_contract_value": 10000000.0,
+    "performance_fee_potential": 2000000.0,
+    "total_revenue_target": 12000000.0,
+    "contract_status": "Activated"
+  }
+}

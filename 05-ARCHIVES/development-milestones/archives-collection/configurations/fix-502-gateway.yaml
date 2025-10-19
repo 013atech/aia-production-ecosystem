@@ -1,0 +1,133 @@
+# FIX 502 BAD GATEWAY - BACKEND CONFIG ANNOTATION
+# Apply proper backend configuration for health checks
+
+# Backend Service with Backend Config
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-unified-backend-service
+  namespace: aia-unified-production
+  annotations:
+    cloud.google.com/backend-config: '{"default": "aia-backend-config"}'
+  labels:
+    app: aia-unified-backend
+    tier: backend
+spec:
+  type: NodePort
+  selector:
+    app: aia-unified-backend
+  ports:
+  - port: 8000
+    targetPort: 8000
+    nodePort: 30344
+    name: http
+
+---
+# Frontend Service with Health Check
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-unified-frontend-service
+  namespace: aia-unified-production
+  annotations:
+    cloud.google.com/backend-config: '{"default": "aia-frontend-config"}'
+  labels:
+    app: aia-unified-frontend
+    tier: frontend
+spec:
+  type: NodePort
+  selector:
+    app: aia-unified-frontend
+  ports:
+  - port: 80
+    targetPort: 80
+    nodePort: 32506
+    name: http
+
+---
+# Frontend Backend Config
+apiVersion: cloud.google.com/v1
+kind: BackendConfig
+metadata:
+  name: aia-frontend-config
+  namespace: aia-unified-production
+spec:
+  healthCheck:
+    checkIntervalSec: 10
+    port: 80
+    type: HTTP
+    requestPath: /
+    timeoutSec: 5
+    healthyThreshold: 1
+    unhealthyThreshold: 3
+  timeoutSec: 30
+  connectionDraining:
+    drainingTimeoutSec: 60
+
+---
+# Optimized Ingress Configuration
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: aia-unified-production-ingress
+  namespace: aia-unified-production
+  annotations:
+    kubernetes.io/ingress.allow-http: "true"
+    kubernetes.io/ingress.global-static-ip-name: aia-production-ip
+    ingress.gcp.kubernetes.io/managed-certificates: aia-unified-ssl-certificate
+    cloud.google.com/armor-config: |
+      {
+        "default-rule": {
+          "evaluate-preconfigured-expr": [
+            "owasp-crs-v030001-id942110-sqli",
+            "owasp-crs-v030001-id942120-sqli",
+            "owasp-crs-v030001-id941100-xss"
+          ]
+        }
+      }
+spec:
+  rules:
+  - host: 013a.tech
+    http:
+      paths:
+      - path: /api/*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-unified-backend-service
+            port:
+              number: 8000
+      - path: /*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-unified-frontend-service
+            port:
+              number: 80
+  - host: www.013a.tech
+    http:
+      paths:
+      - path: /api/*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-unified-backend-service
+            port:
+              number: 8000
+      - path: /*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-unified-frontend-service
+            port:
+              number: 80
+  - host: api.013a.tech
+    http:
+      paths:
+      - path: /*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-unified-backend-service
+            port:
+              number: 8000

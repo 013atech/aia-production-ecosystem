@@ -1,0 +1,50 @@
+# TEMPORARILY DISABLED FOR QUOTA COMPLIANCE
+# This deployment has been temporarily disabled to meet GCP quota requirements
+# Original content below (commented out):
+#
+# ---
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   name: aia-frontend-lb
+#   namespace: aia-production
+# spec:
+#   type: NodePort
+#   loadBalancerIP: 136.112.116.79  # Using aia-frontend-regional (RESERVED)
+#   ports:
+#   - port: 80
+#     targetPort: 80
+#     protocol: TCP
+#   selector:
+#     app: aia-frontend
+# ---
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   name: aia-global-backend
+#   namespace: aia-production
+# spec:
+#   type: NodePort
+#   loadBalancerIP: 104.197.149.170  # Using aia-backend-regional (RESERVED)
+#   ports:
+#   - port: 80
+#     targetPort: 8000
+#     protocol: TCP
+#     name: http
+#   selector:
+#     app: aia-backend
+# ---
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   name: aia-enhanced-frontend
+#   namespace: aia-production
+# spec:
+#   type: NodePort
+#   loadBalancerIP: 34.46.224.213   # Using aia-enhanced-regional (RESERVED)
+#   ports:
+#   - port: 80
+#     targetPort: 3000
+#     protocol: TCP
+#   selector:
+#     app: aia-enhanced-frontend

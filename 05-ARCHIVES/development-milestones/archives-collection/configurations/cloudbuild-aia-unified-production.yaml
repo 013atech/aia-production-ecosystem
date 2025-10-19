@@ -1,0 +1,40 @@
+# TEMPORARILY DISABLED FOR QUOTA COMPLIANCE
+# This deployment has been temporarily disabled to meet GCP quota requirements
+# Original content below (commented out):
+#
+# steps:
+# # Build AIA Backend with Full Multi-Agent System
+# - name: 'gcr.io/cloud-builders/docker'
+#   args:
+#   - 'build'
+#   - '-t'
+#   - 'gcr.io/aia-system-prod-1759055445/aia-unified-backend:latest'
+#   - '-f'
+#   - 'aia/Dockerfile'
+#   - './aia'
+#   env:
+#   - 'DOCKER_BUILDKIT=1'
+# 
+# # Build AIA Frontend with React 3D and WebXR
+# - name: 'gcr.io/cloud-builders/docker'
+#   args:
+#   - 'build'
+#   - '-t'
+#   - 'gcr.io/aia-system-prod-1759055445/aia-frontend:latest'
+#   - '-f'
+#   - 'frontend/Dockerfile'
+#   - './frontend'
+#   env:
+#   - 'DOCKER_BUILDKIT=1'
+#   - 'NODE_OPTIONS=--max-old-space-size=4096'
+# 
+# # Push all images
+# images:
+# - 'gcr.io/aia-system-prod-1759055445/aia-unified-backend:latest'
+# - 'gcr.io/aia-system-prod-1759055445/aia-frontend:latest'
+# 
+# options:
+#   machineType: 'E2_HIGHCPU_8'
+#   diskSizeGb: 100
+# 
+# timeout: 1800s

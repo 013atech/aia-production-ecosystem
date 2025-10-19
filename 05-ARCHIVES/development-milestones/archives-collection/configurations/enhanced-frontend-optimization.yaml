@@ -1,0 +1,463 @@
+# Enhanced Frontend with React Three Fiber Optimization
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: frontend-nginx-config
+  namespace: aia-comprehensive-platform
+data:
+  nginx.conf: |
+    events {
+        worker_connections 1024;
+    }
+
+    http {
+        include /etc/nginx/mime.types;
+        default_type application/octet-stream;
+
+        # Gzip compression for better performance
+        gzip on;
+        gzip_vary on;
+        gzip_min_length 1024;
+        gzip_proxied any;
+        gzip_comp_level 6;
+        gzip_types
+            application/javascript
+            application/json
+            application/ld+json
+            application/manifest+json
+            application/rss+xml
+            application/vnd.geo+json
+            application/vnd.ms-fontobject
+            application/x-font-ttf
+            application/x-web-app-manifest+json
+            font/opentype
+            image/bmp
+            image/svg+xml
+            image/x-icon
+            text/cache-manifest
+            text/css
+            text/plain
+            text/vcard
+            text/vnd.rim.location.xloc
+            text/vtt
+            text/x-component
+            text/x-cross-domain-policy;
+
+        # Cache settings for static assets
+        location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
+            expires 1y;
+            add_header Cache-Control "public, immutable";
+            add_header X-Content-Type-Options nosniff;
+        }
+
+        # Security headers
+        add_header X-Frame-Options SAMEORIGIN;
+        add_header X-Content-Type-Options nosniff;
+        add_header X-XSS-Protection "1; mode=block";
+        add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+
+        server {
+            listen 80;
+            server_name _;
+            root /usr/share/nginx/html;
+            index index.html;
+
+            # Handle React Router
+            location / {
+                try_files $uri $uri/ /index.html;
+            }
+
+            # Health check endpoint
+            location /health {
+                return 200 'healthy';
+                add_header Content-Type text/plain;
+            }
+        }
+    }
+---
+# Enhanced Frontend Dockerfile ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: frontend-dockerfile
+  namespace: aia-comprehensive-platform
+data:
+  Dockerfile: |
+    # Multi-stage build for optimized React Three Fiber app
+    FROM node:18-alpine as builder
+
+    WORKDIR /app
+
+    # Copy package files
+    COPY package*.json ./
+
+    # Install dependencies with optimizations
+    RUN npm ci --only=production --no-audit --prefer-offline
+
+    # Copy source code
+    COPY . .
+
+    # Build optimized production bundle
+    ENV NODE_ENV=production
+    ENV REACT_APP_THREE_JS_OPTIMIZED=true
+    ENV REACT_APP_WEBGL_PRECISION=high
+
+    RUN npm run build
+
+    # Production stage with nginx
+    FROM nginx:1.21-alpine
+
+    # Copy custom nginx config
+    COPY nginx.conf /etc/nginx/nginx.conf
+
+    # Copy built assets
+    COPY --from=builder /app/build /usr/share/nginx/html
+
+    # Add health check
+    HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+        CMD curl -f http://localhost/health || exit 1
+
+    EXPOSE 80
+
+    CMD ["nginx", "-g", "daemon off;"]
+---
+# Package.json optimization ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: frontend-package-config
+  namespace: aia-comprehensive-platform
+data:
+  package.json: |
+    {
+      "name": "aia-frontend-optimized",
+      "version": "2.0.0",
+      "private": true,
+      "dependencies": {
+        "@react-three/fiber": "^8.15.12",
+        "@react-three/drei": "^9.92.7",
+        "@react-three/postprocessing": "^2.15.11",
+        "react": "^18.2.0",
+        "react-dom": "^18.2.0",
+        "three": "^0.158.0",
+        "react-router-dom": "^6.8.1",
+        "axios": "^1.6.2",
+        "@emotion/react": "^11.11.1",
+        "@emotion/styled": "^11.11.0",
+        "@mui/material": "^5.15.1",
+        "framer-motion": "^10.16.16",
+        "react-spring": "^9.7.3"
+      },
+      "devDependencies": {
+        "@types/react": "^18.2.45",
+        "@types/react-dom": "^18.2.18",
+        "@types/three": "^0.158.3",
+        "react-scripts": "5.0.1",
+        "webpack-bundle-analyzer": "^4.10.1"
+      },
+      "scripts": {
+        "start": "react-scripts start",
+        "build": "react-scripts build && npm run analyze",
+        "test": "react-scripts test",
+        "eject": "react-scripts eject",
+        "analyze": "npx webpack-bundle-analyzer build/static/js/*.js"
+      },
+      "eslintConfig": {
+        "extends": [
+          "react-app",
+          "react-app/jest"
+        ]
+      },
+      "browserslist": {
+        "production": [
+          ">0.2%",
+          "not dead",
+          "not op_mini all"
+        ],
+        "development": [
+          "last 1 chrome version",
+          "last 1 firefox version",
+          "last 1 safari version"
+        ]
+      }
+    }
+---
+# Advanced Three.js Configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: threejs-optimization-config
+  namespace: aia-comprehensive-platform
+data:
+  three-config.ts: |
+    // Advanced Three.js optimization configuration
+    import * as THREE from 'three';
+
+    export const THREE_CONFIG = {
+      // Renderer optimizations
+      renderer: {
+        antialias: true,
+        alpha: true,
+        powerPreference: 'high-performance',
+        stencil: false,
+        depth: true,
+        logarithmicDepthBuffer: true,
+        precision: 'highp'
+      },
+
+      // Performance optimizations
+      performance: {
+        // Use InstancedMesh for repeated geometries
+        useInstancedMesh: true,
+
+        // Enable GPU instancing
+        enableGPUInstancing: true,
+
+        // Use LOD (Level of Detail) for complex models
+        enableLOD: true,
+
+        // Frustum culling
+        enableFrustumCulling: true,
+
+        // Occlusion culling
+        enableOcclusionCulling: true,
+
+        // Texture compression
+        textureCompression: true,
+
+        // Geometry merging
+        mergeGeometries: true,
+
+        // Use BufferGeometry exclusively
+        useBufferGeometry: true
+      },
+
+      // Memory management
+      memory: {
+        // Dispose of unused textures
+        autoDisposeTextures: true,
+
+        // Geometry disposal
+        autoDisposeGeometry: true,
+
+        // Material disposal
+        autoDisposeMaterials: true,
+
+        // Maximum texture size
+        maxTextureSize: 2048,
+
+        // Use texture atlases
+        useTextureAtlases: true
+      },
+
+      // WebXR optimizations
+      webxr: {
+        // Enable foveated rendering
+        enableFoveatedRendering: true,
+
+        // Use reprojection
+        enableReprojection: true,
+
+        // Adaptive quality
+        enableAdaptiveQuality: true,
+
+        // Hand tracking optimization
+        optimizeHandTracking: true
+      },
+
+      // Lighting optimizations
+      lighting: {
+        // Use shadow map cascades
+        useShadowCascades: true,
+
+        // Shadow map size optimization
+        shadowMapSize: 1024,
+
+        // Use light probe for GI approximation
+        useLightProbes: true,
+
+        // Environment map optimization
+        optimizeEnvironmentMaps: true
+      },
+
+      // Animation optimizations
+      animation: {
+        // Use quaternion interpolation
+        useQuaternionInterpolation: true,
+
+        // Skeletal animation optimization
+        optimizeSkeletalAnimation: true,
+
+        // Morph target optimization
+        optimizeMorphTargets: true
+      }
+    };
+
+    // Performance monitoring
+    export class PerformanceMonitor {
+      private stats: any;
+      private frameCount = 0;
+      private lastTime = performance.now();
+
+      constructor() {
+        if (process.env.NODE_ENV === 'development') {
+          import('stats.js').then(Stats => {
+            this.stats = new Stats.default();
+            document.body.appendChild(this.stats.dom);
+          });
+        }
+      }
+
+      update() {
+        if (this.stats) {
+          this.stats.update();
+        }
+
+        this.frameCount++;
+        const currentTime = performance.now();
+
+        // Log performance metrics every 60 frames
+        if (this.frameCount % 60 === 0) {
+          const fps = 60000 / (currentTime - this.lastTime);
+          console.log(`Average FPS: ${fps.toFixed(2)}`);
+          this.lastTime = currentTime;
+        }
+      }
+
+      getMemoryUsage() {
+        if ('memory' in performance) {
+          return (performance as any).memory;
+        }
+        return null;
+      }
+    }
+
+    // WebGL capability detection
+    export const detectWebGLCapabilities = () => {
+      const canvas = document.createElement('canvas');
+      const gl = canvas.getContext('webgl2') || canvas.getContext('webgl');
+
+      if (!gl) {
+        return { supported: false };
+      }
+
+      return {
+        supported: true,
+        version: gl.getParameter(gl.VERSION),
+        vendor: gl.getParameter(gl.VENDOR),
+        renderer: gl.getParameter(gl.RENDERER),
+        maxTextureSize: gl.getParameter(gl.MAX_TEXTURE_SIZE),
+        maxViewportDims: gl.getParameter(gl.MAX_VIEWPORT_DIMS),
+        maxVertexAttribs: gl.getParameter(gl.MAX_VERTEX_ATTRIBS),
+        supportedExtensions: gl.getSupportedExtensions()
+      };
+    };
+---
+# Mobile optimization ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mobile-optimization-config
+  namespace: aia-comprehensive-platform
+data:
+  mobile-config.ts: |
+    // Mobile-specific optimizations for Three.js
+    export const MOBILE_CONFIG = {
+      // Detect mobile device
+      isMobile: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent),
+
+      // Reduced quality settings for mobile
+      mobile: {
+        pixelRatio: Math.min(window.devicePixelRatio, 2),
+        shadowMapSize: 512,
+        antialias: false,
+        precision: 'mediump',
+        maxLights: 3,
+        maxTextureSize: 1024,
+        enableLOD: true,
+        cullingDistance: 100
+      },
+
+      // Desktop high-quality settings
+      desktop: {
+        pixelRatio: window.devicePixelRatio,
+        shadowMapSize: 2048,
+        antialias: true,
+        precision: 'highp',
+        maxLights: 8,
+        maxTextureSize: 2048,
+        enableLOD: false,
+        cullingDistance: 500
+      },
+
+      // Adaptive quality based on performance
+      adaptiveQuality: {
+        targetFPS: 60,
+        minFPS: 30,
+        qualityLevels: ['low', 'medium', 'high', 'ultra']
+      }
+    };
+
+    // Touch gesture handling for mobile
+    export class TouchGestureHandler {
+      private canvas: HTMLCanvasElement;
+      private camera: THREE.Camera;
+      private controls: any;
+
+      constructor(canvas: HTMLCanvasElement, camera: THREE.Camera, controls: any) {
+        this.canvas = canvas;
+        this.camera = camera;
+        this.controls = controls;
+        this.setupTouchEvents();
+      }
+
+      private setupTouchEvents() {
+        // Prevent default touch behaviors
+        this.canvas.addEventListener('touchstart', this.preventDefault);
+        this.canvas.addEventListener('touchmove', this.preventDefault);
+        this.canvas.addEventListener('touchend', this.preventDefault);
+
+        // Handle gestures
+        let lastTouchDistance = 0;
+        let lastTouchCenter = { x: 0, y: 0 };
+
+        this.canvas.addEventListener('touchstart', (event) => {
+          if (event.touches.length === 2) {
+            // Pinch gesture start
+            lastTouchDistance = this.getTouchDistance(event.touches);
+            lastTouchCenter = this.getTouchCenter(event.touches);
+          }
+        });
+
+        this.canvas.addEventListener('touchmove', (event) => {
+          if (event.touches.length === 2) {
+            // Pinch gesture
+            const currentDistance = this.getTouchDistance(event.touches);
+            const currentCenter = this.getTouchCenter(event.touches);
+
+            const scale = currentDistance / lastTouchDistance;
+            this.controls.dollyIn(scale);
+
+            lastTouchDistance = currentDistance;
+            lastTouchCenter = currentCenter;
+          }
+        });
+      }
+
+      private preventDefault(event: TouchEvent) {
+        event.preventDefault();
+      }
+
+      private getTouchDistance(touches: TouchList): number {
+        const dx = touches[0].pageX - touches[1].pageX;
+        const dy = touches[0].pageY - touches[1].pageY;
+        return Math.sqrt(dx * dx + dy * dy);
+      }
+
+      private getTouchCenter(touches: TouchList): { x: number; y: number } {
+        return {
+          x: (touches[0].pageX + touches[1].pageX) / 2,
+          y: (touches[0].pageY + touches[1].pageY) / 2
+        };
+      }
+    }

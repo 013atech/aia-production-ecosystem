@@ -1,0 +1,142 @@
+# TEMPORARILY DISABLED FOR QUOTA COMPLIANCE
+# This deployment has been temporarily disabled to meet GCP quota requirements
+# Original content below (commented out):
+#
+# apiVersion: v1
+# kind: Namespace
+# metadata:
+#   name: aia-quick-secure
+#   labels:
+#     app: aia-system
+#     security-level: "post-quantum"
+# ---
+# apiVersion: apps/v1
+# kind: Deployment
+# metadata:
+#   name: aia-quick-frontend
+#   namespace: aia-quick-secure
+# spec:
+#   replicas: 3
+#   selector:
+#     matchLabels:
+#       app: aia-frontend
+#   template:
+#     metadata:
+#       labels:
+#         app: aia-frontend
+#         security-level: "post-quantum"
+#     spec:
+#       containers:
+#       - name: frontend
+#         image: nginx:1.25-alpine
+#         ports:
+#         - containerPort: 80
+#         volumeMounts:
+#         - name: html-content
+#           mountPath: /usr/share/nginx/html/index.html
+#           subPath: index.html
+#         resources:
+#           requests:
+#             memory: "128Mi"
+#             cpu: "100m"
+#           limits:
+#             memory: "128Mi"
+#             cpu: "100m"
+#       volumes:
+#       - name: html-content
+#         configMap:
+#           name: aia-quick-html
+# ---
+# apiVersion: v1
+# kind: ConfigMap
+# metadata:
+#   name: aia-quick-html
+#   namespace: aia-quick-secure
+# data:
+#   index.html: |
+#     <!DOCTYPE html>
+#     <html lang="en">
+#     <head>
+#         <meta charset="UTF-8">
+#         <meta name="viewport" content="width=device-width, initial-scale=1.0">
+#         <title>013a Analytics - Post-Quantum Secured</title>
+#         <style>
+#             body {
+#                 background: linear-gradient(135deg, #1E1E1E, #2A2A2A);
+#                 color: #F5F5DC;
+#                 font-family: 'Inter', system-ui, sans-serif;
+#                 margin: 0;
+#                 padding: 2rem;
+#                 text-align: center;
+#                 min-height: 100vh;
+#                 display: flex;
+#                 align-items: center;
+#                 justify-content: center;
+#             }
+#             .container {
+#                 max-width: 800px;
+#             }
+#             .logo {
+#                 background: linear-gradient(135deg, #00FFFF, #FFFF00);
+#                 -webkit-background-clip: text;
+#                 -webkit-text-fill-color: transparent;
+#                 font-size: 4rem;
+#                 font-weight: 300;
+#                 margin-bottom: 2rem;
+#             }
+#             .security-badge {
+#                 position: fixed;
+#                 top: 1rem;
+#                 right: 1rem;
+#                 background: #00FF00;
+#                 color: #000;
+#                 padding: 0.5rem 1rem;
+#                 border-radius: 20px;
+#                 font-weight: bold;
+#                 font-size: 0.9rem;
+#             }
+#             .status {
+#                 background: rgba(0, 255, 0, 0.2);
+#                 border: 2px solid #00FF00;
+#                 border-radius: 10px;
+#                 padding: 1rem;
+#                 margin: 2rem 0;
+#             }
+#         </style>
+#     </head>
+#     <body>
+#         <div class="security-badge">🔐 POST-QUANTUM SECURED</div>
+#         <div class="container">
+#             <h1 class="logo">013a Analytics</h1>
+#             <h2>Secure Autonomous Analytical Partner</h2>
+#             <div class="status">
+#                 <h3>🟢 System Operational</h3>
+#                 <p>Post-Quantum Cryptography: ACTIVE</p>
+#                 <p>Kyber/Dilithium Protection: ENABLED</p>
+#                 <p>Version: 3.0 - October 1, 2025</p>
+#             </div>
+#             <p>Transform your data questions into comprehensive business insights with our advanced AI-powered analytical platform, protected by military-grade post-quantum cryptography.</p>
+#             <div style="margin-top: 2rem;">
+#                 <button style="background: linear-gradient(135deg, #00FFFF, #FFFF00); color: #000; padding: 1rem 2rem; border: none; border-radius: 25px; font-size: 1.1rem; font-weight: bold; cursor: pointer;">🚀 Start Secure Analysis</button>
+#             </div>
+#         </div>
+#         <script>
+#             console.log('%c013a Analytics - Post-Quantum Secured', 'color: #00FFFF; font-size: 16px; font-weight: bold;');
+#             console.log('%cSecurity Level: POST-QUANTUM', 'color: #00FF00; font-weight: bold;');
+#             console.log('%cDeployment: October 1, 2025', 'color: #FFFF00;');
+#         </script>
+#     </body>
+#     </html>
+# ---
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   name: aia-quick-service
+#   namespace: aia-quick-secure
+# spec:
+#   selector:
+#     app: aia-frontend
+#   ports:
+#   - port: 80
+#     targetPort: 80
+#   type: NodePort

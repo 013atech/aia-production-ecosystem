@@ -1,0 +1,817 @@
+# AIA MLOps Enhanced Prometheus Configuration
+# =============================================
+# Comprehensive monitoring configuration for MLOps workflows
+# with advanced metrics collection, alerting, and business intelligence
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: aia-mlops-monitoring
+  labels:
+    name: aia-mlops-monitoring
+    environment: production
+    component: monitoring
+---
+# Enhanced Prometheus Configuration for MLOps
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-mlops-config
+  namespace: aia-mlops-monitoring
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 15s
+      evaluation_interval: 15s
+      external_labels:
+        cluster: 'aia-production-mlops'
+        environment: 'production'
+        platform: '013a-tech'
+
+    rule_files:
+      - "/etc/prometheus/rules/*.yml"
+      - "/etc/prometheus/mlops-rules/*.yml"
+
+    scrape_configs:
+      # Kubernetes Infrastructure
+      - job_name: 'kubernetes-apiservers'
+        kubernetes_sd_configs:
+        - role: endpoints
+        scheme: https
+        tls_config:
+          ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+        bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+        relabel_configs:
+        - source_labels: [__meta_kubernetes_namespace, __meta_kubernetes_service_name, __meta_kubernetes_endpoint_port_name]
+          action: keep
+          regex: default;kubernetes;https
+
+      # Kubernetes Nodes with Enhanced Labels
+      - job_name: 'kubernetes-nodes'
+        kubernetes_sd_configs:
+        - role: node
+        scheme: https
+        tls_config:
+          ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+        bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+        relabel_configs:
+        - action: labelmap
+          regex: __meta_kubernetes_node_label_(.+)
+        - target_label: __address__
+          replacement: kubernetes.default.svc:443
+        - source_labels: [__meta_kubernetes_node_name]
+          regex: (.+)
+          target_label: __metrics_path__
+          replacement: /api/v1/nodes/${1}/proxy/metrics
+
+      # AIA MLOps Backend Services
+      - job_name: 'aia-mlops-backend'
+        kubernetes_sd_configs:
+        - role: endpoints
+          namespaces:
+            names:
+            - aia-production-v2
+            - aia-mlops-monitoring
+        relabel_configs:
+        - source_labels: [__meta_kubernetes_service_name]
+          action: keep
+          regex: aia-backend-api-service|aia-mlops-service
+        - source_labels: [__meta_kubernetes_service_name]
+          target_label: service_name
+        - source_labels: [__meta_kubernetes_pod_name]
+          target_label: pod_name
+        - source_labels: [__meta_kubernetes_namespace]
+          target_label: kubernetes_namespace
+
+      # ML Model Serving Endpoints
+      - job_name: 'ml-model-endpoints'
+        kubernetes_sd_configs:
+        - role: endpoints
+          namespaces:
+            names:
+            - aia-production-v2
+        relabel_configs:
+        - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_scrape]
+          action: keep
+          regex: true
+        - source_labels: [__meta_kubernetes_service_annotation_model_name]
+          target_label: model_name
+        - source_labels: [__meta_kubernetes_service_annotation_model_version]
+          target_label: model_version
+        - source_labels: [__meta_kubernetes_service_annotation_model_type]
+          target_label: model_type
+
+      # Vertex AI Pipeline Jobs (via custom exporter)
+      - job_name: 'vertex-ai-pipelines'
+        static_configs:
+        - targets: ['vertex-ai-exporter:8080']
+        scrape_interval: 60s
+        metrics_path: /metrics
+
+      # MLflow Tracking Server
+      - job_name: 'mlflow-tracking'
+        static_configs:
+        - targets: ['mlflow-server:5000']
+        metrics_path: /metrics
+        scrape_interval: 30s
+
+      # Custom MLOps Metrics Exporter
+      - job_name: 'mlops-metrics-exporter'
+        kubernetes_sd_configs:
+        - role: endpoints
+          namespaces:
+            names:
+            - aia-mlops-monitoring
+        relabel_configs:
+        - source_labels: [__meta_kubernetes_service_name]
+          action: keep
+          regex: mlops-metrics-exporter
+
+      # Database Performance (PostgreSQL)
+      - job_name: 'postgresql-mlops'
+        kubernetes_sd_configs:
+        - role: endpoints
+          namespaces:
+            names:
+            - aia-production-v2
+        relabel_configs:
+        - source_labels: [__meta_kubernetes_service_name]
+          action: keep
+          regex: aia-postgresql-service
+        - source_labels: [__meta_kubernetes_service_name]
+          target_label: database_type
+          replacement: postgresql
+
+      # Redis Cache Metrics
+      - job_name: 'redis-mlops'
+        kubernetes_sd_configs:
+        - role: endpoints
+          namespaces:
+            names:
+            - aia-production-v2
+        relabel_configs:
+        - source_labels: [__meta_kubernetes_service_name]
+          action: keep
+          regex: aia-redis-service
+
+      # Business Intelligence Metrics
+      - job_name: 'business-intelligence'
+        static_configs:
+        - targets: ['bi-metrics-exporter:8090']
+        scrape_interval: 120s  # Business metrics don't need frequent collection
+
+      # Stakeholder Satisfaction Metrics
+      - job_name: 'stakeholder-metrics'
+        static_configs:
+        - targets: ['stakeholder-metrics-exporter:8091']
+        scrape_interval: 300s  # Every 5 minutes
+
+      # Node Exporter for System Metrics
+      - job_name: 'node-exporter'
+        kubernetes_sd_configs:
+        - role: endpoints
+        relabel_configs:
+        - source_labels: [__meta_kubernetes_endpoints_name]
+          action: keep
+          regex: node-exporter
+
+      # cAdvisor for Container Metrics
+      - job_name: 'cadvisor'
+        kubernetes_sd_configs:
+        - role: node
+        scheme: https
+        tls_config:
+          ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+        bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+        relabel_configs:
+        - action: labelmap
+          regex: __meta_kubernetes_node_label_(.+)
+        - target_label: __address__
+          replacement: kubernetes.default.svc:443
+        - source_labels: [__meta_kubernetes_node_name]
+          regex: (.+)
+          target_label: __metrics_path__
+          replacement: /api/v1/nodes/${1}/proxy/metrics/cadvisor
+
+      # BlackBox Exporter for External Health Checks
+      - job_name: 'blackbox'
+        metrics_path: /probe
+        params:
+          module: [http_2xx]
+        static_configs:
+          - targets:
+            - https://013a.tech/health
+            - https://013a.tech/api/health
+            - https://013a.tech/api/models/health
+        relabel_configs:
+          - source_labels: [__address__]
+            target_label: __param_target
+          - source_labels: [__param_target]
+            target_label: instance
+          - target_label: __address__
+            replacement: blackbox-exporter:9115
+
+    alerting:
+      alertmanagers:
+      - static_configs:
+        - targets:
+          - alertmanager:9093
+
+  # MLOps-Specific Alerting Rules
+  mlops-rules.yml: |
+    groups:
+    - name: mlops-model-performance
+      rules:
+      # Model Accuracy Degradation
+      - alert: ModelAccuracyDegraded
+        expr: model_accuracy < 0.85
+        for: 5m
+        labels:
+          severity: warning
+          category: model_performance
+          business_impact: high
+        annotations:
+          summary: "Model accuracy below threshold"
+          description: "Model {{ $labels.model_name }} accuracy ({{ $value }}) is below 0.85 threshold"
+          runbook_url: "https://docs.013a.tech/runbooks/model-accuracy-degradation"
+          revenue_impact: "$10,000"
+
+      - alert: ModelAccuracyCritical
+        expr: model_accuracy < 0.75
+        for: 2m
+        labels:
+          severity: critical
+          category: model_performance
+          business_impact: critical
+        annotations:
+          summary: "CRITICAL: Model accuracy severely degraded"
+          description: "Model {{ $labels.model_name }} accuracy ({{ $value }}) is critically low"
+          revenue_impact: "$50,000"
+
+      # Model Response Time
+      - alert: ModelResponseTimeHigh
+        expr: histogram_quantile(0.95, rate(model_inference_duration_seconds_bucket[5m])) > 1.0
+        for: 3m
+        labels:
+          severity: warning
+          category: model_performance
+        annotations:
+          summary: "High model response time"
+          description: "95th percentile response time for {{ $labels.model_name }} is {{ $value }}s"
+
+      # Model Drift Detection
+      - alert: ModelDriftDetected
+        expr: model_drift_score > 0.1
+        for: 1m
+        labels:
+          severity: warning
+          category: model_drift
+          business_impact: medium
+        annotations:
+          summary: "Model drift detected"
+          description: "Drift score for {{ $labels.model_name }} is {{ $value }}"
+          recommended_action: "Consider model retraining"
+
+      - alert: ModelDriftCritical
+        expr: model_drift_score > 0.2
+        for: 1m
+        labels:
+          severity: critical
+          category: model_drift
+          business_impact: high
+        annotations:
+          summary: "CRITICAL: Severe model drift"
+          description: "Critical drift detected for {{ $labels.model_name }} (score: {{ $value }})"
+          recommended_action: "Immediate model retraining required"
+
+    - name: mlops-pipeline-health
+      rules:
+      # Pipeline Execution Failures
+      - alert: PipelineExecutionFailed
+        expr: increase(pipeline_execution_failures_total[10m]) > 0
+        for: 1m
+        labels:
+          severity: critical
+          category: pipeline_health
+        annotations:
+          summary: "ML Pipeline execution failed"
+          description: "Pipeline {{ $labels.pipeline_name }} has failed {{ $value }} times in the last 10 minutes"
+
+      # Pipeline Execution Time
+      - alert: PipelineExecutionSlow
+        expr: pipeline_execution_duration_seconds > 1800  # 30 minutes
+        for: 5m
+        labels:
+          severity: warning
+          category: pipeline_performance
+        annotations:
+          summary: "ML Pipeline execution slow"
+          description: "Pipeline {{ $labels.pipeline_name }} taking {{ $value }}s to execute"
+
+      # Data Quality Issues
+      - alert: DataQualityDegraded
+        expr: data_quality_score < 0.9
+        for: 5m
+        labels:
+          severity: warning
+          category: data_quality
+          business_impact: medium
+        annotations:
+          summary: "Data quality degraded"
+          description: "Data quality score for {{ $labels.dataset_name }} is {{ $value }}"
+
+    - name: mlops-resource-utilization
+      rules:
+      # GPU Utilization for ML Workloads
+      - alert: GPUUtilizationLow
+        expr: nvidia_gpu_utilization_percent < 30
+        for: 10m
+        labels:
+          severity: warning
+          category: resource_efficiency
+          cost_impact: medium
+        annotations:
+          summary: "Low GPU utilization"
+          description: "GPU {{ $labels.gpu_name }} utilization is only {{ $value }}%"
+          cost_impact: "$500/day in wasted resources"
+
+      - alert: GPUMemoryHigh
+        expr: nvidia_gpu_memory_usage_percent > 90
+        for: 2m
+        labels:
+          severity: warning
+          category: resource_utilization
+        annotations:
+          summary: "High GPU memory usage"
+          description: "GPU {{ $labels.gpu_name }} memory usage is {{ $value }}%"
+
+      # ML Training Job Resource Usage
+      - alert: TrainingJobResourceExhaustion
+        expr: ml_training_job_memory_usage_percent > 95
+        for: 1m
+        labels:
+          severity: critical
+          category: resource_utilization
+        annotations:
+          summary: "Training job resource exhaustion"
+          description: "Training job {{ $labels.job_name }} using {{ $value }}% memory"
+
+    - name: mlops-business-intelligence
+      rules:
+      # Revenue Impact
+      - alert: RevenueImpactHigh
+        expr: revenue_impact_from_ml_downtime > 100000
+        for: 5m
+        labels:
+          severity: critical
+          category: business_impact
+          stakeholder: executive
+        annotations:
+          summary: "High revenue impact from ML issues"
+          description: "Estimated revenue impact: ${{ $value }}"
+
+      # Stakeholder Satisfaction
+      - alert: StakeholderSatisfactionLow
+        expr: stakeholder_satisfaction_score < 0.7
+        for: 15m
+        labels:
+          severity: warning
+          category: stakeholder_satisfaction
+          stakeholder: all
+        annotations:
+          summary: "Low stakeholder satisfaction"
+          description: "{{ $labels.stakeholder_type }} satisfaction score is {{ $value }}"
+
+      # ROI Below Threshold
+      - alert: ROIBelowThreshold
+        expr: ml_platform_roi_percent < 50
+        for: 30m
+        labels:
+          severity: warning
+          category: business_metrics
+          stakeholder: executive
+        annotations:
+          summary: "ML Platform ROI below threshold"
+          description: "Current ROI is {{ $value }}%, target is 50%+"
+
+    - name: mlops-security-compliance
+      rules:
+      # Model Serving Security
+      - alert: UnauthorizedModelAccess
+        expr: increase(model_api_unauthorized_requests_total[5m]) > 10
+        for: 1m
+        labels:
+          severity: critical
+          category: security
+        annotations:
+          summary: "Unauthorized model API access attempts"
+          description: "{{ $value }} unauthorized requests to {{ $labels.model_name }}"
+
+      # Data Privacy Compliance
+      - alert: DataPrivacyViolation
+        expr: increase(data_privacy_violation_events_total[1m]) > 0
+        for: 1m
+        labels:
+          severity: critical
+          category: compliance
+        annotations:
+          summary: "Potential data privacy violation"
+          description: "Data privacy violation detected in {{ $labels.component }}"
+
+    - name: mlops-automated-responses
+      rules:
+      # Auto-Retraining Trigger
+      - alert: AutoRetrainingTriggered
+        expr: increase(automated_retraining_triggered_total[1m]) > 0
+        for: 1m
+        labels:
+          severity: info
+          category: automation
+        annotations:
+          summary: "Automated retraining triggered"
+          description: "Auto-retraining initiated for {{ $labels.model_name }}"
+
+      # Incident Response Automation
+      - alert: IncidentResponseActivated
+        expr: increase(incident_response_activated_total[1m]) > 0
+        for: 1m
+        labels:
+          severity: info
+          category: automation
+        annotations:
+          summary: "Automated incident response activated"
+          description: "Incident response triggered for {{ $labels.incident_type }}"
+
+  # Recording Rules for MLOps Metrics
+  recording-rules.yml: |
+    groups:
+    - name: mlops-recording-rules
+      interval: 30s
+      rules:
+      # Model Performance Aggregations
+      - record: model:accuracy:avg5m
+        expr: avg_over_time(model_accuracy[5m])
+
+      - record: model:response_time:p95_5m
+        expr: histogram_quantile(0.95, rate(model_inference_duration_seconds_bucket[5m]))
+
+      - record: model:requests:rate5m
+        expr: rate(model_requests_total[5m])
+
+      # Pipeline Performance
+      - record: pipeline:success_rate:5m
+        expr: rate(pipeline_execution_success_total[5m]) / rate(pipeline_execution_total[5m])
+
+      - record: pipeline:duration:avg5m
+        expr: avg_over_time(pipeline_execution_duration_seconds[5m])
+
+      # Business Intelligence Metrics
+      - record: business:revenue_per_minute
+        expr: rate(revenue_generated_total[1m])
+
+      - record: business:cost_per_prediction
+        expr: rate(ml_platform_costs_total[5m]) / rate(model_requests_total[5m])
+
+      # Resource Efficiency
+      - record: resource:gpu_efficiency_score
+        expr: |
+          (
+            avg(nvidia_gpu_utilization_percent) * 0.4 +
+            avg(ml_training_throughput_samples_per_second) * 0.3 +
+            avg(model:requests:rate5m) * 0.3
+          ) / 100
+
+      - record: resource:cost_efficiency_score
+        expr: business:revenue_per_minute / rate(infrastructure_costs_total[1m])
+
+    - name: stakeholder-metrics-recording
+      interval: 60s
+      rules:
+      # Executive Metrics
+      - record: executive:roi_score
+        expr: (business:revenue_per_minute * 1440 * 30 - rate(ml_platform_costs_total[1m]) * 1440 * 30) / (rate(ml_platform_costs_total[1m]) * 1440 * 30) * 100
+
+      - record: executive:efficiency_score
+        expr: |
+          (
+            model:accuracy:avg5m * 0.3 +
+            pipeline:success_rate:5m * 0.3 +
+            resource:gpu_efficiency_score * 0.4
+          )
+
+      # Technical Metrics
+      - record: technical:system_health_score
+        expr: |
+          (
+            avg(up{job=~"aia-.*"}) * 0.4 +
+            pipeline:success_rate:5m * 0.3 +
+            (1 - rate(model_errors_total[5m]) / rate(model_requests_total[5m])) * 0.3
+          )
+
+      # Operations Metrics
+      - record: operations:automation_success_rate
+        expr: rate(automated_actions_success_total[5m]) / rate(automated_actions_total[5m])
+
+      - record: operations:incident_resolution_time
+        expr: avg_over_time(incident_resolution_duration_seconds[1h])
+
+---
+# Enhanced Alertmanager Configuration for MLOps
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: alertmanager-mlops-config
+  namespace: aia-mlops-monitoring
+data:
+  alertmanager.yml: |
+    global:
+      smtp_smarthost: 'smtp.gmail.com:587'
+      smtp_from: 'mlops-alerts@013a.tech'
+      smtp_auth_username: 'hello@013a.tech'
+      smtp_auth_password: 'fgpz-mjdy-xlzm-okev'
+      slack_api_url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
+
+    templates:
+    - '/etc/alertmanager/templates/*.tmpl'
+
+    route:
+      group_by: ['alertname', 'category', 'business_impact']
+      group_wait: 10s
+      group_interval: 5m
+      repeat_interval: 2h
+      receiver: 'default-receiver'
+      routes:
+      # Executive Stakeholder Routes
+      - match:
+          stakeholder: executive
+        receiver: 'executive-alerts'
+        group_by: ['business_impact']
+        continue: true
+
+      # Technical Stakeholder Routes
+      - match_re:
+          category: model_performance|pipeline_health|model_drift
+        receiver: 'technical-alerts'
+        continue: true
+
+      # Business Impact Routes
+      - match:
+          business_impact: critical
+        receiver: 'critical-business-alerts'
+        group_wait: 0s
+        repeat_interval: 30m
+
+      # High Revenue Impact
+      - match_re:
+          revenue_impact: \$[5-9][0-9],000|\$[1-9][0-9][0-9],000
+        receiver: 'high-revenue-impact-alerts'
+        group_wait: 0s
+
+      # Model Drift Specific
+      - match:
+          category: model_drift
+        receiver: 'model-drift-alerts'
+        group_by: ['model_name']
+
+      # Security & Compliance
+      - match_re:
+          category: security|compliance
+        receiver: 'security-alerts'
+        group_wait: 0s
+        repeat_interval: 15m
+
+    inhibit_rules:
+    # Inhibit model accuracy warnings if critical alert is firing
+    - source_match:
+        severity: critical
+        category: model_performance
+      target_match:
+        severity: warning
+        category: model_performance
+      equal: ['model_name']
+
+    # Inhibit pipeline slow alerts if pipeline failed
+    - source_match:
+        category: pipeline_health
+      target_match:
+        category: pipeline_performance
+      equal: ['pipeline_name']
+
+    receivers:
+    - name: 'default-receiver'
+      email_configs:
+      - to: 'mlops-team@013a.tech'
+        from: 'mlops-alerts@013a.tech'
+        subject: 'AIA MLOps Alert: {{ .GroupLabels.alertname }}'
+        html: |
+          <h3>AIA MLOps System Alert</h3>
+          <p><strong>Alert:</strong> {{ range .Alerts }}{{ .Annotations.summary }}{{ end }}</p>
+          <p><strong>Description:</strong> {{ range .Alerts }}{{ .Annotations.description }}{{ end }}</p>
+          <p><strong>Severity:</strong> {{ range .Alerts }}{{ .Labels.severity }}{{ end }}</p>
+          <p><strong>Time:</strong> {{ range .Alerts }}{{ .StartsAt }}{{ end }}</p>
+
+          {{ if .Alerts }}{{ range .Alerts }}{{ if .Annotations.runbook_url }}
+          <p><a href="{{ .Annotations.runbook_url }}">📖 Runbook</a></p>
+          {{ end }}{{ end }}{{ end }}
+
+    - name: 'executive-alerts'
+      email_configs:
+      - to: 'executives@013a.tech'
+        from: 'mlops-alerts@013a.tech'
+        subject: 'EXECUTIVE ALERT: Business Impact - {{ .GroupLabels.alertname }}'
+        html: |
+          <h2 style="color: #d73027;">Executive Business Impact Alert</h2>
+          {{ range .Alerts }}
+          <div style="background-color: #f8f9fa; padding: 20px; margin: 10px 0; border-left: 4px solid #d73027;">
+            <h4>{{ .Annotations.summary }}</h4>
+            <p><strong>Business Impact:</strong> {{ .Labels.business_impact }}</p>
+            {{ if .Annotations.revenue_impact }}
+            <p><strong>Revenue Impact:</strong> {{ .Annotations.revenue_impact }}</p>
+            {{ end }}
+            <p><strong>Description:</strong> {{ .Annotations.description }}</p>
+            <p><strong>Time:</strong> {{ .StartsAt }}</p>
+          </div>
+          {{ end }}
+          <p><a href="https://grafana.013a.tech/d/executive-dashboard">📊 Executive Dashboard</a></p>
+      slack_configs:
+      - channel: '#executives'
+        title: 'Executive Alert: Business Impact'
+        text: |
+          {{ range .Alerts }}
+          *{{ .Annotations.summary }}*
+          Business Impact: {{ .Labels.business_impact }}
+          {{ if .Annotations.revenue_impact }}Revenue Impact: {{ .Annotations.revenue_impact }}{{ end }}
+          {{ end }}
+
+    - name: 'technical-alerts'
+      email_configs:
+      - to: 'mlops-engineers@013a.tech'
+        from: 'mlops-alerts@013a.tech'
+        subject: 'TECHNICAL: {{ .GroupLabels.alertname }} - {{ .GroupLabels.category }}'
+        html: |
+          <h3 style="color: #1f77b4;">Technical MLOps Alert</h3>
+          {{ range .Alerts }}
+          <div style="background-color: #f0f8ff; padding: 15px; margin: 10px 0; border-left: 4px solid #1f77b4;">
+            <h4>{{ .Annotations.summary }}</h4>
+            <p><strong>Category:</strong> {{ .Labels.category }}</p>
+            <p><strong>Severity:</strong> {{ .Labels.severity }}</p>
+            <p><strong>Description:</strong> {{ .Annotations.description }}</p>
+            {{ if .Annotations.recommended_action }}
+            <p><strong>Recommended Action:</strong> {{ .Annotations.recommended_action }}</p>
+            {{ end }}
+            {{ if .Annotations.runbook_url }}
+            <p><a href="{{ .Annotations.runbook_url }}">📖 Troubleshooting Runbook</a></p>
+            {{ end }}
+            <p><strong>Time:</strong> {{ .StartsAt }}</p>
+          </div>
+          {{ end }}
+      slack_configs:
+      - channel: '#mlops-alerts'
+        title: 'Technical Alert: {{ .GroupLabels.category }}'
+        text: |
+          {{ range .Alerts }}
+          *{{ .Annotations.summary }}*
+          Category: `{{ .Labels.category }}`
+          Severity: `{{ .Labels.severity }}`
+          {{ if .Labels.model_name }}Model: `{{ .Labels.model_name }}`{{ end }}
+          {{ if .Labels.pipeline_name }}Pipeline: `{{ .Labels.pipeline_name }}`{{ end }}
+          {{ end }}
+
+    - name: 'critical-business-alerts'
+      email_configs:
+      - to: 'executives@013a.tech,mlops-team@013a.tech,operations@013a.tech'
+        from: 'mlops-alerts@013a.tech'
+        subject: '🚨 CRITICAL BUSINESS IMPACT: {{ .GroupLabels.alertname }}'
+        html: |
+          <h1 style="color: #d73027;">🚨 CRITICAL BUSINESS IMPACT ALERT</h1>
+          <div style="background-color: #ffebee; padding: 20px; border: 2px solid #d73027;">
+            {{ range .Alerts }}
+            <h3>{{ .Annotations.summary }}</h3>
+            <p><strong>Business Impact:</strong> {{ .Labels.business_impact }}</p>
+            <p><strong>Revenue Impact:</strong> {{ .Annotations.revenue_impact }}</p>
+            <p><strong>Description:</strong> {{ .Annotations.description }}</p>
+            <p><strong>Time:</strong> {{ .StartsAt }}</p>
+            {{ end }}
+          </div>
+          <h4>Immediate Actions Required:</h4>
+          <ul>
+            <li>Escalate to on-call engineer</li>
+            <li>Notify stakeholders</li>
+            <li>Activate incident response</li>
+          </ul>
+      pagerduty_configs:
+      - routing_key: 'your-pagerduty-integration-key'
+        description: 'Critical MLOps business impact: {{ range .Alerts }}{{ .Annotations.summary }}{{ end }}'
+
+    - name: 'high-revenue-impact-alerts'
+      email_configs:
+      - to: 'executives@013a.tech,finance@013a.tech'
+        from: 'mlops-alerts@013a.tech'
+        subject: '💰 HIGH REVENUE IMPACT: {{ .GroupLabels.alertname }}'
+
+    - name: 'model-drift-alerts'
+      email_configs:
+      - to: 'data-scientists@013a.tech,mlops-engineers@013a.tech'
+        from: 'mlops-alerts@013a.tech'
+        subject: '📊 Model Drift Alert: {{ .GroupLabels.alertname }}'
+        html: |
+          <h3 style="color: #ff7f0e;">Model Drift Detection Alert</h3>
+          {{ range .Alerts }}
+          <div style="background-color: #fff3e0; padding: 15px; margin: 10px 0; border-left: 4px solid #ff7f0e;">
+            <h4>{{ .Annotations.summary }}</h4>
+            {{ if .Labels.model_name }}<p><strong>Model:</strong> {{ .Labels.model_name }}</p>{{ end }}
+            {{ if .Labels.model_version }}<p><strong>Version:</strong> {{ .Labels.model_version }}</p>{{ end }}
+            <p><strong>Description:</strong> {{ .Annotations.description }}</p>
+            {{ if .Annotations.recommended_action }}
+            <p><strong>Recommended Action:</strong> {{ .Annotations.recommended_action }}</p>
+            {{ end }}
+            <p><strong>Time:</strong> {{ .StartsAt }}</p>
+          </div>
+          {{ end }}
+          <p><a href="https://mlflow.013a.tech">🔬 MLflow Dashboard</a> | <a href="https://grafana.013a.tech/d/model-monitoring">📈 Model Monitoring</a></p>
+
+    - name: 'security-alerts'
+      email_configs:
+      - to: 'security@013a.tech,mlops-team@013a.tech'
+        from: 'security-alerts@013a.tech'
+        subject: '🔒 SECURITY ALERT: {{ .GroupLabels.alertname }}'
+        html: |
+          <h2 style="color: #d32f2f;">🔒 Security Alert</h2>
+          {{ range .Alerts }}
+          <div style="background-color: #ffebee; padding: 20px; margin: 10px 0; border: 2px solid #d32f2f;">
+            <h4>{{ .Annotations.summary }}</h4>
+            <p><strong>Category:</strong> {{ .Labels.category }}</p>
+            <p><strong>Severity:</strong> {{ .Labels.severity }}</p>
+            <p><strong>Description:</strong> {{ .Annotations.description }}</p>
+            <p><strong>Time:</strong> {{ .StartsAt }}</p>
+          </div>
+          {{ end }}
+          <p><strong>⚠️ This requires immediate attention from the security team.</strong></p>
+      pagerduty_configs:
+      - routing_key: 'security-pagerduty-key'
+        description: 'Security alert in MLOps platform: {{ range .Alerts }}{{ .Annotations.summary }}{{ end }}'
+
+---
+# Custom MLOps Metrics Exporter Service
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mlops-metrics-exporter
+  namespace: aia-mlops-monitoring
+  labels:
+    app: mlops-metrics-exporter
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mlops-metrics-exporter
+  template:
+    metadata:
+      labels:
+        app: mlops-metrics-exporter
+    spec:
+      containers:
+      - name: metrics-exporter
+        image: python:3.11-slim
+        ports:
+        - containerPort: 8080
+        command: ["python", "/app/mlops_metrics_exporter.py"]
+        env:
+        - name: METRICS_PORT
+          value: "8080"
+        - name: REDIS_HOST
+          value: "aia-redis-service"
+        - name: POSTGRES_HOST
+          value: "aia-postgresql-service"
+        volumeMounts:
+        - name: exporter-code
+          mountPath: /app
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+      volumes:
+      - name: exporter-code
+        configMap:
+          name: mlops-exporter-code
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mlops-metrics-exporter
+  namespace: aia-mlops-monitoring
+  labels:
+    app: mlops-metrics-exporter
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "8080"
+spec:
+  selector:
+    app: mlops-metrics-exporter
+  ports:
+  - name: metrics
+    port: 8080
+    targetPort: 8080

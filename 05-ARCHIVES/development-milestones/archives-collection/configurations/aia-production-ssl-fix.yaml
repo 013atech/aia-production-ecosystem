@@ -1,0 +1,246 @@
+# AIA PRODUCTION SSL FIX - IMMEDIATE DEPLOYMENT
+# Fix service types and health checks for SSL certificate provisioning
+
+# Fix Backend Service Type
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-unified-backend-service
+  namespace: aia-unified-production
+  labels:
+    app: aia-unified-backend
+    tier: backend
+spec:
+  type: NodePort
+  selector:
+    app: aia-unified-backend
+  ports:
+  - port: 8000
+    targetPort: 8000
+    nodePort: 30344
+    name: http
+
+---
+# Fix Frontend Service Type
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-unified-frontend-service
+  namespace: aia-unified-production
+  labels:
+    app: aia-unified-frontend
+    tier: frontend
+spec:
+  type: NodePort
+  selector:
+    app: aia-unified-frontend
+  ports:
+  - port: 80
+    targetPort: 80
+    nodePort: 32506
+    name: http
+
+---
+# Backend Health Check Fix
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-unified-backend
+  namespace: aia-unified-production
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: aia-unified-backend
+  template:
+    metadata:
+      labels:
+        app: aia-unified-backend
+    spec:
+      containers:
+      - name: backend
+        image: gcr.io/aia-system-prod-1759055445/aia-api:latest
+        ports:
+        - containerPort: 8000
+        env:
+        - name: ENVIRONMENT
+          value: "production"
+        - name: PORT
+          value: "8000"
+        - name: HOST
+          value: "0.0.0.0"
+        - name: POSTGRES_USER
+          value: "aia_user"
+        - name: POSTGRES_PASSWORD
+          value: "aia_secure_password_2025"
+        - name: POSTGRES_DB
+          value: "aia_production"
+        - name: POSTGRES_HOST
+          value: "aia-postgresql-simple-service"
+        - name: POSTGRES_PORT
+          value: "5432"
+        - name: DATABASE_URL
+          value: "postgresql://aia_user:aia_secure_password_2025@aia-postgresql-simple-service:5432/aia_production"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          successThreshold: 1
+          failureThreshold: 3
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+
+---
+# Frontend Health Check Fix
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-unified-frontend
+  namespace: aia-unified-production
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: aia-unified-frontend
+  template:
+    metadata:
+      labels:
+        app: aia-unified-frontend
+    spec:
+      containers:
+      - name: frontend
+        image: nginx:alpine
+        ports:
+        - containerPort: 80
+        env:
+        - name: REACT_APP_API_BASE_URL
+          value: "https://api.013a.tech"
+        - name: REACT_APP_ENVIRONMENT
+          value: "production"
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          successThreshold: 1
+          failureThreshold: 3
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+
+---
+# Backend Load Balancer Configuration
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-backend-lb-service
+  namespace: aia-unified-production
+  annotations:
+    cloud.google.com/load-balancer-type: External
+spec:
+  type: NodePort
+  selector:
+    app: aia-unified-backend
+  ports:
+  - port: 80
+    targetPort: 8000
+    name: http
+
+---
+# Updated Ingress with proper backends
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: aia-unified-production-ingress
+  namespace: aia-unified-production
+  annotations:
+    kubernetes.io/ingress.allow-http: "true"
+    kubernetes.io/ingress.global-static-ip-name: aia-production-ip
+    ingress.gcp.kubernetes.io/managed-certificates: aia-unified-ssl-certificate
+    ingress.gcp.kubernetes.io/frontend-config: aia-frontend-config
+    cloud.google.com/armor-config: |
+      {
+        "default-rule": {
+          "evaluate-preconfigured-expr": [
+            "owasp-crs-v030001-id942110-sqli",
+            "owasp-crs-v030001-id942120-sqli",
+            "owasp-crs-v030001-id941100-xss"
+          ]
+        }
+      }
+spec:
+  rules:
+  - host: 013a.tech
+    http:
+      paths:
+      - path: /api/*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-unified-backend-service
+            port:
+              number: 8000
+      - path: /*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-unified-frontend-service
+            port:
+              number: 80
+  - host: www.013a.tech
+    http:
+      paths:
+      - path: /api/*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-unified-backend-service
+            port:
+              number: 8000
+      - path: /*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-unified-frontend-service
+            port:
+              number: 80
+  - host: api.013a.tech
+    http:
+      paths:
+      - path: /*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-unified-backend-service
+            port:
+              number: 8000

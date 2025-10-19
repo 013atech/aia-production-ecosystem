@@ -1,0 +1,74 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-enterprise-unified
+  namespace: aia-enterprise-ecosystem
+  labels:
+    app: aia-enterprise
+    tier: unified
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: aia-enterprise
+  template:
+    metadata:
+      labels:
+        app: aia-enterprise
+        tier: unified
+    spec:
+      containers:
+      - name: aia-unified
+        image: python:3.11-slim
+        ports:
+        - containerPort: 8000
+        - containerPort: 3000
+        - containerPort: 9000
+        command: ["/bin/bash"]
+        args: ["-c", "python3 -m http.server 8000"]
+        env:
+        - name: GCP_PROJECT
+          value: "aia-system-prod-1759055445"
+        - name: ENVIRONMENT
+          value: "production"
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
+          limits:
+            memory: "3Gi"
+            cpu: "1500m"
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 60
+          periodSeconds: 30
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-enterprise-service
+  namespace: aia-enterprise-ecosystem
+  labels:
+    app: aia-enterprise
+spec:
+  selector:
+    app: aia-enterprise
+  ports:
+  - name: backend
+    port: 80
+    targetPort: 8000
+  - name: frontend
+    port: 3000
+    targetPort: 3000
+  - name: analytics
+    port: 9000
+    targetPort: 9000
+  type: ClusterIP

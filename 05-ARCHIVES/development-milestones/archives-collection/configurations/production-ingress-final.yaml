@@ -1,0 +1,125 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: aia-production-ingress-final
+  namespace: aia-production-v2
+  annotations:
+    kubernetes.io/ingress.global-static-ip-name: aia-production-ip-final
+    ingress.gcp.kubernetes.io/managed-certificates: aia-ssl-certificate-final
+    ingress.gcp.kubernetes.io/ssl-redirect: "true"
+    kubernetes.io/ingress.allow-http: "true"
+    cloud.google.com/armor-config: |
+      {
+        "default-rule": {
+          "evaluate-preconfigured-expr": [
+            "owasp-crs-v030001-id942110-sqli",
+            "owasp-crs-v030001-id942120-sqli",
+            "owasp-crs-v030001-id942130-sqli",
+            "owasp-crs-v030001-id942140-sqli",
+            "owasp-crs-v030001-id942150-sqli",
+            "owasp-crs-v030001-id942160-sqli",
+            "owasp-crs-v030001-id942170-sqli",
+            "owasp-crs-v030001-id942180-sqli",
+            "owasp-crs-v030001-id942190-sqli",
+            "owasp-crs-v030001-id942200-sqli",
+            "owasp-crs-v030001-id942210-sqli",
+            "owasp-crs-v030001-id942220-sqli",
+            "owasp-crs-v030001-id942230-sqli",
+            "owasp-crs-v030001-id942240-sqli",
+            "owasp-crs-v030001-id942250-sqli",
+            "owasp-crs-v030001-id942251-sqli",
+            "owasp-crs-v030001-id942260-sqli",
+            "owasp-crs-v030001-id942300-sqli",
+            "owasp-crs-v030001-id942310-sqli",
+            "owasp-crs-v030001-id942320-sqli",
+            "owasp-crs-v030001-id942330-sqli",
+            "owasp-crs-v030001-id942340-sqli",
+            "owasp-crs-v030001-id942350-sqli",
+            "owasp-crs-v030001-id942360-sqli",
+            "owasp-crs-v030001-id942370-sqli",
+            "owasp-crs-v030001-id942380-sqli",
+            "owasp-crs-v030001-id942390-sqli",
+            "owasp-crs-v030001-id942400-sqli",
+            "owasp-crs-v030001-id942410-sqli",
+            "owasp-crs-v030001-id942420-sqli",
+            "owasp-crs-v030001-id942430-sqli",
+            "owasp-crs-v030001-id942431-sqli",
+            "owasp-crs-v030001-id942432-sqli",
+            "owasp-crs-v030001-id942440-sqli",
+            "owasp-crs-v030001-id942450-sqli",
+            "owasp-crs-v030001-id942251-sqli",
+            "owasp-crs-v030001-id942420-sqli",
+            "owasp-crs-v030001-id942431-sqli",
+            "owasp-crs-v030001-id942460-sqli",
+            "owasp-crs-v030001-id942511-sqli"
+          ]
+        }
+      }
+spec:
+  rules:
+  - host: 013a.tech
+    http:
+      paths:
+      - path: /api/*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-backend-api-service
+            port:
+              number: 8000
+      - path: /*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-frontend-service
+            port:
+              number: 80
+  - host: www.013a.tech
+    http:
+      paths:
+      - path: /api/*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-backend-api-service
+            port:
+              number: 8000
+      - path: /*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-frontend-service
+            port:
+              number: 80
+  - host: api.013a.tech
+    http:
+      paths:
+      - path: /*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-backend-api-service
+            port:
+              number: 8000
+
+---
+apiVersion: networking.gke.io/v1
+kind: ManagedCertificate
+metadata:
+  name: aia-ssl-certificate-final
+  namespace: aia-production-v2
+spec:
+  domains:
+  - 013a.tech
+  - www.013a.tech
+  - api.013a.tech
+
+---
+apiVersion: compute.cnrm.cloud.google.com/v1beta1
+kind: ComputeGlobalAddress
+metadata:
+  name: aia-production-ip-final
+  namespace: aia-production-v2
+spec:
+  description: "Static IP for AIA Production System"
+  ipVersion: IPV4

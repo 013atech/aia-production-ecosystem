@@ -1,0 +1,9 @@
+apiVersion: networking.gke.io/v1
+kind: ManagedCertificate
+metadata:
+  name: aia-ssl-cert-013atech
+  namespace: aia-production
+spec:
+  domains:
+  - 013a.tech
+  - www.013a.tech

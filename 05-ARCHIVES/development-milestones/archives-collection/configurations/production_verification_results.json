@@ -1,0 +1,69 @@
+{
+  "timestamp": "2025-10-06T18:46:35.964473",
+  "test_results": [
+    {
+      "test_name": "Frontend LoadBalancer - HTTP 200",
+      "endpoint": "http://34.170.252.192",
+      "status": "FAIL",
+      "error": "Timeout",
+      "response_time": 10068.02,
+      "timestamp": "2025-10-06T18:46:46.032520"
+    },
+    {
+      "test_name": "Production Domain HTTPS - HTTP 200",
+      "endpoint": "https://013a.tech",
+      "status": "PASS",
+      "http_code": 200,
+      "response_time": 1399.06,
+      "content_length": 241,
+      "timestamp": "2025-10-06T18:46:47.431596"
+    },
+    {
+      "test_name": "Production Domain HTTP - HTTP 200",
+      "endpoint": "http://013a.tech",
+      "status": "PASS",
+      "http_code": 200,
+      "response_time": 833.08,
+      "content_length": 241,
+      "timestamp": "2025-10-06T18:46:48.264993"
+    },
+    {
+      "test_name": "Backend Health - HTTP 200",
+      "endpoint": "http://34.30.19.184/health",
+      "status": "FAIL",
+      "error": "Timeout",
+      "response_time": 10068.06,
+      "timestamp": "2025-10-06T18:46:58.333241"
+    },
+    {
+      "test_name": "Backend Docs - HTTP 200",
+      "endpoint": "http://34.30.19.184/docs",
+      "status": "FAIL",
+      "error": "Timeout",
+      "response_time": 10068.74,
+      "timestamp": "2025-10-06T18:47:08.402040"
+    },
+    {
+      "test_name": "Analytics API - HTTP 200",
+      "endpoint": "http://34.30.19.184/api/v1/analytics/status",
+      "status": "FAIL",
+      "error": "Timeout",
+      "response_time": 10069.56,
+      "timestamp": "2025-10-06T18:47:18.471710"
+    },
+    {
+      "test_name": "Enterprise API - HTTP 200",
+      "endpoint": "http://34.30.19.184/api/v1/enterprise/health",
+      "status": "FAIL",
+      "error": "Timeout",
+      "response_time": 10071.03,
+      "timestamp": "2025-10-06T18:47:28.542792"
+    }
+  ],
+  "summary": {
+    "total_tests": 7,
+    "passed": 2,
+    "failed": 5,
+    "warnings": 0
+  }
+}

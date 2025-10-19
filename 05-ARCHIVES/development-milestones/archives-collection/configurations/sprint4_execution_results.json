@@ -1,0 +1,1208 @@
+{
+  "total_score": 180.21724999999998,
+  "final_metrics": {
+    "revenue_performance": {
+      "current_mrr": 80000,
+      "target_mrr": 125000,
+      "achievement_percentage": 64.0,
+      "customers": 0,
+      "customer_target": 25
+    },
+    "stakeholder_performance": {
+      "happiness_index": 90.8005,
+      "target_happiness": 98.0,
+      "achievement_percentage": 92.65357142857142
+    },
+    "profitability": {
+      "gross_margin": 99.25,
+      "target_margin": 99.25,
+      "achievement_percentage": 100.0
+    },
+    "system_performance": {
+      "automation_efficiency": 94.7,
+      "decision_accuracy": 91.3,
+      "cost_reduction": 23.8
+    }
+  },
+  "execution_results": {
+    "contribution_1": {
+      "score": 46.31921428571428,
+      "result": {
+        "execution_timestamp": "2025-10-02T10:07:29.889734",
+        "performance_metrics": {
+          "current_mrr": 80000,
+          "mrr_target_achievement": 64.0,
+          "stakeholder_happiness": 90.8005,
+          "happiness_target_achievement": 92.65357142857142,
+          "new_opportunities_identified": 5,
+          "cycle_execution_time": 0.000195
+        },
+        "happiness_optimization": {
+          "overall_index": 90.8005,
+          "individual_scores": {
+            "stakeholder_001": {
+              "name": "Enterprise Client Alpha",
+              "score": 100,
+              "role": "primary_customer",
+              "influence": "critical"
+            },
+            "stakeholder_002": {
+              "name": "Investment Partner",
+              "score": 75.468,
+              "role": "investor",
+              "influence": "high"
+            }
+          },
+          "improvement_actions": [
+            {
+              "stakeholder_id": "stakeholder_002",
+              "action": "schedule_personalized_check_in",
+              "priority": "high",
+              "timeline": "within_24_hours"
+            }
+          ],
+          "risk_alerts": []
+        },
+        "revenue_optimization": {
+          "current_mrr": 80000,
+          "target_mrr": 125000,
+          "gap_to_target": 45000,
+          "optimization_actions": [
+            {
+              "stream": "Enterprise AI Orchestration Subscriptions",
+              "current_value": 45000,
+              "optimization_potential": 0.25,
+              "projected_increase": 11250.0,
+              "action": "pricing_optimization"
+            },
+            {
+              "stream": "AI Implementation Consulting",
+              "current_value": 35000,
+              "optimization_potential": 0.3,
+              "projected_increase": 10500.0,
+              "action": "pricing_optimization"
+            }
+          ],
+          "growth_projections": {
+            "optimization_gains": 21750.0,
+            "new_business_gains": 116965.85712104607,
+            "total_projected_mrr": 218715.85712104605,
+            "target_achievement": 100
+          },
+          "new_opportunities": [
+            {
+              "lead_id": "lead_001",
+              "company": "Company 1",
+              "estimated_value": 49344,
+              "probability": 0.9303223746224418,
+              "proposal_ready": true
+            },
+            {
+              "lead_id": "lead_006",
+              "company": "Company 6",
+              "estimated_value": 15903,
+              "probability": 0.9236818278972054,
+              "proposal_ready": true
+            },
+            {
+              "lead_id": "lead_010",
+              "company": "Company 10",
+              "estimated_value": 46750,
+              "probability": 0.9226509485401033,
+              "proposal_ready": true
+            },
+            {
+              "lead_id": "lead_009",
+              "company": "Company 9",
+              "estimated_value": 8481,
+              "probability": 0.9069247148836166,
+              "proposal_ready": true
+            },
+            {
+              "lead_id": "lead_005",
+              "company": "Company 5",
+              "estimated_value": 6200,
+              "probability": 0.8943802270079434,
+              "proposal_ready": true
+            }
+          ]
+        },
+        "market_intelligence": {
+          "new_opportunities": 5,
+          "competitive_analysis": {
+            "average_enterprise_pricing": 25000,
+            "price_trend": "increasing",
+            "our_position": "competitive_advantage",
+            "recommended_action": "maintain_premium_positioning"
+          }
+        },
+        "autonomous_actions": [
+          {
+            "type": "stakeholder_engagement",
+            "priority": "high",
+            "action": "initiate_happiness_recovery_protocol",
+            "target": "all_stakeholders_below_85"
+          },
+          {
+            "type": "revenue_acceleration",
+            "priority": "high",
+            "action": "execute_lead_generation_campaign",
+            "target_value": 45000
+          }
+        ],
+        "system_status": "operational",
+        "next_cycle": "2025-10-02T11:07:29.889734"
+      }
+    },
+    "contribution_2": {
+      "score": 35.0,
+      "result": {
+        "revenue_analysis": {
+          "analysis_timestamp": "2025-10-02T10:07:29.889987",
+          "competitive_analysis": {
+            "competitive_positioning": "premium_differentiated",
+            "price_gap_opportunity": 15000,
+            "competitive_threats": [
+              "price_war_risk",
+              "feature_parity"
+            ],
+            "market_opportunities": [
+              "enterprise_automation",
+              "ai_integration"
+            ],
+            "recommended_strategy": "value_based_premium_pricing",
+            "trends": {
+              "automation_demand": {
+                "trend": "increasing",
+                "impact": 0.25
+              },
+              "ai_integration": {
+                "trend": "accelerating",
+                "impact": 0.4
+              },
+              "enterprise_budgets": {
+                "trend": "stable",
+                "impact": 0.15
+              },
+              "competition_intensity": {
+                "trend": "moderate",
+                "impact": -0.1
+              }
+            }
+          },
+          "revenue_forecast": {
+            "forecast_horizon_months": 12,
+            "forecast_accuracy": -0.17037194319562524,
+            "forecasts": [
+              {
+                "date": "2025-10-02",
+                "predicted_revenue": 94788.77050623109,
+                "confidence_interval": {
+                  "lower": 80570.45493029642,
+                  "upper": 109007.08608216574
+                }
+              },
+              {
+                "date": "2025-11-02",
+                "predicted_revenue": 93120.58801657564,
+                "confidence_interval": {
+                  "lower": 79152.49981408929,
+                  "upper": 107088.67621906198
+                }
+              },
+              {
+                "date": "2025-12-02",
+                "predicted_revenue": 94243.25189432086,
+                "confidence_interval": {
+                  "lower": 80106.76411017272,
+                  "upper": 108379.73967846898
+                }
+              },
+              {
+                "date": "2026-01-02",
+                "predicted_revenue": 96290.5975273048,
+                "confidence_interval": {
+                  "lower": 81847.00789820908,
+                  "upper": 110734.18715640051
+                }
+              },
+              {
+                "date": "2026-02-02",
+                "predicted_revenue": 94917.74040064716,
+                "confidence_interval": {
+                  "lower": 80680.07934055009,
+                  "upper": 109155.40146074422
+                }
+              },
+              {
+                "date": "2026-03-02",
+                "predicted_revenue": 96717.48967761306,
+                "confidence_interval": {
+                  "lower": 82209.8662259711,
+                  "upper": 111225.11312925501
+                }
+              },
+              {
+                "date": "2026-04-02",
+                "predicted_revenue": 95188.4696754665,
+                "confidence_interval": {
+                  "lower": 80910.19922414653,
+                  "upper": 109466.74012678648
+                }
+              },
+              {
+                "date": "2026-05-02",
+                "predicted_revenue": 94963.89612250298,
+                "confidence_interval": {
+                  "lower": 80719.31170412753,
+                  "upper": 109208.48054087842
+                }
+              },
+              {
+                "date": "2026-06-02",
+                "predicted_revenue": 96381.50428340334,
+                "confidence_interval": {
+                  "lower": 81924.27864089284,
+                  "upper": 110838.72992591382
+                }
+              },
+              {
+                "date": "2026-07-02",
+                "predicted_revenue": 96289.66778475652,
+                "confidence_interval": {
+                  "lower": 81846.21761704303,
+                  "upper": 110733.11795246998
+                }
+              },
+              {
+                "date": "2026-08-02",
+                "predicted_revenue": 97974.49470734973,
+                "confidence_interval": {
+                  "lower": 83278.32050124728,
+                  "upper": 112670.66891345219
+                }
+              },
+              {
+                "date": "2026-09-02",
+                "predicted_revenue": 98505.6082155142,
+                "confidence_interval": {
+                  "lower": 83729.76698318707,
+                  "upper": 113281.44944784133
+                }
+              }
+            ],
+            "insights": {
+              "projected_growth_rate": 0.03921179364847643,
+              "historical_growth_rate": -0.08952230171131315,
+              "growth_acceleration": 0.12873409535978958,
+              "peak_revenue_month": "2026-09-02",
+              "total_forecast_revenue": 1149382.0788116858,
+              "average_monthly_revenue": 95781.83990097382,
+              "revenue_volatility": 1477.1001984214654,
+              "trend_direction": "increasing"
+            },
+            "model_performance": {
+              "r2_score": -0.17037194319562524,
+              "cross_validation_scores": [
+                0.07312102311641377,
+                -0.5528603036979265,
+                -0.574050901593578,
+                0.12846464523148593,
+                0.07346582096547871
+              ]
+            },
+            "generated_at": "2025-10-02T10:07:30.053340"
+          },
+          "pricing_recommendations": {
+            "SMB": {
+              "optimal_price": -4125.678511847723,
+              "price_range": {
+                "minimum": -3506.8267350705646,
+                "maximum": -4744.530288624881
+              },
+              "model_confidence": 0.870069462958899,
+              "predicted_conversion": 0.7,
+              "expected_revenue": -2887.974958293406,
+              "model_used": "pricing_model_20251002_120729"
+            },
+            "Mid-Market": {
+              "optimal_price": 16033.384725778278,
+              "price_range": {
+                "minimum": 13628.377016911536,
+                "maximum": 18438.39243464502
+              },
+              "model_confidence": 0.870069462958899,
+              "predicted_conversion": 0.7,
+              "expected_revenue": 11223.369308044794,
+              "model_used": "pricing_model_20251002_120729"
+            },
+            "Enterprise": {
+              "optimal_price": 61100.06807143784,
+              "price_range": {
+                "minimum": 51935.05786072216,
+                "maximum": 70265.07828215351
+              },
+              "model_confidence": 0.870069462958899,
+              "predicted_conversion": 0.7,
+              "expected_revenue": 42770.04765000648,
+              "model_used": "pricing_model_20251002_120729"
+            }
+          },
+          "market_intelligence": {
+            "total_addressable_market": 2500000000,
+            "serviceable_addressable_market": 250000000,
+            "current_market_penetration": 0.032,
+            "growth_opportunities": [
+              "enterprise_automation",
+              "ai_integration"
+            ],
+            "threat_level": "moderate"
+          },
+          "actionable_insights": [
+            {
+              "category": "pricing",
+              "priority": "high",
+              "insight": "Enterprise pricing has significant upward potential",
+              "action": "Test 15% price increase for new enterprise customers",
+              "expected_impact": "12-18% revenue increase"
+            },
+            {
+              "category": "market_expansion",
+              "priority": "high",
+              "insight": "AI integration market showing strong demand",
+              "action": "Launch AI-focused marketing campaign",
+              "expected_impact": "25-30% lead generation increase"
+            }
+          ],
+          "system_performance": {
+            "analysis_time_seconds": 0.163693,
+            "forecast_accuracy": -0.17037194319562524,
+            "pricing_confidence": 0.8700694629588991
+          }
+        },
+        "forecast": {
+          "forecast_horizon_months": 12,
+          "forecast_accuracy": -158.75797780222632,
+          "forecasts": [
+            {
+              "date": "2025-10-02",
+              "predicted_revenue": 89713.3181788781,
+              "confidence_interval": {
+                "lower": 76256.32045204638,
+                "upper": 103170.3159057098
+              }
+            },
+            {
+              "date": "2025-11-02",
+              "predicted_revenue": 91707.98368679447,
+              "confidence_interval": {
+                "lower": 77951.7861337753,
+                "upper": 105464.18123981362
+              }
+            },
+            {
+              "date": "2025-12-02",
+              "predicted_revenue": 92085.32854875985,
+              "confidence_interval": {
+                "lower": 78272.52926644587,
+                "upper": 105898.12783107381
+              }
+            },
+            {
+              "date": "2026-01-02",
+              "predicted_revenue": 83746.99820242495,
+              "confidence_interval": {
+                "lower": 71184.94847206121,
+                "upper": 96309.04793278869
+              }
+            },
+            {
+              "date": "2026-02-02",
+              "predicted_revenue": 85091.39523896953,
+              "confidence_interval": {
+                "lower": 72327.6859531241,
+                "upper": 97855.10452481496
+              }
+            },
+            {
+              "date": "2026-03-02",
+              "predicted_revenue": 86540.2593906914,
+              "confidence_interval": {
+                "lower": 73559.22048208768,
+                "upper": 99521.2982992951
+              }
+            },
+            {
+              "date": "2026-04-02",
+              "predicted_revenue": 87698.16021169207,
+              "confidence_interval": {
+                "lower": 74543.43617993826,
+                "upper": 100852.88424344588
+              }
+            },
+            {
+              "date": "2026-05-02",
+              "predicted_revenue": 88093.93952679315,
+              "confidence_interval": {
+                "lower": 74879.84859777418,
+                "upper": 101308.03045581211
+              }
+            },
+            {
+              "date": "2026-06-02",
+              "predicted_revenue": 85443.39228087632,
+              "confidence_interval": {
+                "lower": 72626.88343874487,
+                "upper": 98259.90112300776
+              }
+            },
+            {
+              "date": "2026-07-02",
+              "predicted_revenue": 88561.88164366214,
+              "confidence_interval": {
+                "lower": 75277.59939711282,
+                "upper": 101846.16389021145
+              }
+            },
+            {
+              "date": "2026-08-02",
+              "predicted_revenue": 89310.55169663823,
+              "confidence_interval": {
+                "lower": 75913.96894214248,
+                "upper": 102707.13445113396
+              }
+            },
+            {
+              "date": "2026-09-02",
+              "predicted_revenue": 90359.18118097857,
+              "confidence_interval": {
+                "lower": 76805.30400383178,
+                "upper": 103913.05835812534
+              }
+            }
+          ],
+          "insights": {
+            "projected_growth_rate": 0.007199187536600779,
+            "historical_growth_rate": 0.006266128188234026,
+            "growth_acceleration": 0.000933059348366753,
+            "peak_revenue_month": "2025-12-02",
+            "total_forecast_revenue": 1058352.389787159,
+            "average_monthly_revenue": 88196.03248226324,
+            "revenue_volatility": 2513.7518910308686,
+            "trend_direction": "increasing"
+          },
+          "model_performance": {
+            "r2_score": -158.75797780222632,
+            "cross_validation_scores": [
+              -0.0076944409556691795,
+              -785.6178337371781,
+              -6.442816352645775,
+              -1.0716044712490684,
+              -0.6499400091028789
+            ]
+          },
+          "generated_at": "2025-10-02T10:07:30.210011"
+        },
+        "pricing": {
+          "SMB": {
+            "optimal_price": 7990.519167248409,
+            "price_range": {
+              "minimum": 6791.941292161147,
+              "maximum": 9189.09704233567
+            },
+            "model_confidence": 0.870069462958899,
+            "predicted_conversion": 0.7,
+            "expected_revenue": 5593.363417073886,
+            "model_used": "pricing_model_20251002_120729"
+          },
+          "Mid-Market": {
+            "optimal_price": 30311.927392961556,
+            "price_range": {
+              "minimum": 25765.138284017325,
+              "maximum": 34858.71650190579
+            },
+            "model_confidence": 0.870069462958899,
+            "predicted_conversion": 0.7,
+            "expected_revenue": 21218.349175073086,
+            "model_used": "pricing_model_20251002_120729"
+          },
+          "Enterprise": {
+            "optimal_price": 44160.64498157633,
+            "price_range": {
+              "minimum": 37536.54823433988,
+              "maximum": 50784.74172881278
+            },
+            "model_confidence": 0.870069462958899,
+            "predicted_conversion": 0.7,
+            "expected_revenue": 30912.45148710343,
+            "model_used": "pricing_model_20251002_120729"
+          }
+        }
+      }
+    },
+    "contribution_3": {
+      "score": 48.89803571428571,
+      "result": {
+        "overall_index": 90.8005,
+        "individual_scores": {
+          "stakeholder_001": {
+            "name": "Enterprise Client Alpha",
+            "score": 100,
+            "role": "primary_customer",
+            "influence": "critical"
+          },
+          "stakeholder_002": {
+            "name": "Investment Partner",
+            "score": 75.468,
+            "role": "investor",
+            "influence": "high"
+          }
+        },
+        "improvement_actions": [
+          {
+            "stakeholder_id": "stakeholder_002",
+            "action": "schedule_personalized_check_in",
+            "priority": "high",
+            "timeline": "within_24_hours"
+          }
+        ],
+        "risk_alerts": []
+      }
+    },
+    "contribution_4": {
+      "score": 50,
+      "result": {
+        "market_intelligence": {
+          "opportunities_identified": 5,
+          "total_opportunity_value": 155000,
+          "market_position": "leading",
+          "competitive_advantage": "strong"
+        },
+        "secure_intelligence": {
+          "competitive_positioning": "leading",
+          "market_penetration": 3.2,
+          "expansion_opportunities": 5,
+          "threat_assessment": "low",
+          "partnership_potential": 8,
+          "geographic_expansion": [
+            "EU",
+            "APAC",
+            "LATAM"
+          ]
+        }
+      }
+    }
+  },
+  "dashboard_data": {
+    "business_metrics": {
+      "current_mrr": 80000,
+      "mrr_growth_rate": 15.2,
+      "customers": 0,
+      "customer_acquisition_cost": 2500,
+      "customer_lifetime_value": 125000,
+      "churn_rate": 2.1,
+      "gross_margin": 99.25
+    },
+    "stakeholder_happiness": {
+      "overall_index": 90.8005,
+      "trending": "up",
+      "critical_stakeholders": 0,
+      "improvement_actions": 1
+    },
+    "market_intelligence": {
+      "opportunities_identified": 5,
+      "total_opportunity_value": 155000,
+      "market_position": "leading",
+      "competitive_advantage": "strong"
+    },
+    "system_performance": {
+      "automation_efficiency": 94.7,
+      "decision_accuracy": 91.3,
+      "process_automation": 87.2,
+      "cost_reduction": 23.8
+    },
+    "forecasts": {
+      "mrr_next_month": 89600.00000000001,
+      "customers_next_month": 3,
+      "revenue_next_quarter": 272000.0,
+      "target_achievement_timeline": "Q2 2025"
+    }
+  },
+  "execution_log": [
+    {
+      "contribution": "Major Contribution 1",
+      "score": 46.31921428571428,
+      "timestamp": "2025-10-02 10:07:29.889980",
+      "details": {
+        "execution_timestamp": "2025-10-02T10:07:29.889734",
+        "performance_metrics": {
+          "current_mrr": 80000,
+          "mrr_target_achievement": 64.0,
+          "stakeholder_happiness": 90.8005,
+          "happiness_target_achievement": 92.65357142857142,
+          "new_opportunities_identified": 5,
+          "cycle_execution_time": 0.000195
+        },
+        "happiness_optimization": {
+          "overall_index": 90.8005,
+          "individual_scores": {
+            "stakeholder_001": {
+              "name": "Enterprise Client Alpha",
+              "score": 100,
+              "role": "primary_customer",
+              "influence": "critical"
+            },
+            "stakeholder_002": {
+              "name": "Investment Partner",
+              "score": 75.468,
+              "role": "investor",
+              "influence": "high"
+            }
+          },
+          "improvement_actions": [
+            {
+              "stakeholder_id": "stakeholder_002",
+              "action": "schedule_personalized_check_in",
+              "priority": "high",
+              "timeline": "within_24_hours"
+            }
+          ],
+          "risk_alerts": []
+        },
+        "revenue_optimization": {
+          "current_mrr": 80000,
+          "target_mrr": 125000,
+          "gap_to_target": 45000,
+          "optimization_actions": [
+            {
+              "stream": "Enterprise AI Orchestration Subscriptions",
+              "current_value": 45000,
+              "optimization_potential": 0.25,
+              "projected_increase": 11250.0,
+              "action": "pricing_optimization"
+            },
+            {
+              "stream": "AI Implementation Consulting",
+              "current_value": 35000,
+              "optimization_potential": 0.3,
+              "projected_increase": 10500.0,
+              "action": "pricing_optimization"
+            }
+          ],
+          "growth_projections": {
+            "optimization_gains": 21750.0,
+            "new_business_gains": 116965.85712104607,
+            "total_projected_mrr": 218715.85712104605,
+            "target_achievement": 100
+          },
+          "new_opportunities": [
+            {
+              "lead_id": "lead_001",
+              "company": "Company 1",
+              "estimated_value": 49344,
+              "probability": 0.9303223746224418,
+              "proposal_ready": true
+            },
+            {
+              "lead_id": "lead_006",
+              "company": "Company 6",
+              "estimated_value": 15903,
+              "probability": 0.9236818278972054,
+              "proposal_ready": true
+            },
+            {
+              "lead_id": "lead_010",
+              "company": "Company 10",
+              "estimated_value": 46750,
+              "probability": 0.9226509485401033,
+              "proposal_ready": true
+            },
+            {
+              "lead_id": "lead_009",
+              "company": "Company 9",
+              "estimated_value": 8481,
+              "probability": 0.9069247148836166,
+              "proposal_ready": true
+            },
+            {
+              "lead_id": "lead_005",
+              "company": "Company 5",
+              "estimated_value": 6200,
+              "probability": 0.8943802270079434,
+              "proposal_ready": true
+            }
+          ]
+        },
+        "market_intelligence": {
+          "new_opportunities": 5,
+          "competitive_analysis": {
+            "average_enterprise_pricing": 25000,
+            "price_trend": "increasing",
+            "our_position": "competitive_advantage",
+            "recommended_action": "maintain_premium_positioning"
+          }
+        },
+        "autonomous_actions": [
+          {
+            "type": "stakeholder_engagement",
+            "priority": "high",
+            "action": "initiate_happiness_recovery_protocol",
+            "target": "all_stakeholders_below_85"
+          },
+          {
+            "type": "revenue_acceleration",
+            "priority": "high",
+            "action": "execute_lead_generation_campaign",
+            "target_value": 45000
+          }
+        ],
+        "system_status": "operational",
+        "next_cycle": "2025-10-02T11:07:29.889734"
+      }
+    },
+    {
+      "contribution": "Major Contribution 2",
+      "score": 35.0,
+      "timestamp": "2025-10-02 10:07:30.210383",
+      "details": {
+        "revenue_analysis": {
+          "analysis_timestamp": "2025-10-02T10:07:29.889987",
+          "competitive_analysis": {
+            "competitive_positioning": "premium_differentiated",
+            "price_gap_opportunity": 15000,
+            "competitive_threats": [
+              "price_war_risk",
+              "feature_parity"
+            ],
+            "market_opportunities": [
+              "enterprise_automation",
+              "ai_integration"
+            ],
+            "recommended_strategy": "value_based_premium_pricing",
+            "trends": {
+              "automation_demand": {
+                "trend": "increasing",
+                "impact": 0.25
+              },
+              "ai_integration": {
+                "trend": "accelerating",
+                "impact": 0.4
+              },
+              "enterprise_budgets": {
+                "trend": "stable",
+                "impact": 0.15
+              },
+              "competition_intensity": {
+                "trend": "moderate",
+                "impact": -0.1
+              }
+            }
+          },
+          "revenue_forecast": {
+            "forecast_horizon_months": 12,
+            "forecast_accuracy": -0.17037194319562524,
+            "forecasts": [
+              {
+                "date": "2025-10-02",
+                "predicted_revenue": 94788.77050623109,
+                "confidence_interval": {
+                  "lower": 80570.45493029642,
+                  "upper": 109007.08608216574
+                }
+              },
+              {
+                "date": "2025-11-02",
+                "predicted_revenue": 93120.58801657564,
+                "confidence_interval": {
+                  "lower": 79152.49981408929,
+                  "upper": 107088.67621906198
+                }
+              },
+              {
+                "date": "2025-12-02",
+                "predicted_revenue": 94243.25189432086,
+                "confidence_interval": {
+                  "lower": 80106.76411017272,
+                  "upper": 108379.73967846898
+                }
+              },
+              {
+                "date": "2026-01-02",
+                "predicted_revenue": 96290.5975273048,
+                "confidence_interval": {
+                  "lower": 81847.00789820908,
+                  "upper": 110734.18715640051
+                }
+              },
+              {
+                "date": "2026-02-02",
+                "predicted_revenue": 94917.74040064716,
+                "confidence_interval": {
+                  "lower": 80680.07934055009,
+                  "upper": 109155.40146074422
+                }
+              },
+              {
+                "date": "2026-03-02",
+                "predicted_revenue": 96717.48967761306,
+                "confidence_interval": {
+                  "lower": 82209.8662259711,
+                  "upper": 111225.11312925501
+                }
+              },
+              {
+                "date": "2026-04-02",
+                "predicted_revenue": 95188.4696754665,
+                "confidence_interval": {
+                  "lower": 80910.19922414653,
+                  "upper": 109466.74012678648
+                }
+              },
+              {
+                "date": "2026-05-02",
+                "predicted_revenue": 94963.89612250298,
+                "confidence_interval": {
+                  "lower": 80719.31170412753,
+                  "upper": 109208.48054087842
+                }
+              },
+              {
+                "date": "2026-06-02",
+                "predicted_revenue": 96381.50428340334,
+                "confidence_interval": {
+                  "lower": 81924.27864089284,
+                  "upper": 110838.72992591382
+                }
+              },
+              {
+                "date": "2026-07-02",
+                "predicted_revenue": 96289.66778475652,
+                "confidence_interval": {
+                  "lower": 81846.21761704303,
+                  "upper": 110733.11795246998
+                }
+              },
+              {
+                "date": "2026-08-02",
+                "predicted_revenue": 97974.49470734973,
+                "confidence_interval": {
+                  "lower": 83278.32050124728,
+                  "upper": 112670.66891345219
+                }
+              },
+              {
+                "date": "2026-09-02",
+                "predicted_revenue": 98505.6082155142,
+                "confidence_interval": {
+                  "lower": 83729.76698318707,
+                  "upper": 113281.44944784133
+                }
+              }
+            ],
+            "insights": {
+              "projected_growth_rate": 0.03921179364847643,
+              "historical_growth_rate": -0.08952230171131315,
+              "growth_acceleration": 0.12873409535978958,
+              "peak_revenue_month": "2026-09-02",
+              "total_forecast_revenue": 1149382.0788116858,
+              "average_monthly_revenue": 95781.83990097382,
+              "revenue_volatility": 1477.1001984214654,
+              "trend_direction": "increasing"
+            },
+            "model_performance": {
+              "r2_score": -0.17037194319562524,
+              "cross_validation_scores": [
+                0.07312102311641377,
+                -0.5528603036979265,
+                -0.574050901593578,
+                0.12846464523148593,
+                0.07346582096547871
+              ]
+            },
+            "generated_at": "2025-10-02T10:07:30.053340"
+          },
+          "pricing_recommendations": {
+            "SMB": {
+              "optimal_price": -4125.678511847723,
+              "price_range": {
+                "minimum": -3506.8267350705646,
+                "maximum": -4744.530288624881
+              },
+              "model_confidence": 0.870069462958899,
+              "predicted_conversion": 0.7,
+              "expected_revenue": -2887.974958293406,
+              "model_used": "pricing_model_20251002_120729"
+            },
+            "Mid-Market": {
+              "optimal_price": 16033.384725778278,
+              "price_range": {
+                "minimum": 13628.377016911536,
+                "maximum": 18438.39243464502
+              },
+              "model_confidence": 0.870069462958899,
+              "predicted_conversion": 0.7,
+              "expected_revenue": 11223.369308044794,
+              "model_used": "pricing_model_20251002_120729"
+            },
+            "Enterprise": {
+              "optimal_price": 61100.06807143784,
+              "price_range": {
+                "minimum": 51935.05786072216,
+                "maximum": 70265.07828215351
+              },
+              "model_confidence": 0.870069462958899,
+              "predicted_conversion": 0.7,
+              "expected_revenue": 42770.04765000648,
+              "model_used": "pricing_model_20251002_120729"
+            }
+          },
+          "market_intelligence": {
+            "total_addressable_market": 2500000000,
+            "serviceable_addressable_market": 250000000,
+            "current_market_penetration": 0.032,
+            "growth_opportunities": [
+              "enterprise_automation",
+              "ai_integration"
+            ],
+            "threat_level": "moderate"
+          },
+          "actionable_insights": [
+            {
+              "category": "pricing",
+              "priority": "high",
+              "insight": "Enterprise pricing has significant upward potential",
+              "action": "Test 15% price increase for new enterprise customers",
+              "expected_impact": "12-18% revenue increase"
+            },
+            {
+              "category": "market_expansion",
+              "priority": "high",
+              "insight": "AI integration market showing strong demand",
+              "action": "Launch AI-focused marketing campaign",
+              "expected_impact": "25-30% lead generation increase"
+            }
+          ],
+          "system_performance": {
+            "analysis_time_seconds": 0.163693,
+            "forecast_accuracy": -0.17037194319562524,
+            "pricing_confidence": 0.8700694629588991
+          }
+        },
+        "forecast": {
+          "forecast_horizon_months": 12,
+          "forecast_accuracy": -158.75797780222632,
+          "forecasts": [
+            {
+              "date": "2025-10-02",
+              "predicted_revenue": 89713.3181788781,
+              "confidence_interval": {
+                "lower": 76256.32045204638,
+                "upper": 103170.3159057098
+              }
+            },
+            {
+              "date": "2025-11-02",
+              "predicted_revenue": 91707.98368679447,
+              "confidence_interval": {
+                "lower": 77951.7861337753,
+                "upper": 105464.18123981362
+              }
+            },
+            {
+              "date": "2025-12-02",
+              "predicted_revenue": 92085.32854875985,
+              "confidence_interval": {
+                "lower": 78272.52926644587,
+                "upper": 105898.12783107381
+              }
+            },
+            {
+              "date": "2026-01-02",
+              "predicted_revenue": 83746.99820242495,
+              "confidence_interval": {
+                "lower": 71184.94847206121,
+                "upper": 96309.04793278869
+              }
+            },
+            {
+              "date": "2026-02-02",
+              "predicted_revenue": 85091.39523896953,
+              "confidence_interval": {
+                "lower": 72327.6859531241,
+                "upper": 97855.10452481496
+              }
+            },
+            {
+              "date": "2026-03-02",
+              "predicted_revenue": 86540.2593906914,
+              "confidence_interval": {
+                "lower": 73559.22048208768,
+                "upper": 99521.2982992951
+              }
+            },
+            {
+              "date": "2026-04-02",
+              "predicted_revenue": 87698.16021169207,
+              "confidence_interval": {
+                "lower": 74543.43617993826,
+                "upper": 100852.88424344588
+              }
+            },
+            {
+              "date": "2026-05-02",
+              "predicted_revenue": 88093.93952679315,
+              "confidence_interval": {
+                "lower": 74879.84859777418,
+                "upper": 101308.03045581211
+              }
+            },
+            {
+              "date": "2026-06-02",
+              "predicted_revenue": 85443.39228087632,
+              "confidence_interval": {
+                "lower": 72626.88343874487,
+                "upper": 98259.90112300776
+              }
+            },
+            {
+              "date": "2026-07-02",
+              "predicted_revenue": 88561.88164366214,
+              "confidence_interval": {
+                "lower": 75277.59939711282,
+                "upper": 101846.16389021145
+              }
+            },
+            {
+              "date": "2026-08-02",
+              "predicted_revenue": 89310.55169663823,
+              "confidence_interval": {
+                "lower": 75913.96894214248,
+                "upper": 102707.13445113396
+              }
+            },
+            {
+              "date": "2026-09-02",
+              "predicted_revenue": 90359.18118097857,
+              "confidence_interval": {
+                "lower": 76805.30400383178,
+                "upper": 103913.05835812534
+              }
+            }
+          ],
+          "insights": {
+            "projected_growth_rate": 0.007199187536600779,
+            "historical_growth_rate": 0.006266128188234026,
+            "growth_acceleration": 0.000933059348366753,
+            "peak_revenue_month": "2025-12-02",
+            "total_forecast_revenue": 1058352.389787159,
+            "average_monthly_revenue": 88196.03248226324,
+            "revenue_volatility": 2513.7518910308686,
+            "trend_direction": "increasing"
+          },
+          "model_performance": {
+            "r2_score": -158.75797780222632,
+            "cross_validation_scores": [
+              -0.0076944409556691795,
+              -785.6178337371781,
+              -6.442816352645775,
+              -1.0716044712490684,
+              -0.6499400091028789
+            ]
+          },
+          "generated_at": "2025-10-02T10:07:30.210011"
+        },
+        "pricing": {
+          "SMB": {
+            "optimal_price": 7990.519167248409,
+            "price_range": {
+              "minimum": 6791.941292161147,
+              "maximum": 9189.09704233567
+            },
+            "model_confidence": 0.870069462958899,
+            "predicted_conversion": 0.7,
+            "expected_revenue": 5593.363417073886,
+            "model_used": "pricing_model_20251002_120729"
+          },
+          "Mid-Market": {
+            "optimal_price": 30311.927392961556,
+            "price_range": {
+              "minimum": 25765.138284017325,
+              "maximum": 34858.71650190579
+            },
+            "model_confidence": 0.870069462958899,
+            "predicted_conversion": 0.7,
+            "expected_revenue": 21218.349175073086,
+            "model_used": "pricing_model_20251002_120729"
+          },
+          "Enterprise": {
+            "optimal_price": 44160.64498157633,
+            "price_range": {
+              "minimum": 37536.54823433988,
+              "maximum": 50784.74172881278
+            },
+            "model_confidence": 0.870069462958899,
+            "predicted_conversion": 0.7,
+            "expected_revenue": 30912.45148710343,
+            "model_used": "pricing_model_20251002_120729"
+          }
+        }
+      }
+    },
+    {
+      "contribution": "Major Contribution 3",
+      "score": 48.89803571428571,
+      "timestamp": "2025-10-02 10:07:30.210421",
+      "details": {
+        "overall_index": 90.8005,
+        "individual_scores": {
+          "stakeholder_001": {
+            "name": "Enterprise Client Alpha",
+            "score": 100,
+            "role": "primary_customer",
+            "influence": "critical"
+          },
+          "stakeholder_002": {
+            "name": "Investment Partner",
+            "score": 75.468,
+            "role": "investor",
+            "influence": "high"
+          }
+        },
+        "improvement_actions": [
+          {
+            "stakeholder_id": "stakeholder_002",
+            "action": "schedule_personalized_check_in",
+            "priority": "high",
+            "timeline": "within_24_hours"
+          }
+        ],
+        "risk_alerts": []
+      }
+    },
+    {
+      "contribution": "Major Contribution 4",
+      "score": 50,
+      "timestamp": "2025-10-02 10:07:30.210452",
+      "details": {
+        "market_intelligence": {
+          "opportunities_identified": 5,
+          "total_opportunity_value": 155000,
+          "market_position": "leading",
+          "competitive_advantage": "strong"
+        },
+        "secure_intelligence": {
+          "competitive_positioning": "leading",
+          "market_penetration": 3.2,
+          "expansion_opportunities": 5,
+          "threat_assessment": "low",
+          "partnership_potential": 8,
+          "geographic_expansion": [
+            "EU",
+            "APAC",
+            "LATAM"
+          ]
+        }
+      }
+    }
+  ]
+}

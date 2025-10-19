@@ -1,0 +1,9 @@
+steps:
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['build', '-f', 'Dockerfile.aia-ai', '-t', 'gcr.io/$PROJECT_ID/aia-ai', '.']
+images: ['gcr.io/$PROJECT_ID/aia-ai']
+options:
+  logging: CLOUD_LOGGING_ONLY
+  machineType: 'E2_HIGHCPU_8'
+  diskSizeGb: 100
+timeout: '1200s'

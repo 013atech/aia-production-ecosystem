@@ -1,0 +1,46 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: aia-production-ingress-fixed
+  namespace: aia-production-v3
+  annotations:
+    kubernetes.io/ingress.global-static-ip-name: "aia-production-static-ip"
+    networking.gke.io/managed-certificates: "aia-ssl-certificate"
+    ingress.gcp.kubernetes.io/pre-shared-certs: "aia-ssl-certificate"
+    cloud.google.com/armor-config: '{"default-rule": {"action": "allow"}}'
+spec:
+  rules:
+  - host: 013a.tech
+    http:
+      paths:
+      - path: /api/*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-backend-simple-service
+            port:
+              number: 80
+      - path: /*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-backend-simple-service
+            port:
+              number: 80
+  - host: www.013a.tech
+    http:
+      paths:
+      - path: /api/*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-backend-simple-service
+            port:
+              number: 80
+      - path: /*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-backend-simple-service
+            port:
+              number: 80

@@ -1,0 +1,659 @@
+#!/usr/bin/env bash
+#
+# Fortune 500 Partner API Activation
+# ==================================
+# Comprehensive deployment for $25M partnership pipeline activation
+# EY Global ($8.5M) + JPMorgan ($12M) + Google Cloud ($3.5M) + Apple ($1M)
+
+set -e
+
+echo "🚀 FORTUNE 500 PARTNER API ACTIVATION"
+echo "======================================"
+echo "Total Partnership Value: $25,000,000"
+echo "Target: Enterprise-grade API activation with quantum security"
+echo ""
+
+# Configuration
+export NAMESPACE="aia-enterprise-services"
+export PROJECT_ID="aia-system-prod-1759055445"
+export REGION="us-central1"
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: enterprise-partner-config
+  namespace: aia-enterprise-services
+  labels:
+    app: aia-enterprise-partners
+    version: "2.5.0"
+    tier: fortune-500
+data:
+  # Partner Configuration
+  EY_GLOBAL_CONFIG: |
+    {
+      "partner_id": "ey-global",
+      "name": "Ernst & Young Global",
+      "pipeline_value": 8500000,
+      "revenue_model": {
+        "base_fee": 500000,
+        "usage_rates": {
+          "obsidian_workflow": 50.0,
+          "client_analysis": 1000.0,
+          "presentation_generation": 2000.0
+        }
+      },
+      "security_level": "enterprise",
+      "compliance": ["SOC2", "ISO27001", "GDPR"],
+      "endpoints": ["/ey/obsidian-workflow", "/ey/client-analysis", "/ey/presentations"],
+      "rate_limit": "10000/hour",
+      "authentication": "quantum_enhanced"
+    }
+
+  JPMORGAN_CONFIG: |
+    {
+      "partner_id": "jpmorgan-chase",
+      "name": "JPMorgan Chase & Co.",
+      "pipeline_value": 12000000,
+      "revenue_model": {
+        "base_fee": 2000000,
+        "usage_rates": {
+          "portfolio_optimization": 5000.0,
+          "ri[STRIPE_KEY_PLACEHOLDER]": 1000.0,
+          "crypto_trading": 10.0,
+          "market_prediction": 2500.0
+        }
+      },
+      "security_level": "financial_max",
+      "compliance": ["SOX", "FINRA", "Basel_III", "GDPR"],
+      "endpoints": ["/jpmorgan/portfolio-optimization", "/jpmorgan/crypto-trading", "/jpmorgan/risk-assessment"],
+      "rate_limit": "50000/hour",
+      "authentication": "financial_grade_quantum"
+    }
+
+  GOOGLE_CLOUD_CONFIG: |
+    {
+      "partner_id": "google-cloud",
+      "name": "Google Cloud Platform",
+      "pipeline_value": 3500000,
+      "revenue_model": {
+        "base_fee": 750000,
+        "usage_rates": {
+          "agent_deployment": 200.0,
+          "knowledge_operations": 0.05,
+          "workspace_integration": 50.0
+        }
+      },
+      "security_level": "enterprise",
+      "compliance": ["SOC2", "ISO27001", "FedRAMP", "GDPR"],
+      "endpoints": ["/gcp/agent-deployment", "/gcp/knowledge-graph-ops", "/gcp/workspace-integration"],
+      "rate_limit": "25000/hour",
+      "authentication": "gcp_quantum_secured"
+    }
+
+  APPLE_CONFIG: |
+    {
+      "partner_id": "apple-inc",
+      "name": "Apple Inc.",
+      "pipeline_value": 1000000,
+      "revenue_model": {
+        "base_fee": 1500000,
+        "usage_rates": {
+          "vision_pro_apps": 100.0,
+          "ipad_workflows": 25.0,
+          "macos_integration": 75.0,
+          "spatial_analytics": 150.0
+        }
+      },
+      "security_level": "ecosystem_secured",
+      "compliance": ["App_Store_Guidelines", "Privacy_Labels", "GDPR"],
+      "endpoints": ["/apple/spatial-analytics", "/apple/vision-pro", "/apple/ipad-workflows"],
+      "rate_limit": "30000/hour",
+      "authentication": "apple_ecosystem_quantum"
+    }
+
+  # API Gateway Configuration
+  API_GATEWAY_CONFIG: |
+    {
+      "global_settings": {
+        "enable_quantum_security": true,
+        "enable_revenue_tracking": true,
+        "enable_compliance_monitoring": true,
+        "enable_real_time_analytics": true,
+        "circuit_breaker_enabled": true,
+        "rate_limiting_strategy": "partner_based",
+        "authentication_method": "jwt_quantum_enhanced"
+      },
+      "monitoring": {
+        "enable_prometheus": true,
+        "enable_grafana_dashboards": true,
+        "enable_alerting": true,
+        "slo_targets": {
+          "availability": 99.95,
+          "response_time_p95": 200,
+          "error_rate": 0.1
+        }
+      }
+    }
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-fortune-500-partner-api
+  namespace: aia-enterprise-services
+  labels:
+    app: aia-fortune-500-partners
+    version: "2.5.0"
+    tier: enterprise
+    partnership-value: "25M"
+spec:
+  replicas: 6  # High availability for enterprise partners
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 2
+  selector:
+    matchLabels:
+      app: aia-fortune-500-partners
+  template:
+    metadata:
+      labels:
+        app: aia-fortune-500-partners
+        version: "2.5.0"
+        tier: enterprise
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/metrics"
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 2000
+      containers:
+      - name: enterprise-partner-api
+        image: gcr.io/aia-system-prod-1759055445/aia-enterprise-partner-api:2.5.0
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+          name: http
+          protocol: TCP
+        - containerPort: 8443
+          name: https
+          protocol: TCP
+        env:
+        - name: ENVIRONMENT
+          value: "production"
+        - name: LOG_LEVEL
+          value: "INFO"
+        - name: SECURITY_LEVEL
+          value: "enterprise_max"
+        - name: ENABLE_QUANTUM_SECURITY
+          value: "true"
+        - name: ENABLE_REVENUE_TRACKING
+          value: "true"
+        - name: PROMETHEUS_METRICS
+          value: "true"
+        - name: PARTNER_CONFIG_PATH
+          value: "/app/config"
+        # Revenue tracking
+        - name: TOTAL_PIPELINE_VALUE
+          value: "25000000"
+        - name: EY_PIPELINE_VALUE
+          value: "8500000"
+        - name: JPMORGAN_PIPELINE_VALUE
+          value: "12000000"
+        - name: GOOGLE_CLOUD_PIPELINE_VALUE
+          value: "3500000"
+        - name: APPLE_PIPELINE_VALUE
+          value: "1000000"
+        # Security
+        - name: JWT_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: enterprise-partner-secrets
+              key: jwt-secret
+        - name: QUANTUM_ENCRYPTION_KEY
+          valueFrom:
+            secretKeyRef:
+              name: enterprise-partner-secrets
+              key: quantum-key
+        # Database
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: enterprise-partner-secrets
+              key: database-url
+        # Redis for caching
+        - name: REDIS_URL
+          valueFrom:
+            secretKeyRef:
+              name: enterprise-partner-secrets
+              key: redis-url
+        volumeMounts:
+        - name: config-volume
+          mountPath: /app/config
+          readOnly: true
+        - name: tls-certs
+          mountPath: /app/certs
+          readOnly: true
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+          limits:
+            cpu: "100m"
+            memory: "128Mi"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+            scheme: HTTP
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8080
+            scheme: HTTP
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        # Enhanced security
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+            - ALL
+      volumes:
+      - name: config-volume
+        configMap:
+          name: enterprise-partner-config
+      - name: tls-certs
+        secret:
+          secretName: enterprise-partner-tls
+      # Service account for enterprise operations
+      serviceAccountName: aia-enterprise-service-account
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-fortune-500-partner-service
+  namespace: aia-enterprise-services
+  labels:
+    app: aia-fortune-500-partners
+    tier: enterprise
+  annotations:
+    service.beta.kubernetes.io/gce-load-balancer-type: "External"
+    cloud.google.com/neg: '{"ingress": true}'
+spec:
+  type: NodePort
+  ports:
+  - name: http
+    port: 80
+    targetPort: 8080
+    protocol: TCP
+  - name: https
+    port: 443
+    targetPort: 8443
+    protocol: TCP
+  selector:
+    app: aia-fortune-500-partners
+
+---
+# Revenue Tracking Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-revenue-tracker
+  namespace: aia-enterprise-services
+  labels:
+    app: aia-revenue-tracker
+    component: financial-analytics
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: aia-revenue-tracker
+  template:
+    metadata:
+      labels:
+        app: aia-revenue-tracker
+    spec:
+      containers:
+      - name: revenue-tracker
+        image: gcr.io/aia-system-prod-1759055445/aia-revenue-tracker:1.0.0
+        ports:
+        - containerPort: 8090
+        env:
+        - name: TOTAL_PIPELINE_TARGET
+          value: "25000000"
+        - name: ENABLE_REAL_TIME_TRACKING
+          value: "true"
+        - name: PROMETHEUS_METRICS
+          value: "true"
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+          limits:
+            cpu: "100m"
+            memory: "128Mi"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-revenue-tracker-service
+  namespace: aia-enterprise-services
+spec:
+  ports:
+  - port: 8090
+    targetPort: 8090
+  selector:
+    app: aia-revenue-tracker
+
+---
+# Partner-Specific Ingress Configuration
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: fortune-500-partner-ingress
+  namespace: aia-enterprise-services
+  annotations:
+    kubernetes.io/ingress.class: "gce"
+    kubernetes.io/ingress.global-static-ip-name: "aia-enterprise-ip"
+    networking.gke.io/managed-certificates: "fortune-500-partner-ssl-cert"
+    ingress.gcp.kubernetes.io/frontend-config: "enterprise-frontend-config"
+    ingress.gcp.kubernetes.io/backend-config: "enterprise-backend-config"
+    # Rate limiting per partner
+    nginx.ingress.kubernetes.io/rate-limit: "1000"
+    nginx.ingress.kubernetes.io/rate-limit-window: "1m"
+    # Security headers
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      add_header X-Frame-Options SAMEORIGIN;
+      add_header X-Content-Type-Options nosniff;
+      add_header X-XSS-Protection "1; mode=block";
+      add_header Strict-Transport-Security "max-age=31536000; includeSubDomains";
+spec:
+  tls:
+  - hosts:
+    - partners.013a.tech
+    - ey.013a.tech
+    - jpmorgan.013a.tech
+    - gcp.013a.tech
+    - apple.013a.tech
+    secretName: fortune-500-partner-tls
+  rules:
+  # Main partner API gateway
+  - host: partners.013a.tech
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-fortune-500-partner-service
+            port:
+              number: 80
+
+  # EY-specific subdomain
+  - host: ey.013a.tech
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-fortune-500-partner-service
+            port:
+              number: 80
+
+  # JPMorgan-specific subdomain
+  - host: jpmorgan.013a.tech
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-fortune-500-partner-service
+            port:
+              number: 80
+
+  # Google Cloud-specific subdomain
+  - host: gcp.013a.tech
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-fortune-500-partner-service
+            port:
+              number: 80
+
+  # Apple-specific subdomain
+  - host: apple.013a.tech
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-fortune-500-partner-service
+            port:
+              number: 80
+
+---
+# SSL Certificate Management
+apiVersion: networking.gke.io/v1
+kind: ManagedCertificate
+metadata:
+  name: fortune-500-partner-ssl-cert
+  namespace: aia-enterprise-services
+spec:
+  domains:
+  - partners.013a.tech
+  - ey.013a.tech
+  - jpmorgan.013a.tech
+  - gcp.013a.tech
+  - apple.013a.tech
+
+---
+# Frontend Configuration for GCP Load Balancer
+apiVersion: networking.gke.io/v1beta1
+kind: FrontendConfig
+metadata:
+  name: enterprise-frontend-config
+  namespace: aia-enterprise-services
+spec:
+  sslPolicy: enterprise-ssl-policy
+  redirectToHttps:
+    enabled: true
+
+---
+# Backend Configuration
+apiVersion: cloud.google.com/v1
+kind: BackendConfig
+metadata:
+  name: enterprise-backend-config
+  namespace: aia-enterprise-services
+spec:
+  healthCheck:
+    checkIntervalSec: 30
+    timeoutSec: 10
+    healthyThreshold: 1
+    unhealthyThreshold: 3
+    type: HTTP
+    requestPath: /health
+    port: 8080
+  connectionDraining:
+    drainingTimeoutSec: 60
+  # Circuit breaker for enterprise resilience
+  customRequestHeaders:
+    - "X-Enterprise-Grade:true"
+    - "X-Pipeline-Value:25000000"
+
+---
+# Secrets for enterprise operations
+apiVersion: v1
+kind: Secret
+metadata:
+  name: enterprise-partner-secrets
+  namespace: aia-enterprise-services
+type: Opaque
+data:
+  # Base64 encoded secrets (replace with actual values)
+  jwt-secret: ZW50ZXJwcmlzZV9qd3Rfc2VjcmV0XzIwMjVfcXVhbnR1bV9lbmhhbmNlZA==
+  quantum-key: cXVhbnR1bV9lbmNyeXB0aW9uX2tleV8yMDI1X2VudGVycHJpc2VfZ3JhZGU=
+  database-url: cG9zdGdyZXNxbDovL3VzZXI6cGFzcyUyNDEyM0Bwcm9kLWRiOjU0MzIvYWlhX2VudGVycHJpc2U=
+  redis-url: cmVkaXM6Ly9yZWRpcy1lbnRlcnByaXNlOjYzNzk=
+
+---
+# Enterprise Service Account
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: aia-enterprise-service-account
+  namespace: aia-enterprise-services
+  annotations:
+    iam.gke.io/gcp-service-account: aia-enterprise@aia-system-prod-1759055445.iam.gserviceaccount.com
+
+---
+# Role-Based Access Control
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: enterprise-partner-role
+  namespace: aia-enterprise-services
+rules:
+- apiGroups: [""]
+  resources: ["configmaps", "secrets", "services"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["apps"]
+  resources: ["deployments", "replicasets"]
+  verbs: ["get", "list", "watch"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: enterprise-partner-rolebinding
+  namespace: aia-enterprise-services
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: enterprise-partner-role
+subjects:
+- kind: ServiceAccount
+  name: aia-enterprise-service-account
+  namespace: aia-enterprise-services
+
+---
+# Horizontal Pod Autoscaler for enterprise scalability
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: fortune-500-partner-hpa
+  namespace: aia-enterprise-services
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: aia-fortune-500-partner-api
+  minReplicas: 6
+  maxReplicas: 20
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+      - type: Percent
+        value: 10
+        periodSeconds: 60
+    scaleUp:
+      stabilizationWindowSeconds: 60
+      policies:
+      - type: Percent
+        value: 50
+        periodSeconds: 60
+
+---
+# Network Policy for enterprise security
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: enterprise-partner-network-policy
+  namespace: aia-enterprise-services
+spec:
+  podSelector:
+    matchLabels:
+      app: aia-fortune-500-partners
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: aia-monitoring
+    - namespaceSelector:
+        matchLabels:
+          name: ingress-nginx
+  - ports:
+    - protocol: TCP
+      port: 8080
+    - protocol: TCP
+      port: 8443
+  egress:
+  # Allow DNS resolution
+  - to: []
+    ports:
+    - protocol: UDP
+      port: 53
+  # Allow HTTPS outbound for partner integrations
+  - to: []
+    ports:
+    - protocol: TCP
+      port: 443
+  # Allow database connections
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: aia-database
+    ports:
+    - protocol: TCP
+      port: 5432
+
+---
+# PodDisruptionBudget for high availability
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: fortune-500-partner-pdb
+  namespace: aia-enterprise-services
+spec:
+  minAvailable: 4
+  selector:
+    matchLabels:
+      app: aia-fortune-500-partners

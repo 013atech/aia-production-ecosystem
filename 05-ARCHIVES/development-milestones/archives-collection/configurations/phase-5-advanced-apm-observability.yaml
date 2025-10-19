@@ -1,0 +1,794 @@
+---
+# PHASE 5: ADVANCED APM & ENTERPRISE OBSERVABILITY STACK
+# Distributed Tracing, SLO Monitoring, Predictive Analytics
+# Zero-blind-spot visibility for Multi-Agent System
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: aia-observability
+  labels:
+    phase: "5"
+    component: "observability-stack"
+    tier: "monitoring"
+---
+# Jaeger Distributed Tracing System
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jaeger-operator
+  namespace: aia-observability
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: jaeger-operator
+  template:
+    metadata:
+      labels:
+        app: jaeger-operator
+    spec:
+      containers:
+      - name: jaeger-operator
+        image: jaegertracing/jaeger-operator:1.51.0
+        ports:
+        - containerPort: 8080
+        env:
+        - name: WATCH_NAMESPACE
+          value: "aia-observability"
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: OPERATOR_NAME
+          value: "jaeger-operator"
+---
+# Jaeger All-in-One Instance
+apiVersion: jaegertracing.io/v1
+kind: Jaeger
+metadata:
+  name: aia-jaeger
+  namespace: aia-observability
+spec:
+  strategy: production
+  storage:
+    type: elasticsearch
+    elasticsearch:
+      nodeCount: 3
+      redundancyPolicy: SingleRedundancy
+      storage:
+        size: 50Gi
+        storageClassName: ssd-retain
+  collector:
+    maxReplicas: 5
+    resources:
+      limits:
+        memory: 2Gi
+        cpu: 1000m
+      requests:
+        memory: 1Gi
+        cpu: 500m
+  query:
+    replicas: 2
+    resources:
+      limits:
+        memory: 1Gi
+        cpu: 500m
+      requests:
+        memory: 512Mi
+        cpu: 250m
+---
+# OpenTelemetry Collector
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: otel-collector
+  namespace: aia-observability
+spec:
+  selector:
+    matchLabels:
+      app: otel-collector
+  template:
+    metadata:
+      labels:
+        app: otel-collector
+    spec:
+      serviceAccountName: otel-collector
+      containers:
+      - name: otel-collector
+        image: otel/opentelemetry-collector-contrib:0.89.0
+        command: ["/otelcol-contrib"]
+        args: ["--config=/etc/otel/config.yaml"]
+        ports:
+        - containerPort: 4317  # OTLP gRPC
+        - containerPort: 4318  # OTLP HTTP
+        - containerPort: 8889  # Prometheus metrics
+        - containerPort: 13133 # Health check
+        env:
+        - name: MY_POD_IP
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: status.podIP
+        - name: K8S_NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+        resources:
+          requests:
+            memory: 512Mi
+            cpu: 200m
+          limits:
+            memory: 2Gi
+            cpu: 1
+        volumeMounts:
+        - name: otel-config
+          mountPath: /etc/otel
+        - name: varlog
+          mountPath: /var/log
+          readOnly: true
+        - name: varlibdockercontainers
+          mountPath: /var/lib/docker/containers
+          readOnly: true
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 13133
+          initialDelaySeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 13133
+          initialDelaySeconds: 30
+      volumes:
+      - name: otel-config
+        configMap:
+          name: otel-config
+      - name: varlog
+        hostPath:
+          path: /var/log
+      - name: varlibdockercontainers
+        hostPath:
+          path: /var/lib/docker/containers
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+---
+# OpenTelemetry Configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: otel-config
+  namespace: aia-observability
+data:
+  config.yaml: |
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+            endpoint: 0.0.0.0:4317
+          http:
+            endpoint: 0.0.0.0:4318
+      prometheus:
+        config:
+          scrape_configs:
+            - job_name: 'aia-services'
+              kubernetes_sd_configs:
+                - role: pod
+              relabel_configs:
+                - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+                  action: keep
+                  regex: true
+      k8s_cluster:
+        node_conditions_to_report: [Ready, MemoryPressure, DiskPressure, PIDPressure]
+        allocatable_types_to_report: [cpu, memory, storage]
+      kubeletstats:
+        collection_interval: 20s
+        auth_type: "serviceAccount"
+        endpoint: "https://${env:K8S_NODE_NAME}:10250"
+        insecure_skip_verify: true
+
+    processors:
+      batch:
+        timeout: 1s
+        send_batch_size: 8192
+      memory_limiter:
+        limit_mib: 1500
+      resource:
+        attributes:
+          - key: cluster.name
+            value: "aia-production"
+            action: insert
+          - key: deployment.environment
+            value: "production"
+            action: insert
+      k8sattributes:
+        auth_type: "serviceAccount"
+        passthrough: false
+        extract:
+          metadata:
+            - k8s.pod.name
+            - k8s.pod.uid
+            - k8s.deployment.name
+            - k8s.namespace.name
+            - k8s.node.name
+            - k8s.pod.start_time
+
+    exporters:
+      jaeger:
+        endpoint: aia-jaeger-collector.aia-observability.svc.cluster.local:14250
+        tls:
+          insecure: true
+      prometheus:
+        endpoint: "0.0.0.0:8889"
+      logging:
+        loglevel: debug
+      elasticsearch:
+        endpoints: ["http://elasticsearch.aia-observability.svc.cluster.local:9200"]
+        logs_index: "aia-logs"
+        metrics_index: "aia-metrics"
+
+    service:
+      extensions: [health_check]
+      pipelines:
+        traces:
+          receivers: [otlp]
+          processors: [memory_limiter, k8sattributes, resource, batch]
+          exporters: [jaeger, logging]
+        metrics:
+          receivers: [otlp, prometheus, k8s_cluster, kubeletstats]
+          processors: [memory_limiter, k8sattributes, resource, batch]
+          exporters: [prometheus, elasticsearch]
+        logs:
+          receivers: [otlp]
+          processors: [memory_limiter, k8sattributes, resource, batch]
+          exporters: [elasticsearch, logging]
+
+      extensions:
+        health_check:
+          endpoint: 0.0.0.0:13133
+---
+# ServiceAccount for OpenTelemetry
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: otel-collector
+  namespace: aia-observability
+---
+# ClusterRole for OpenTelemetry
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: otel-collector
+rules:
+- apiGroups: [""]
+  resources: ["pods", "nodes", "services", "endpoints", "events"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["apps"]
+  resources: ["replicasets", "deployments"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["extensions"]
+  resources: ["replicasets"]
+  verbs: ["get", "list", "watch"]
+- nonResourceURLs: ["/metrics"]
+  verbs: ["get"]
+---
+# ClusterRoleBinding for OpenTelemetry
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: otel-collector
+subjects:
+- kind: ServiceAccount
+  name: otel-collector
+  namespace: aia-observability
+roleRef:
+  kind: ClusterRole
+  name: otel-collector
+  apiGroup: rbac.authorization.k8s.io
+---
+# Elasticsearch for Logs and Metrics
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: elasticsearch
+  namespace: aia-observability
+spec:
+  serviceName: elasticsearch
+  replicas: 3
+  selector:
+    matchLabels:
+      app: elasticsearch
+  template:
+    metadata:
+      labels:
+        app: elasticsearch
+    spec:
+      containers:
+      - name: elasticsearch
+        image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+        ports:
+        - containerPort: 9200
+        - containerPort: 9300
+        env:
+        - name: cluster.name
+          value: "aia-logs"
+        - name: node.name
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: cluster.initial_master_nodes
+          value: "elasticsearch-0,elasticsearch-1,elasticsearch-2"
+        - name: discovery.seed_hosts
+          value: "elasticsearch-0.elasticsearch.aia-observability.svc.cluster.local,elasticsearch-1.elasticsearch.aia-observability.svc.cluster.local,elasticsearch-2.elasticsearch.aia-observability.svc.cluster.local"
+        - name: ES_JAVA_OPTS
+          value: "-Xms2g -Xmx2g"
+        - name: xpack.security.enabled
+          value: "false"
+        - name: xpack.monitoring.collection.enabled
+          value: "true"
+        resources:
+          requests:
+            memory: 4Gi
+            cpu: 1
+          limits:
+            memory: 8Gi
+            cpu: 2
+        volumeMounts:
+        - name: elasticsearch-data
+          mountPath: /usr/share/elasticsearch/data
+        readinessProbe:
+          httpGet:
+            path: /_cluster/health
+            port: 9200
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /_cluster/health
+            port: 9200
+          initialDelaySeconds: 60
+          periodSeconds: 30
+  volumeClaimTemplates:
+  - metadata:
+      name: elasticsearch-data
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      storageClassName: ssd-retain
+      resources:
+        requests:
+          storage: 100Gi
+---
+# Elasticsearch Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: elasticsearch
+  namespace: aia-observability
+spec:
+  clusterIP: None
+  selector:
+    app: elasticsearch
+  ports:
+  - port: 9200
+    targetPort: 9200
+    name: http
+  - port: 9300
+    targetPort: 9300
+    name: transport
+---
+# Kibana for Log Visualization
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kibana
+  namespace: aia-observability
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: kibana
+  template:
+    metadata:
+      labels:
+        app: kibana
+    spec:
+      containers:
+      - name: kibana
+        image: docker.elastic.co/kibana/kibana:8.11.0
+        ports:
+        - containerPort: 5601
+        env:
+        - name: ELASTICSEARCH_HOSTS
+          value: "http://elasticsearch.aia-observability.svc.cluster.local:9200"
+        - name: SERVER_NAME
+          value: "aia-kibana"
+        - name: XPACK_SECURITY_ENABLED
+          value: "false"
+        resources:
+          requests:
+            memory: 1Gi
+            cpu: 500m
+          limits:
+            memory: 2Gi
+            cpu: 1
+        readinessProbe:
+          httpGet:
+            path: /api/status
+            port: 5601
+          initialDelaySeconds: 60
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /api/status
+            port: 5601
+          initialDelaySeconds: 120
+          periodSeconds: 30
+---
+# Kibana Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: kibana
+  namespace: aia-observability
+spec:
+  selector:
+    app: kibana
+  ports:
+  - port: 5601
+    targetPort: 5601
+  type: LoadBalancer
+---
+# SLO Monitoring System
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: slo-monitor
+  namespace: aia-observability
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: slo-monitor
+  template:
+    metadata:
+      labels:
+        app: slo-monitor
+    spec:
+      containers:
+      - name: slo-monitor
+        image: python:3.11-slim
+        ports:
+        - containerPort: 8100
+        command:
+        - python
+        - -c
+        - |
+          import asyncio
+          import json
+          import time
+          import aiohttp
+          from datetime import datetime, timedelta
+          import logging
+
+          logging.basicConfig(level=logging.INFO)
+          logger = logging.getLogger(__name__)
+
+          class SLOMonitor:
+              def __init__(self):
+                  self.slo_targets = {
+                      'availability': 99.9,  # 99.9% uptime
+                      'response_time_p95': 200,  # 95th percentile < 200ms
+                      'error_rate': 0.1,  # < 0.1% error rate
+                      'throughput': 1000  # > 1000 req/min
+                  }
+                  self.alert_thresholds = {
+                      'availability': 99.5,  # Alert if below 99.5%
+                      'response_time_p95': 500,  # Alert if above 500ms
+                      'error_rate': 0.5,  # Alert if above 0.5%
+                      'throughput': 500  # Alert if below 500 req/min
+                  }
+
+              async def monitor_slos(self):
+                  """Main SLO monitoring loop"""
+                  logger.info("🎯 SLO Monitor Starting...")
+
+                  while True:
+                      try:
+                          current_metrics = await self.collect_metrics()
+                          slo_status = await self.evaluate_slos(current_metrics)
+                          await self.generate_alerts(slo_status)
+                          await self.update_slo_dashboard(slo_status)
+
+                          logger.info(f"📊 SLO Status: {json.dumps(slo_status, indent=2)}")
+
+                      except Exception as e:
+                          logger.error(f"❌ SLO monitoring error: {e}")
+
+                      await asyncio.sleep(60)  # Monitor every minute
+
+              async def collect_metrics(self):
+                  """Collect metrics from various sources"""
+                  try:
+                      # In production, query Prometheus, Jaeger, etc.
+                      # Simulated metrics for demonstration
+                      metrics = {
+                          'availability': 99.95,
+                          'response_time_p95': 150,
+                          'error_rate': 0.05,
+                          'throughput': 1200,
+                          'timestamp': datetime.now().isoformat()
+                      }
+
+                      return metrics
+
+                  except Exception as e:
+                      logger.error(f"❌ Metrics collection error: {e}")
+                      return {}
+
+              async def evaluate_slos(self, metrics):
+                  """Evaluate current metrics against SLO targets"""
+                  slo_status = {}
+
+                  for metric, target in self.slo_targets.items():
+                      if metric in metrics:
+                          current_value = metrics[metric]
+
+                          if metric == 'availability':
+                              meets_slo = current_value >= target
+                          elif metric == 'response_time_p95':
+                              meets_slo = current_value <= target
+                          elif metric == 'error_rate':
+                              meets_slo = current_value <= target
+                          elif metric == 'throughput':
+                              meets_slo = current_value >= target
+                          else:
+                              meets_slo = False
+
+                          slo_status[metric] = {
+                              'current': current_value,
+                              'target': target,
+                              'meets_slo': meets_slo,
+                              'breach_duration': 0 if meets_slo else 60  # seconds
+                          }
+
+                  return slo_status
+
+              async def generate_alerts(self, slo_status):
+                  """Generate alerts for SLO breaches"""
+                  for metric, status in slo_status.items():
+                      if not status['meets_slo']:
+                          alert_threshold = self.alert_thresholds.get(metric)
+                          current_value = status['current']
+
+                          should_alert = False
+                          if metric == 'availability' and current_value < alert_threshold:
+                              should_alert = True
+                          elif metric == 'response_time_p95' and current_value > alert_threshold:
+                              should_alert = True
+                          elif metric == 'error_rate' and current_value > alert_threshold:
+                              should_alert = True
+                          elif metric == 'throughput' and current_value < alert_threshold:
+                              should_alert = True
+
+                          if should_alert:
+                              alert = {
+                                  'severity': 'critical',
+                                  'metric': metric,
+                                  'current': current_value,
+                                  'threshold': alert_threshold,
+                                  'timestamp': datetime.now().isoformat(),
+                                  'message': f"SLO breach detected for {metric}"
+                              }
+                              logger.warning(f"🚨 ALERT: {json.dumps(alert)}")
+
+              async def update_slo_dashboard(self, slo_status):
+                  """Update SLO dashboard with current status"""
+                  dashboard_update = {
+                      'timestamp': datetime.now().isoformat(),
+                      'slo_compliance': all(status['meets_slo'] for status in slo_status.values()),
+                      'metrics': slo_status
+                  }
+
+                  # In production, send to dashboard service
+                  logger.info("📈 Dashboard updated with SLO status")
+
+          async def main():
+              monitor = SLOMonitor()
+              await monitor.monitor_slos()
+
+          if __name__ == "__main__":
+              asyncio.run(main())
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "0.2"
+          limits:
+            memory: "512Mi"
+            cpu: "0.5"
+---
+# SLO Monitor Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: slo-monitor
+  namespace: aia-observability
+spec:
+  selector:
+    app: slo-monitor
+  ports:
+  - port: 8100
+    targetPort: 8100
+  type: ClusterIP
+---
+# Capacity Planning System
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: capacity-planner
+  namespace: aia-observability
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: capacity-planner
+  template:
+    metadata:
+      labels:
+        app: capacity-planner
+    spec:
+      containers:
+      - name: planner
+        image: python:3.11-slim
+        ports:
+        - containerPort: 8110
+        command:
+        - python
+        - -c
+        - |
+          import asyncio
+          import json
+          import numpy as np
+          from datetime import datetime, timedelta
+          import logging
+
+          logging.basicConfig(level=logging.INFO)
+          logger = logging.getLogger(__name__)
+
+          class CapacityPlanner:
+              def __init__(self):
+                  self.historical_data = []
+                  self.prediction_window = 7  # days
+                  self.capacity_thresholds = {
+                      'cpu': 80.0,  # % utilization
+                      'memory': 85.0,  # % utilization
+                      'storage': 90.0,  # % utilization
+                      'network': 75.0  # % utilization
+                  }
+
+              async def plan_capacity(self):
+                  """Main capacity planning loop"""
+                  logger.info("📊 Capacity Planner Starting...")
+
+                  while True:
+                      try:
+                          current_usage = await self.collect_usage_data()
+                          predictions = await self.predict_future_usage(current_usage)
+                          recommendations = await self.generate_scaling_recommendations(predictions)
+
+                          capacity_report = {
+                              'timestamp': datetime.now().isoformat(),
+                              'current_usage': current_usage,
+                              'predictions': predictions,
+                              'recommendations': recommendations
+                          }
+
+                          logger.info(f"📈 Capacity Report: {json.dumps(capacity_report, indent=2)}")
+
+                      except Exception as e:
+                          logger.error(f"❌ Capacity planning error: {e}")
+
+                      await asyncio.sleep(3600)  # Plan every hour
+
+              async def collect_usage_data(self):
+                  """Collect current resource usage data"""
+                  # Simulated usage data
+                  usage_data = {
+                      'cpu': 65.5,
+                      'memory': 72.3,
+                      'storage': 68.9,
+                      'network': 45.2,
+                      'timestamp': datetime.now().isoformat()
+                  }
+
+                  self.historical_data.append(usage_data)
+
+                  # Keep only last 168 hours (7 days)
+                  if len(self.historical_data) > 168:
+                      self.historical_data.pop(0)
+
+                  return usage_data
+
+              async def predict_future_usage(self, current_usage):
+                  """Predict future resource usage using trend analysis"""
+                  predictions = {}
+
+                  for resource in ['cpu', 'memory', 'storage', 'network']:
+                      if len(self.historical_data) >= 24:  # At least 24 hours of data
+                          values = [data[resource] for data in self.historical_data]
+
+                          # Simple linear trend prediction
+                          x = np.arange(len(values))
+                          y = np.array(values)
+
+                          # Linear regression
+                          slope, intercept = np.polyfit(x, y, 1)
+
+                          # Predict next 7 days
+                          future_x = len(values) + (self.prediction_window * 24)
+                          predicted_value = slope * future_x + intercept
+
+                          predictions[resource] = {
+                              'current': current_usage[resource],
+                              'predicted_7_days': max(0, min(100, predicted_value)),
+                              'trend': 'increasing' if slope > 0 else 'decreasing',
+                              'trend_rate': abs(slope)
+                          }
+                      else:
+                          predictions[resource] = {
+                              'current': current_usage[resource],
+                              'predicted_7_days': current_usage[resource],
+                              'trend': 'stable',
+                              'trend_rate': 0.0
+                          }
+
+                  return predictions
+
+              async def generate_scaling_recommendations(self, predictions):
+                  """Generate scaling recommendations based on predictions"""
+                  recommendations = []
+
+                  for resource, prediction in predictions.items():
+                      predicted_usage = prediction['predicted_7_days']
+                      threshold = self.capacity_thresholds[resource]
+
+                      if predicted_usage > threshold:
+                          severity = 'critical' if predicted_usage > 95 else 'warning'
+                          recommendations.append({
+                              'resource': resource,
+                              'action': 'scale_up',
+                              'severity': severity,
+                              'current': prediction['current'],
+                              'predicted': predicted_usage,
+                              'threshold': threshold,
+                              'recommended_increase': f"{int((predicted_usage - threshold) * 1.2)}%"
+                          })
+
+                  return recommendations
+
+          async def main():
+              planner = CapacityPlanner()
+              await planner.plan_capacity()
+
+          if __name__ == "__main__":
+              asyncio.run(main())
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "0.3"
+          limits:
+            memory: "1Gi"
+            cpu: "0.8"
+---
+# Capacity Planner Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: capacity-planner
+  namespace: aia-observability
+spec:
+  selector:
+    app: capacity-planner
+  ports:
+  - port: 8110
+    targetPort: 8110
+  type: ClusterIP

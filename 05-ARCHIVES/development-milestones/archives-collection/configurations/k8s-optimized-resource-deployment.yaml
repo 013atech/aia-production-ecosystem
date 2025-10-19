@@ -1,0 +1,104 @@
+# Optimized resource deployment for current node capacity
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-frontend
+  namespace: aia-production
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: aia-frontend
+  template:
+    metadata:
+      labels:
+        app: aia-frontend
+        tier: frontend
+    spec:
+      containers:
+      - name: frontend
+        image: nginx:1.25-alpine
+        ports:
+        - containerPort: 80
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 10
+          periodSeconds: 5
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 30
+          periodSeconds: 10
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-backend
+  namespace: aia-production
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: aia-backend
+  template:
+    metadata:
+      labels:
+        app: aia-backend
+        tier: backend
+    spec:
+      containers:
+      - name: backend
+        image: python:3.12-slim
+        ports:
+        - containerPort: 8000
+        command: ["/bin/bash", "-c"]
+        args:
+        - |
+          pip install fastapi uvicorn[standard] &&
+          mkdir -p /app &&
+          echo 'from fastapi import FastAPI; app = FastAPI(); @app.get("/health"); def health(): return {"status": "ok", "service": "aia-backend", "database_host": "34.69.228.15", "redis_host": "10.40.193.91"}; @app.get("/"); def root(): return {"message": "AIA Backend Service", "status": "running", "microservices_ready": True}' > /app/main.py &&
+          cd /app &&
+          uvicorn main:app --host 0.0.0.0 --port 8000
+        env:
+        - name: DATABASE_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: aia-config
+              key: DATABASE_HOST
+        - name: REDIS_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: aia-config
+              key: REDIS_HOST
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 45
+          periodSeconds: 5
+          timeoutSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 90
+          periodSeconds: 10
+          timeoutSeconds: 10

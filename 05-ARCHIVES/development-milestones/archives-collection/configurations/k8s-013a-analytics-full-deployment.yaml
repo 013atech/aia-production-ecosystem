@@ -1,0 +1,699 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: analytics-platform
+  labels:
+    app.kubernetes.io/name: 013a-analytics
+    app.kubernetes.io/version: "v2.0"
+
+---
+# ConfigMap for 013a Analytics Configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: analytics-config
+  namespace: analytics-platform
+data:
+  DATABASE_URL: "postgresql://analytics_user:analytics_pass@aia-analytics-postgres:5432/analytics_db"
+  REDIS_URL: "redis://aia-analytics-redis:6379/0"
+  GCP_PROJECT_ID: "aia-system-prod-1759055445"
+  ENVIRONMENT: "production"
+  LOG_LEVEL: "INFO"
+  METRICS_ENABLED: "true"
+  TRACING_ENABLED: "true"
+
+---
+# PostgreSQL Database for 013a Analytics
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: aia-analytics-postgres
+  namespace: analytics-platform
+spec:
+  serviceName: aia-analytics-postgres
+  replicas: 1
+  selector:
+    matchLabels:
+      app: aia-analytics-postgres
+  template:
+    metadata:
+      labels:
+        app: aia-analytics-postgres
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:15-alpine
+        env:
+        - name: POSTGRES_DB
+          value: "analytics_db"
+        - name: POSTGRES_USER
+          value: "analytics_user"
+        - name: POSTGRES_PASSWORD
+          value: "analytics_pass"
+        - name: PGDATA
+          value: "/var/lib/postgresql/data/pgdata"
+        ports:
+        - containerPort: 5432
+        volumeMounts:
+        - name: postgres-storage
+          mountPath: /var/lib/postgresql/data
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "200m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+        livenessProbe:
+          exec:
+            command:
+            - pg_isready
+            - -U
+            - analytics_user
+            - -d
+            - analytics_db
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          exec:
+            command:
+            - pg_isready
+            - -U
+            - analytics_user
+            - -d
+            - analytics_db
+          initialDelaySeconds: 5
+          periodSeconds: 5
+  volumeClaimTemplates:
+  - metadata:
+      name: postgres-storage
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 20Gi
+      storageClassName: premium-rwo
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-analytics-postgres
+  namespace: analytics-platform
+spec:
+  selector:
+    app: aia-analytics-postgres
+  ports:
+  - port: 5432
+    targetPort: 5432
+  type: ClusterIP
+
+---
+# Redis Cache for 013a Analytics
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-analytics-redis
+  namespace: analytics-platform
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: aia-analytics-redis
+  template:
+    metadata:
+      labels:
+        app: aia-analytics-redis
+    spec:
+      containers:
+      - name: redis
+        image: redis:7-alpine
+        ports:
+        - containerPort: 6379
+        command:
+        - redis-server
+        - --appendonly
+        - "yes"
+        - --maxmemory
+        - "1gb"
+        - --maxmemory-policy
+        - "allkeys-lru"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        volumeMounts:
+        - name: redis-storage
+          mountPath: /data
+        livenessProbe:
+          exec:
+            command:
+            - redis-cli
+            - ping
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          exec:
+            command:
+            - redis-cli
+            - ping
+          initialDelaySeconds: 5
+          periodSeconds: 5
+      volumes:
+      - name: redis-storage
+        emptyDir: {}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-analytics-redis
+  namespace: analytics-platform
+spec:
+  selector:
+    app: aia-analytics-redis
+  ports:
+  - port: 6379
+    targetPort: 6379
+  type: ClusterIP
+
+---
+# 013a Analytics Backend API
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-analytics-backend
+  namespace: analytics-platform
+  labels:
+    app.kubernetes.io/name: aia-analytics-backend
+    app.kubernetes.io/component: backend
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: aia-analytics-backend
+  template:
+    metadata:
+      labels:
+        app: aia-analytics-backend
+        app.kubernetes.io/name: aia-analytics-backend
+        app.kubernetes.io/component: backend
+    spec:
+      containers:
+      - name: analytics-backend
+        image: gcr.io/aia-system-prod-1759055445/aia-analytics:latest
+        ports:
+        - containerPort: 8000
+          name: http
+        env:
+        - name: DATABASE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: analytics-config
+              key: DATABASE_URL
+        - name: REDIS_URL
+          valueFrom:
+            configMapKeyRef:
+              name: analytics-config
+              key: REDIS_URL
+        - name: GCP_PROJECT_ID
+          valueFrom:
+            configMapKeyRef:
+              name: analytics-config
+              key: GCP_PROJECT_ID
+        - name: ENVIRONMENT
+          valueFrom:
+            configMapKeyRef:
+              name: analytics-config
+              key: ENVIRONMENT
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "200m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8000
+          initialDelaySeconds: 10
+          periodSeconds: 5
+        volumeMounts:
+        - name: app-secrets
+          mountPath: /app/secrets
+          readOnly: true
+      volumes:
+      - name: app-secrets
+        secret:
+          secretName: analytics-secrets
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-analytics-backend
+  namespace: analytics-platform
+  labels:
+    app.kubernetes.io/name: aia-analytics-backend
+    app.kubernetes.io/component: backend
+spec:
+  selector:
+    app: aia-analytics-backend
+  ports:
+  - port: 8000
+    targetPort: 8000
+    name: http
+  type: ClusterIP
+
+---
+# 013a Analytics ML Engine
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-analytics-ml-engine
+  namespace: analytics-platform
+  labels:
+    app.kubernetes.io/name: aia-analytics-ml-engine
+    app.kubernetes.io/component: ml-engine
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: aia-analytics-ml-engine
+  template:
+    metadata:
+      labels:
+        app: aia-analytics-ml-engine
+        app.kubernetes.io/name: aia-analytics-ml-engine
+        app.kubernetes.io/component: ml-engine
+    spec:
+      containers:
+      - name: ml-engine
+        image: gcr.io/aia-system-prod-1759055445/aia-ml-processor:latest
+        ports:
+        - containerPort: 8001
+          name: http
+        env:
+        - name: DATABASE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: analytics-config
+              key: DATABASE_URL
+        - name: REDIS_URL
+          valueFrom:
+            configMapKeyRef:
+              name: analytics-config
+              key: REDIS_URL
+        - name: MODEL_PATH
+          value: "/app/models"
+        - name: CUDA_VISIBLE_DEVICES
+          value: ""
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
+          limits:
+            memory: "4Gi"
+            cpu: "2000m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8001
+          initialDelaySeconds: 60
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8001
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        volumeMounts:
+        - name: model-storage
+          mountPath: /app/models
+        - name: app-secrets
+          mountPath: /app/secrets
+          readOnly: true
+      volumes:
+      - name: model-storage
+        persistentVolumeClaim:
+          claimName: ml-models-pvc
+      - name: app-secrets
+        secret:
+          secretName: analytics-secrets
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-analytics-ml-engine
+  namespace: analytics-platform
+  labels:
+    app.kubernetes.io/name: aia-analytics-ml-engine
+    app.kubernetes.io/component: ml-engine
+spec:
+  selector:
+    app: aia-analytics-ml-engine
+  ports:
+  - port: 8001
+    targetPort: 8001
+    name: http
+  type: ClusterIP
+
+---
+# 013a Analytics Frontend
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-analytics-frontend
+  namespace: analytics-platform
+  labels:
+    app.kubernetes.io/name: aia-analytics-frontend
+    app.kubernetes.io/component: frontend
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: aia-analytics-frontend
+  template:
+    metadata:
+      labels:
+        app: aia-analytics-frontend
+        app.kubernetes.io/name: aia-analytics-frontend
+        app.kubernetes.io/component: frontend
+    spec:
+      containers:
+      - name: analytics-frontend
+        image: gcr.io/aia-system-prod-1759055445/aia-frontend:latest
+        ports:
+        - containerPort: 3000
+          name: http
+        env:
+        - name: REACT_APP_API_URL
+          value: "https://analytics.013a.tech/api"
+        - name: REACT_APP_ENVIRONMENT
+          value: "production"
+        - name: REACT_APP_VERSION
+          value: "v2.0"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 3000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 3000
+          initialDelaySeconds: 10
+          periodSeconds: 5
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-analytics-frontend
+  namespace: analytics-platform
+  labels:
+    app.kubernetes.io/name: aia-analytics-frontend
+    app.kubernetes.io/component: frontend
+spec:
+  selector:
+    app: aia-analytics-frontend
+  ports:
+  - port: 3000
+    targetPort: 3000
+    name: http
+  type: ClusterIP
+
+---
+# Persistent Volume Claim for ML Models
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ml-models-pvc
+  namespace: analytics-platform
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 50Gi
+  storageClassName: ssd
+
+---
+# Secret for sensitive configuration
+apiVersion: v1
+kind: Secret
+metadata:
+  name: analytics-secrets
+  namespace: analytics-platform
+type: Opaque
+data:
+  JWT_SECRET: "YWlhLWFuYWx5dGljcy1zZWNyZXQtand0LWtleQ=="
+  ENCRYPTION_KEY: "YWlhLWFuYWx5dGljcy1lbmNyeXB0aW9uLWtleQ=="
+  API_KEY: "YWlhLWFuYWx5dGljcy1hcGkta2V5"
+
+---
+# Ingress for 013a Analytics
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: aia-analytics-ingress
+  namespace: analytics-platform
+  annotations:
+    kubernetes.io/ingress.class: "gce"
+    kubernetes.io/ingress.global-static-ip-name: "analytics-global-ip"
+    networking.gke.io/managed-certificates: "analytics-ssl-cert"
+    kubernetes.io/ingress.allow-http: "false"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+spec:
+  rules:
+  - host: analytics.013a.tech
+    http:
+      paths:
+      - path: /api
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-analytics-backend
+            port:
+              number: 8000
+      - path: /ml
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-analytics-ml-engine
+            port:
+              number: 8001
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-analytics-frontend
+            port:
+              number: 3000
+
+---
+# Managed SSL Certificate
+apiVersion: networking.gke.io/v1
+kind: ManagedCertificate
+metadata:
+  name: analytics-ssl-cert
+  namespace: analytics-platform
+spec:
+  domains:
+  - analytics.013a.tech
+
+---
+# Horizontal Pod Autoscaler for Backend
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: aia-analytics-backend-hpa
+  namespace: analytics-platform
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: aia-analytics-backend
+  minReplicas: 3
+  maxReplicas: 15
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+
+---
+# Horizontal Pod Autoscaler for ML Engine
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: aia-analytics-ml-engine-hpa
+  namespace: analytics-platform
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: aia-analytics-ml-engine
+  minReplicas: 2
+  maxReplicas: 8
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 75
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 85
+
+---
+# Horizontal Pod Autoscaler for Frontend
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: aia-analytics-frontend-hpa
+  namespace: analytics-platform
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: aia-analytics-frontend
+  minReplicas: 3
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+
+---
+# Network Policy for Security
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: analytics-network-policy
+  namespace: analytics-platform
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: analytics-platform
+    ports:
+    - protocol: TCP
+      port: 8000
+    - protocol: TCP
+      port: 8001
+    - protocol: TCP
+      port: 3000
+  egress:
+  - to: []
+    ports:
+    - protocol: TCP
+      port: 5432
+    - protocol: TCP
+      port: 6379
+    - protocol: TCP
+      port: 80
+    - protocol: TCP
+      port: 443
+
+---
+# Service Monitor for Prometheus
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: aia-analytics-monitoring
+  namespace: analytics-platform
+  labels:
+    app.kubernetes.io/name: aia-analytics
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: aia-analytics-backend
+  endpoints:
+  - port: http
+    path: /metrics
+    interval: 30s
+
+---
+# Pod Disruption Budget for High Availability
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: aia-analytics-backend-pdb
+  namespace: analytics-platform
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: aia-analytics-backend
+
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: aia-analytics-ml-engine-pdb
+  namespace: analytics-platform
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: aia-analytics-ml-engine
+
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: aia-analytics-frontend-pdb
+  namespace: analytics-platform
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: aia-analytics-frontend

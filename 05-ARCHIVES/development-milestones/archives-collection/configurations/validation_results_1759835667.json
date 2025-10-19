@@ -1,0 +1,334 @@
+{
+  "validation_id": "mlops_validation_1759835631",
+  "started_at": "2025-10-07 13:13:51.523349",
+  "test_suites": [
+    {
+      "name": "Core Infrastructure",
+      "description": "Basic infrastructure and connectivity tests",
+      "critical": true,
+      "tests": [
+        {
+          "test_name": "AIA Backend Health",
+          "status": "fail",
+          "score": 0.0,
+          "message": "Failed to connect to AIA backend: ",
+          "details": {},
+          "execution_time": 10.058420181274414,
+          "timestamp": "2025-10-07 13:14:01.581782"
+        },
+        {
+          "test_name": "Service Connectivity",
+          "status": "fail",
+          "score": 0.3333333333333333,
+          "message": "Only 2/6 services accessible",
+          "details": {
+            "aia_backend": "connected",
+            "atomic_dkg": "connected",
+            "ml_pipeline": "connection_failed: All connection attempts failed",
+            "drift_monitoring": "connection_failed: All connection attempts failed",
+            "deployment_system": "connection_failed: All connection attempts failed",
+            "apple_silicon_optimizer": "connection_failed: All connection attempts failed"
+          },
+          "execution_time": 0.7475490570068359,
+          "timestamp": "2025-10-07 13:14:02.329354"
+        },
+        {
+          "test_name": "Database Connectivity",
+          "status": "pass",
+          "score": 1.0,
+          "message": "Database operations working correctly",
+          "details": {},
+          "execution_time": 0.001237630844116211,
+          "timestamp": "2025-10-07 13:14:02.330439"
+        }
+      ],
+      "status": "fail",
+      "execution_time": 10.807268857955933,
+      "passed_tests": 1,
+      "total_tests": 3
+    },
+    {
+      "name": "Knowledge Graph System",
+      "description": "U-DKG v3.0 and knowledge processing tests",
+      "critical": true,
+      "tests": [
+        {
+          "test_name": "Knowledge Graph Loading",
+          "status": "pass",
+          "score": 1.0,
+          "message": "Knowledge graph loaded successfully with 2472 atoms",
+          "details": {
+            "total_atoms": 2472,
+            "loaded_atoms": 2472,
+            "processing_time": 16.377524852752686
+          },
+          "execution_time": 0.035144805908203125,
+          "timestamp": "2025-10-07 13:14:02.364482"
+        },
+        {
+          "test_name": "Atomic DKG Processing",
+          "status": "fail",
+          "score": 0.0,
+          "message": "Knowledge query failed with status 404",
+          "details": {},
+          "execution_time": 0.012191057205200195,
+          "timestamp": "2025-10-07 13:14:02.377984"
+        },
+        {
+          "test_name": "test_knowledge_query_performance",
+          "status": "fail",
+          "score": 0.0,
+          "message": "Test execution failed: 'NoneType' object has no attribute 'execution_time'",
+          "details": {},
+          "execution_time": 0.012014150619506836,
+          "timestamp": "2025-10-07 13:14:02.390054"
+        }
+      ],
+      "status": "fail",
+      "execution_time": 0.05939888954162598,
+      "passed_tests": 1,
+      "total_tests": 3
+    },
+    {
+      "name": "ML Pipeline System",
+      "description": "Enterprise ML pipeline tests",
+      "critical": true,
+      "tests": [
+        {
+          "test_name": "ML Pipeline Creation",
+          "status": "fail",
+          "score": 0.0,
+          "message": "ML pipeline creation test failed: All connection attempts failed",
+          "details": {},
+          "execution_time": 0.00992584228515625,
+          "timestamp": "2025-10-07 13:14:02.400010"
+        },
+        {
+          "test_name": "Model Training",
+          "status": "pass",
+          "score": 1.0,
+          "message": "Model creation and forward pass successful",
+          "details": {
+            "input_shape": [
+              16,
+              128
+            ],
+            "output_shape": [
+              16,
+              1
+            ]
+          },
+          "execution_time": 0.0005931854248046875,
+          "timestamp": "2025-10-07 13:14:02.400589"
+        },
+        {
+          "test_name": "Model Deployment",
+          "status": "fail",
+          "score": 0.0,
+          "message": "Model deployment test failed: All connection attempts failed",
+          "details": {},
+          "execution_time": 0.00978708267211914,
+          "timestamp": "2025-10-07 13:14:02.410410"
+        }
+      ],
+      "status": "fail",
+      "execution_time": 0.020338058471679688,
+      "passed_tests": 1,
+      "total_tests": 3
+    },
+    {
+      "name": "Monitoring & Observability",
+      "description": "Drift detection and monitoring tests",
+      "critical": true,
+      "tests": [
+        {
+          "test_name": "Drift Monitoring",
+          "status": "fail",
+          "score": 0.0,
+          "message": "Drift monitoring test failed: All connection attempts failed",
+          "details": {},
+          "execution_time": 0.009843111038208008,
+          "timestamp": "2025-10-07 13:14:02.420286"
+        },
+        {
+          "test_name": "Performance Monitoring",
+          "status": "pass",
+          "score": 1.0,
+          "message": "Performance monitoring operational, response time: 0.012s",
+          "details": {
+            "response_time_seconds": 0.01212000846862793
+          },
+          "execution_time": 0.012128829956054688,
+          "timestamp": "2025-10-07 13:14:02.432424"
+        },
+        {
+          "test_name": "Alert System",
+          "status": "pass",
+          "score": 1.0,
+          "message": "Basic alert system (logging) operational",
+          "details": {},
+          "execution_time": 2.384185791015625e-05,
+          "timestamp": "2025-10-07 13:14:02.432465"
+        }
+      ],
+      "status": "fail",
+      "execution_time": 0.022027969360351562,
+      "passed_tests": 2,
+      "total_tests": 3
+    },
+    {
+      "name": "Production Deployment",
+      "description": "Production deployment system tests",
+      "critical": true,
+      "tests": [
+        {
+          "test_name": "Deployment Endpoints",
+          "status": "fail",
+          "score": 0.0,
+          "message": "Deployment endpoints test failed: All connection attempts failed",
+          "details": {},
+          "execution_time": 0.009419918060302734,
+          "timestamp": "2025-10-07 13:14:02.441906"
+        },
+        {
+          "test_name": "Load Balancing",
+          "status": "pass",
+          "score": 1.0,
+          "message": "Load balancing configuration validation passed",
+          "details": {},
+          "execution_time": 9.5367431640625e-07,
+          "timestamp": "2025-10-07 13:14:02.441917"
+        },
+        {
+          "test_name": "Auto Scaling",
+          "status": "pass",
+          "score": 1.0,
+          "message": "Auto-scaling configuration validation passed",
+          "details": {},
+          "execution_time": 9.5367431640625e-07,
+          "timestamp": "2025-10-07 13:14:02.441922"
+        }
+      ],
+      "status": "fail",
+      "execution_time": 0.009439229965209961,
+      "passed_tests": 2,
+      "total_tests": 3
+    },
+    {
+      "name": "Apple Silicon Optimization",
+      "description": "GPU acceleration and optimization tests",
+      "critical": false,
+      "tests": [
+        {
+          "test_name": "Apple Silicon Detection",
+          "status": "pass",
+          "score": 1.0,
+          "message": "Apple Silicon detected and MPS backend available",
+          "details": {
+            "platform": "arm64",
+            "mps_available": true
+          },
+          "execution_time": 0.0083160400390625,
+          "timestamp": "2025-10-07 13:14:02.450260"
+        },
+        {
+          "test_name": "MPS Optimization",
+          "status": "pass",
+          "score": 1.0,
+          "message": "MPS optimization working correctly",
+          "details": {
+            "tensor_device": "mps:0"
+          },
+          "execution_time": 0.032171010971069336,
+          "timestamp": "2025-10-07 13:14:02.482447"
+        },
+        {
+          "test_name": "Performance Profiling",
+          "status": "pass",
+          "score": 1.0,
+          "message": "Performance profiling operational, test computation: 0.014s",
+          "details": {
+            "computation_time_seconds": 0.013645648956298828
+          },
+          "execution_time": 0.013766050338745117,
+          "timestamp": "2025-10-07 13:14:02.496118"
+        }
+      ],
+      "status": "pass",
+      "execution_time": 0.05430006980895996,
+      "passed_tests": 3,
+      "total_tests": 3
+    },
+    {
+      "name": "Performance & Load Testing",
+      "description": "System performance under load",
+      "critical": true,
+      "tests": [
+        {
+          "test_name": "Concurrent Requests",
+          "status": "pass",
+          "score": 1.0,
+          "message": "Concurrent load test passed: 10/10 successful",
+          "details": {
+            "concurrent_requests": 10,
+            "successful_requests": 10,
+            "success_rate": 1.0,
+            "avg_response_time": 0.0031802892684936524
+          },
+          "execution_time": 0.04152703285217285,
+          "timestamp": "2025-10-07 13:14:02.537570"
+        },
+        {
+          "test_name": "High Load Performance",
+          "status": "pass",
+          "score": 1.0,
+          "message": "High load test passed: 100.0% success rate, 752.5 RPS",
+          "details": {
+            "total_requests": 50,
+            "successful_requests": 50,
+            "success_rate": 1.0,
+            "avg_response_time": 0.013288593292236328,
+            "throughput_rps": 752.5251002935245
+          },
+          "execution_time": 0.5809957981109619,
+          "timestamp": "2025-10-07 13:14:03.086770"
+        },
+        {
+          "test_name": "System Stability",
+          "status": "pass",
+          "score": 1.0,
+          "message": "System stable: 6/6 checks successful",
+          "details": {
+            "stability_duration_seconds": 30,
+            "successful_checks": 6,
+            "total_checks": 6,
+            "stability_score": 1.0
+          },
+          "execution_time": 25.056201934814453,
+          "timestamp": "2025-10-07 13:14:27.570900"
+        }
+      ],
+      "status": "pass",
+      "execution_time": 25.0747127532959,
+      "passed_tests": 3,
+      "total_tests": 3
+    }
+  ],
+  "overall_status": "fail",
+  "total_tests": 21,
+  "passed_tests": 13,
+  "failed_tests": 8,
+  "warning_tests": 0,
+  "skipped_tests": 0,
+  "completed_at": "2025-10-07 13:14:27.571052",
+  "total_execution_time": 36.04772400856018,
+  "system_metrics": {
+    "aia_backend_response_time": 0.01212000846862793,
+    "load_test": {
+      "success_rate": 1.0,
+      "avg_response_time": 0.013288593292236328,
+      "throughput_rps": 752.5251002935245
+    }
+  },
+  "overall_score": 0.6349206349206349
+}

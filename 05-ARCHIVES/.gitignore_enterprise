@@ -1,0 +1,20 @@
+# AIA Enterprise Security
+*.key
+*.pem
+*.p12
+*.pfx
+*secrets*
+*credentials*
+*tokens*
+.env*
+config/secrets/
+certificates/
+*.log
+logs/
+tmp/
+temp/
+__pycache__/
+*.pyc
+node_modules/
+.DS_Store
+Thumbs.db

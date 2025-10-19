@@ -1,0 +1,659 @@
+# Patch to update founder dashboard with enhanced 3D analytics
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: founder-dashboard
+  namespace: aia-founder-dashboard
+spec:
+  template:
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:1.25.3-alpine
+        command:
+        - /bin/sh
+        - -c
+        - |
+          # Create enhanced 3D analytics HTML
+          cat > /usr/share/nginx/html/index.html << 'EOF'
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+              <meta charset="UTF-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <meta name="theme-color" content="#1E1E1E">
+              <title>Enhanced 013a Analytics - Production</title>
+
+              <!-- Enhanced 3D Libraries -->
+              <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r153/three.min.js"></script>
+              <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+
+              <style>
+                  :root {
+                      --charcoal-deep: #1E1E1E;
+                      --ivory-bright: #F5F5DC;
+                      --cyan-bright: #00FFFF;
+                      --lemon-bright: #FFFF00;
+                      --gradient-animated: linear-gradient(135deg, #00FFFF 0%, #FFFF00 50%, #00FFFF 100%);
+                  }
+
+                  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+                  body {
+                      font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
+                      background: var(--charcoal-deep);
+                      color: var(--ivory-bright);
+                      overflow: hidden;
+                      height: 100vh;
+                  }
+
+                  #analytics-canvas {
+                      position: fixed;
+                      top: 0;
+                      left: 0;
+                      width: 100vw;
+                      height: 100vh;
+                      background: var(--charcoal-deep);
+                  }
+
+                  .header-bar {
+                      position: fixed;
+                      top: 0;
+                      left: 0;
+                      right: 0;
+                      background: rgba(30, 30, 30, 0.95);
+                      backdrop-filter: blur(20px);
+                      border-bottom: 2px solid var(--cyan-bright);
+                      padding: 15px 30px;
+                      z-index: 1000;
+                      display: flex;
+                      justify-content: space-between;
+                      align-items: center;
+                  }
+
+                  .header-title {
+                      font-size: 1.8rem;
+                      font-weight: 700;
+                      background: var(--gradient-animated);
+                      background-size: 200% 100%;
+                      -webkit-background-clip: text;
+                      -webkit-text-fill-color: transparent;
+                      background-clip: text;
+                      animation: gradientMove 4s ease-in-out infinite;
+                  }
+
+                  @keyframes gradientMove {
+                      0%, 100% { background-position: 0% 50%; }
+                      50% { background-position: 100% 50%; }
+                  }
+
+                  .status-indicator {
+                      background: rgba(0, 255, 255, 0.1);
+                      border: 1px solid var(--cyan-bright);
+                      border-radius: 20px;
+                      padding: 8px 16px;
+                      font-size: 0.9rem;
+                      animation: pulse 2s infinite;
+                  }
+
+                  @keyframes pulse {
+                      0%, 100% { opacity: 1; transform: scale(1); }
+                      50% { opacity: 0.8; transform: scale(1.05); }
+                  }
+
+                  .control-panel {
+                      position: fixed;
+                      top: 100px;
+                      right: 20px;
+                      background: rgba(30, 30, 30, 0.95);
+                      backdrop-filter: blur(20px);
+                      border: 2px solid var(--cyan-bright);
+                      border-radius: 20px;
+                      padding: 25px;
+                      z-index: 1000;
+                      min-width: 280px;
+                      box-shadow: 0 20px 40px rgba(0, 255, 255, 0.1);
+                  }
+
+                  .panel-section {
+                      margin-bottom: 20px;
+                  }
+
+                  .panel-section h3 {
+                      color: var(--cyan-bright);
+                      font-size: 1.1rem;
+                      margin-bottom: 10px;
+                      display: flex;
+                      align-items: center;
+                      gap: 8px;
+                  }
+
+                  .control-button {
+                      display: block;
+                      width: 100%;
+                      background: linear-gradient(135deg, rgba(0, 255, 255, 0.1), rgba(30, 30, 30, 0.8));
+                      border: 1px solid var(--cyan-bright);
+                      border-radius: 12px;
+                      color: var(--ivory-bright);
+                      padding: 12px 16px;
+                      margin-bottom: 8px;
+                      cursor: pointer;
+                      transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+                      font-weight: 500;
+                      text-align: center;
+                  }
+
+                  .control-button:hover {
+                      background: linear-gradient(135deg, rgba(0, 255, 255, 0.2), rgba(50, 50, 50, 0.8));
+                      transform: translateX(-5px);
+                      box-shadow: 0 10px 20px rgba(0, 255, 255, 0.2);
+                  }
+
+                  .control-button.active {
+                      background: linear-gradient(135deg, rgba(255, 255, 0, 0.2), rgba(60, 60, 60, 0.9));
+                      border-color: var(--lemon-bright);
+                      color: var(--lemon-bright);
+                  }
+
+                  .metrics-display {
+                      position: fixed;
+                      bottom: 20px;
+                      left: 20px;
+                      background: rgba(30, 30, 30, 0.95);
+                      backdrop-filter: blur(15px);
+                      border: 1px solid var(--lemon-bright);
+                      border-radius: 16px;
+                      padding: 20px;
+                      z-index: 1000;
+                      min-width: 300px;
+                  }
+
+                  .metric-row {
+                      display: flex;
+                      justify-content: space-between;
+                      margin-bottom: 8px;
+                      padding: 4px 0;
+                  }
+
+                  .metric-label {
+                      color: var(--ivory-bright);
+                      font-size: 0.9rem;
+                  }
+
+                  .metric-value {
+                      color: var(--lemon-bright);
+                      font-weight: 600;
+                      font-size: 0.9rem;
+                  }
+
+                  /* Responsive Design */
+                  @media (max-width: 768px) {
+                      .header-bar {
+                          flex-direction: column;
+                          gap: 10px;
+                          padding: 15px;
+                      }
+
+                      .control-panel {
+                          top: 120px;
+                          right: 10px;
+                          left: 10px;
+                          min-width: auto;
+                      }
+
+                      .metrics-display {
+                          bottom: 10px;
+                          left: 10px;
+                          right: 10px;
+                          min-width: auto;
+                      }
+                  }
+              </style>
+          </head>
+          <body>
+              <!-- Header -->
+              <div class="header-bar">
+                  <div class="header-title">🚀 Enhanced 013a Analytics</div>
+                  <div class="status-indicator">🟢 Production Live</div>
+              </div>
+
+              <!-- 3D Analytics Canvas -->
+              <canvas id="analytics-canvas"></canvas>
+
+              <!-- Control Panel -->
+              <div class="control-panel">
+                  <div class="panel-section">
+                      <h3>📹 Camera Views</h3>
+                      <button class="control-button active" onclick="setView('overview')" id="btn-overview">🌐 Overview</button>
+                      <button class="control-button" onclick="setView('performance')" id="btn-performance">📊 Performance</button>
+                      <button class="control-button" onclick="setView('trends')" id="btn-trends">📈 Trends</button>
+                      <button class="control-button" onclick="setView('cluster')" id="btn-cluster">🎪 Clusters</button>
+                  </div>
+
+                  <div class="panel-section">
+                      <h3>⚙️ Controls</h3>
+                      <button class="control-button" onclick="toggleRotation()">🔄 Auto Rotation</button>
+                      <button class="control-button" onclick="toggleParticles()">✨ Particles</button>
+                      <button class="control-button" onclick="regenerateData()">🔄 New Data</button>
+                  </div>
+
+                  <div class="panel-section">
+                      <h3>🎨 Quality</h3>
+                      <button class="control-button" onclick="setQuality('high')">⚡ High Performance</button>
+                      <button class="control-button" onclick="setQuality('medium')">🔋 Balanced</button>
+                  </div>
+              </div>
+
+              <!-- Metrics Display -->
+              <div class="metrics-display">
+                  <div class="metric-row">
+                      <span class="metric-label">FPS:</span>
+                      <span class="metric-value" id="fps-counter">60</span>
+                  </div>
+                  <div class="metric-row">
+                      <span class="metric-label">Objects:</span>
+                      <span class="metric-value" id="object-count">0</span>
+                  </div>
+                  <div class="metric-row">
+                      <span class="metric-label">Particles:</span>
+                      <span class="metric-value" id="particle-count">1000</span>
+                  </div>
+                  <div class="metric-row">
+                      <span class="metric-label">Data Points:</span>
+                      <span class="metric-value" id="data-points">50</span>
+                  </div>
+              </div>
+
+              <script>
+                  // Enhanced 013a Analytics Engine
+                  class Enhanced013aAnalytics {
+                      constructor() {
+                          this.scene = new THREE.Scene();
+                          this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+                          this.renderer = new THREE.WebGLRenderer({
+                              canvas: document.getElementById('analytics-canvas'),
+                              antialias: true,
+                              alpha: true
+                          });
+
+                          this.objects = [];
+                          this.dataPoints = [];
+                          this.particles = null;
+                          this.time = 0;
+                          this.autoRotate = true;
+                          this.particlesEnabled = true;
+                          this.frameCount = 0;
+                          this.lastFPSUpdate = 0;
+
+                          this.init();
+                      }
+
+                      init() {
+                          this.renderer.setSize(window.innerWidth, window.innerHeight);
+                          this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+                          this.scene.background = new THREE.Color(0x1E1E1E);
+
+                          this.setupLighting();
+                          this.createDataVisualization();
+                          this.createParticleSystem();
+
+                          this.camera.position.set(0, 10, 20);
+                          this.camera.lookAt(0, 0, 0);
+
+                          this.animate();
+
+                          window.addEventListener('resize', () => this.onWindowResize());
+                      }
+
+                      setupLighting() {
+                          const ambientLight = new THREE.AmbientLight(0x404040, 0.4);
+                          this.scene.add(ambientLight);
+
+                          const directionalLight = new THREE.DirectionalLight(0x00FFFF, 1.2);
+                          directionalLight.position.set(10, 10, 5);
+                          this.scene.add(directionalLight);
+
+                          const pointLight = new THREE.PointLight(0xFFFF00, 0.8, 50);
+                          pointLight.position.set(-10, 5, -5);
+                          this.scene.add(pointLight);
+
+                          const spotLight = new THREE.SpotLight(0x00FFFF, 0.6, 100, 0.3, 0.2);
+                          spotLight.position.set(15, 15, 15);
+                          this.scene.add(spotLight);
+                      }
+
+                      createDataVisualization() {
+                          this.clearDataObjects();
+
+                          // Central analytics hub
+                          const hubGeometry = new THREE.SphereGeometry(1.5, 32, 32);
+                          const hubMaterial = new THREE.MeshPhongMaterial({
+                              color: 0x00FFFF,
+                              transparent: true,
+                              opacity: 0.8,
+                              emissive: 0x004444
+                          });
+                          const hub = new THREE.Mesh(hubGeometry, hubMaterial);
+                          this.scene.add(hub);
+                          this.objects.push(hub);
+
+                          // Create data clusters
+                          const clusters = [
+                              { name: 'Performance', color: 0x00FFFF, position: [8, 0, 0] },
+                              { name: 'Security', color: 0xFF4444, position: [-8, 0, 0] },
+                              { name: 'User Experience', color: 0x44FF44, position: [0, 8, 0] },
+                              { name: 'Revenue', color: 0xFFFF00, position: [0, -8, 0] },
+                              { name: 'Efficiency', color: 0xFF44FF, position: [0, 0, 8] }
+                          ];
+
+                          clusters.forEach((cluster, clusterIndex) => {
+                              // Cluster sphere
+                              const clusterGeometry = new THREE.SphereGeometry(2, 16, 16);
+                              const clusterMaterial = new THREE.MeshPhongMaterial({
+                                  color: cluster.color,
+                                  transparent: true,
+                                  opacity: 0.1,
+                                  wireframe: true
+                              });
+                              const clusterSphere = new THREE.Mesh(clusterGeometry, clusterMaterial);
+                              clusterSphere.position.set(...cluster.position);
+                              this.scene.add(clusterSphere);
+                              this.objects.push(clusterSphere);
+
+                              // Data points in cluster
+                              for (let i = 0; i < 10; i++) {
+                                  const geometry = new THREE.BoxGeometry(0.3, 0.3, 0.3);
+                                  const material = new THREE.MeshPhongMaterial({
+                                      color: cluster.color,
+                                      emissive: new THREE.Color(cluster.color).multiplyScalar(0.1)
+                                  });
+                                  const cube = new THREE.Mesh(geometry, material);
+
+                                  // Position around cluster
+                                  const angle = (i / 10) * Math.PI * 2;
+                                  const radius = 2.5 + Math.random();
+                                  cube.position.set(
+                                      cluster.position[0] + Math.cos(angle) * radius,
+                                      cluster.position[1] + (Math.random() - 0.5) * 2,
+                                      cluster.position[2] + Math.sin(angle) * radius
+                                  );
+
+                                  cube.userData = {
+                                      originalPosition: cube.position.clone(),
+                                      cluster: clusterIndex,
+                                      speed: 0.01 + Math.random() * 0.02
+                                  };
+
+                                  this.scene.add(cube);
+                                  this.objects.push(cube);
+                                  this.dataPoints.push(cube);
+                              }
+                          });
+
+                          this.updateMetrics();
+                      }
+
+                      clearDataObjects() {
+                          this.objects.forEach(obj => {
+                              this.scene.remove(obj);
+                              if (obj.geometry) obj.geometry.dispose();
+                              if (obj.material) obj.material.dispose();
+                          });
+                          this.objects = [];
+                          this.dataPoints = [];
+                      }
+
+                      createParticleSystem() {
+                          if (this.particles) {
+                              this.scene.remove(this.particles);
+                          }
+
+                          if (!this.particlesEnabled) return;
+
+                          const particleCount = 1500;
+                          const geometry = new THREE.BufferGeometry();
+                          const positions = new Float32Array(particleCount * 3);
+                          const colors = new Float32Array(particleCount * 3);
+
+                          for (let i = 0; i < particleCount; i++) {
+                              positions[i * 3] = (Math.random() - 0.5) * 80;
+                              positions[i * 3 + 1] = (Math.random() - 0.5) * 80;
+                              positions[i * 3 + 2] = (Math.random() - 0.5) * 80;
+
+                              const color = new THREE.Color().setHSL(Math.random(), 0.7, 0.5);
+                              colors[i * 3] = color.r;
+                              colors[i * 3 + 1] = color.g;
+                              colors[i * 3 + 2] = color.b;
+                          }
+
+                          geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+                          geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+                          const material = new THREE.PointsMaterial({
+                              size: 0.8,
+                              vertexColors: true,
+                              transparent: true,
+                              opacity: 0.6
+                          });
+
+                          this.particles = new THREE.Points(geometry, material);
+                          this.scene.add(this.particles);
+                      }
+
+                      animate() {
+                          requestAnimationFrame(() => this.animate());
+
+                          this.time += 0.01;
+
+                          // Update objects
+                          this.objects.forEach((object, index) => {
+                              if (object.geometry instanceof THREE.BoxGeometry) {
+                                  // Rotate data cubes
+                                  object.rotation.x += 0.01;
+                                  object.rotation.y += 0.015;
+
+                                  // Floating animation
+                                  if (object.userData) {
+                                      const floating = Math.sin(this.time * object.userData.speed) * 0.3;
+                                      object.position.y = object.userData.originalPosition.y + floating;
+                                  }
+                              } else if (object.geometry instanceof THREE.SphereGeometry) {
+                                  if (index === 0) { // Central hub
+                                      const scale = 1 + Math.sin(this.time * 2) * 0.1;
+                                      object.scale.setScalar(scale);
+                                  }
+                                  object.rotation.y += 0.005;
+                              }
+                          });
+
+                          // Update particle system
+                          if (this.particles) {
+                              this.particles.rotation.y += 0.001;
+                              this.particles.rotation.x += 0.0005;
+                          }
+
+                          // Auto rotation
+                          if (this.autoRotate) {
+                              this.camera.position.x = Math.cos(this.time * 0.1) * 20;
+                              this.camera.position.z = Math.sin(this.time * 0.1) * 20;
+                              this.camera.lookAt(0, 0, 0);
+                          }
+
+                          this.updateFPS();
+                          this.renderer.render(this.scene, this.camera);
+                      }
+
+                      updateFPS() {
+                          this.frameCount++;
+                          const now = performance.now();
+
+                          if (now > this.lastFPSUpdate + 1000) {
+                              const fps = Math.round((this.frameCount * 1000) / (now - this.lastFPSUpdate));
+                              document.getElementById('fps-counter').textContent = fps;
+                              this.frameCount = 0;
+                              this.lastFPSUpdate = now;
+                          }
+                      }
+
+                      updateMetrics() {
+                          document.getElementById('object-count').textContent = this.objects.length;
+                          document.getElementById('data-points').textContent = this.dataPoints.length;
+                          document.getElementById('particle-count').textContent = this.particlesEnabled ? '1500' : '0';
+                      }
+
+                      onWindowResize() {
+                          this.camera.aspect = window.innerWidth / window.innerHeight;
+                          this.camera.updateProjectionMatrix();
+                          this.renderer.setSize(window.innerWidth, window.innerHeight);
+                      }
+
+                      setView(viewType) {
+                          // Update active button
+                          document.querySelectorAll('.control-button').forEach(btn => btn.classList.remove('active'));
+                          document.getElementById(`btn-${viewType}`).classList.add('active');
+
+                          this.autoRotate = false;
+
+                          switch(viewType) {
+                              case 'overview':
+                                  gsap.to(this.camera.position, { x: 0, y: 10, z: 25, duration: 2 });
+                                  break;
+                              case 'performance':
+                                  gsap.to(this.camera.position, { x: 15, y: 5, z: 10, duration: 2 });
+                                  break;
+                              case 'trends':
+                                  gsap.to(this.camera.position, { x: -10, y: 15, z: 5, duration: 2 });
+                                  break;
+                              case 'cluster':
+                                  gsap.to(this.camera.position, { x: 0, y: 20, z: 15, duration: 2 });
+                                  break;
+                          }
+                      }
+
+                      toggleRotation() {
+                          this.autoRotate = !this.autoRotate;
+                      }
+
+                      toggleParticles() {
+                          this.particlesEnabled = !this.particlesEnabled;
+                          this.createParticleSystem();
+                          this.updateMetrics();
+                      }
+
+                      regenerateData() {
+                          this.createDataVisualization();
+                      }
+                  }
+
+                  // Global functions
+                  let analytics;
+
+                  function setView(viewType) {
+                      analytics.setView(viewType);
+                  }
+
+                  function toggleRotation() {
+                      analytics.toggleRotation();
+                  }
+
+                  function toggleParticles() {
+                      analytics.toggleParticles();
+                  }
+
+                  function regenerateData() {
+                      analytics.regenerateData();
+                  }
+
+                  function setQuality(quality) {
+                      // Performance optimization based on quality setting
+                      if (quality === 'medium') {
+                          analytics.particlesEnabled = false;
+                          analytics.createParticleSystem();
+                      } else {
+                          analytics.particlesEnabled = true;
+                          analytics.createParticleSystem();
+                      }
+                  }
+
+                  // Initialize
+                  window.addEventListener('DOMContentLoaded', () => {
+                      analytics = new Enhanced013aAnalytics();
+                      console.log('🚀 Enhanced 013a Analytics initialized successfully!');
+                  });
+
+                  // Keyboard shortcuts
+                  document.addEventListener('keydown', (e) => {
+                      switch(e.key) {
+                          case '1': setView('overview'); break;
+                          case '2': setView('performance'); break;
+                          case '3': setView('trends'); break;
+                          case '4': setView('cluster'); break;
+                          case 'r': toggleRotation(); break;
+                          case 'p': toggleParticles(); break;
+                          case ' ': e.preventDefault(); regenerateData(); break;
+                      }
+                  });
+              </script>
+          </body>
+          </html>
+          EOF
+
+          # Create nginx configuration
+          cat > /etc/nginx/conf.d/default.conf << 'EOF'
+          server {
+              listen 80;
+              server_name _;
+              root /usr/share/nginx/html;
+              index index.html;
+
+              # Security headers
+              add_header X-Frame-Options "SAMEORIGIN" always;
+              add_header X-Content-Type-Options "nosniff" always;
+              add_header X-XSS-Protection "1; mode=block" always;
+
+              # Caching for static assets
+              location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
+                  expires 1y;
+                  add_header Cache-Control "public, immutable";
+              }
+
+              location / {
+                  try_files $uri $uri/ /index.html;
+                  # No cache for HTML
+                  add_header Cache-Control "no-cache, no-store, must-revalidate";
+                  add_header Pragma "no-cache";
+                  add_header Expires "0";
+              }
+
+              location /health {
+                  return 200 'Enhanced 013a Analytics - OK';
+                  add_header Content-Type text/plain;
+              }
+          }
+          EOF
+
+          # Start nginx
+          nginx -g "daemon off;"
+        ports:
+        - containerPort: 80
+          name: http
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 80
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 80
+          initialDelaySeconds: 10
+          periodSeconds: 5
+---

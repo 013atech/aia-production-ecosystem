@@ -1,0 +1,1353 @@
+# ==============================================================================
+# FULL-COMPLEXITY 013A-ANALYTICS PRODUCTION DEPLOYMENT
+# Complete GCP deployment with all services, zero simplifications
+# ==============================================================================
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: analytics-production
+  labels:
+    env: production
+    application: 013a-analytics
+    complexity: full
+---
+# ==============================================================================
+# CONFIGURATION AND SECRETS
+# ==============================================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: aia-production-config
+  namespace: analytics-production
+data:
+  # Application Configuration
+  NODE_ENV: "production"
+  REACT_APP_API_URL: "https://api.013a.tech"
+  REACT_APP_WS_URL: "wss://api.013a.tech"
+  REACT_APP_ENVIRONMENT: "production"
+
+  # 3D Engine Configuration
+  REACT_APP_3D_OPTIMIZED: "true"
+  REACT_APP_WEBXR_ENABLED: "true"
+  REACT_APP_PERFORMANCE_MONITORING: "true"
+
+  # ML Engine Configuration
+  ML_MODEL_VERSION: "v2.0.0"
+  ML_DRIFT_DETECTION_ENABLED: "true"
+  ML_AUTO_RETRAINING: "true"
+
+  # Business Intelligence Configuration
+  BI_REAL_TIME_ANALYTICS: "true"
+  BI_PREDICTIVE_MODELS: "true"
+  BI_DASHBOARD_UPDATES: "live"
+
+  # Enterprise Integration
+  ENTERPRISE_PARTNERS_ENABLED: "true"
+  STRIPE_INTEGRATION: "true"
+  PAYMENT_PROCESSING: "live"
+
+  # Database Configuration
+  POSTGRES_DB: "aia_production"
+  POSTGRES_HOST: "aia-postgresql-service"
+  POSTGRES_PORT: "5432"
+  REDIS_URL: "redis://aia-redis-service:6379"
+
+  # Monitoring & Observability
+  PROMETHEUS_ENABLED: "true"
+  GRAFANA_DASHBOARD_ENABLED: "true"
+  JAEGER_TRACING: "true"
+  LOG_LEVEL: "info"
+
+  # Security Configuration
+  JWT_ALGORITHM: "RS256"
+  CORS_ORIGINS: "https://013a.tech,https://www.013a.tech,https://api.013a.tech"
+  RATE_LIMITING: "true"
+
+  # Performance Configuration
+  CACHE_TTL: "3600"
+  CONNECTION_POOL_SIZE: "20"
+  MAX_CONCURRENT_REQUESTS: "1000"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: aia-production-secrets
+  namespace: analytics-production
+type: Opaque
+stringData:
+  # Database Credentials
+  POSTGRES_USER: "aia_admin"
+  POSTGRES_PASSWORD: "aia_secure_2024_prod!"
+
+  # JWT Secrets
+  JWT_SECRET: "aia_jwt_super_secret_key_2024_production"
+  JWT_PRIVATE_KEY: |
+    -----BEGIN PRIVATE KEY-----
+    MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC7VJTUt9Us8cKB
+    xhQnHQwuTvLduiBNeqRXribfvtbhIOco8MG4NHD0ZSBNGGZXVSqP3sBTYFEX8LK9
+    VEKENYYHxxC2dNiPkN4DjQfbqTAEuiBKkYXfEq0X7TQv5z5bLQPLg2ooO8hIqwCs
+    A2Kxt3k4g2nGiGrXkQBAKsBYpgNaKYvwXABJuNHNj
+    -----END PRIVATE KEY-----
+
+  # API Keys
+  STRIPE_SECRET_KEY: "[STRIPE_KEY_PLACEHOLDER]"
+  OPENAI_API_KEY: "sk-proj-1234567890"
+  GOOGLE_CLOUD_API_KEY: "AIza1234567890"
+
+  # External Service Credentials
+  REDIS_PASSWORD: "redis_secure_password_2024"
+  MONITORING_TOKEN: "monitoring_secure_token_2024"
+---
+# ==============================================================================
+# PERSISTENT STORAGE
+# ==============================================================================
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: aia-postgres-pvc
+  namespace: analytics-production
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: standard-rwo
+  resources:
+    requests:
+      storage: 100Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: aia-redis-pvc
+  namespace: analytics-production
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: standard-rwo
+  resources:
+    requests:
+      storage: 20Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: aia-ml-models-pvc
+  namespace: analytics-production
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: standard-rwo
+  resources:
+    requests:
+      storage: 50Gi
+---
+# ==============================================================================
+# DATABASE SERVICES
+# ==============================================================================
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: aia-postgresql
+  namespace: analytics-production
+spec:
+  serviceName: aia-postgresql-service
+  replicas: 1
+  selector:
+    matchLabels:
+      app: aia-postgresql
+  template:
+    metadata:
+      labels:
+        app: aia-postgresql
+    spec:
+      containers:
+      - name: postgresql
+        image: postgres:15-alpine
+        ports:
+        - containerPort: 5432
+        env:
+        - name: POSTGRES_DB
+          valueFrom:
+            configMapKeyRef:
+              name: aia-production-config
+              key: POSTGRES_DB
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: aia-production-secrets
+              key: POSTGRES_USER
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: aia-production-secrets
+              key: POSTGRES_PASSWORD
+        - name: PGDATA
+          value: /var/lib/postgresql/data/pgdata
+        volumeMounts:
+        - name: postgres-storage
+          mountPath: /var/lib/postgresql/data
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        livenessProbe:
+          exec:
+            command:
+              - /bin/sh
+              - -c
+              - exec pg_isready -U $POSTGRES_USER -d $POSTGRES_DB -h 127.0.0.1 -p 5432
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 6
+        readinessProbe:
+          exec:
+            command:
+              - /bin/sh
+              - -c
+              - exec pg_isready -U $POSTGRES_USER -d $POSTGRES_DB -h 127.0.0.1 -p 5432
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 6
+      volumes:
+      - name: postgres-storage
+        persistentVolumeClaim:
+          claimName: aia-postgres-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-postgresql-service
+  namespace: analytics-production
+spec:
+  selector:
+    app: aia-postgresql
+  ports:
+  - port: 5432
+    targetPort: 5432
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-redis
+  namespace: analytics-production
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: aia-redis
+  template:
+    metadata:
+      labels:
+        app: aia-redis
+    spec:
+      containers:
+      - name: redis
+        image: redis:7-alpine
+        ports:
+        - containerPort: 6379
+        args:
+        - redis-server
+        - --requirepass
+        - $(REDIS_PASSWORD)
+        - --maxmemory
+        - 1gb
+        - --maxmemory-policy
+        - allkeys-lru
+        env:
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: aia-production-secrets
+              key: REDIS_PASSWORD
+        volumeMounts:
+        - name: redis-storage
+          mountPath: /data
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        livenessProbe:
+          exec:
+            command:
+            - redis-cli
+            - ping
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          exec:
+            command:
+            - redis-cli
+            - ping
+          initialDelaySeconds: 5
+          periodSeconds: 5
+      volumes:
+      - name: redis-storage
+        persistentVolumeClaim:
+          claimName: aia-redis-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-redis-service
+  namespace: analytics-production
+spec:
+  selector:
+    app: aia-redis
+  ports:
+  - port: 6379
+    targetPort: 6379
+  type: ClusterIP
+---
+# ==============================================================================
+# BACKEND SERVICES
+# ==============================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-backend
+  namespace: analytics-production
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: aia-backend
+  template:
+    metadata:
+      labels:
+        app: aia-backend
+    spec:
+      containers:
+      - name: aia-backend
+        image: us-central1-docker.pkg.dev/aia-system-prod-1759055445/aia-repo/aia-backend:latest
+        ports:
+        - containerPort: 8000
+        - containerPort: 8080
+        env:
+        - name: DATABASE_URL
+          value: "postgresql://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@aia-postgresql-service:5432/$(POSTGRES_DB)"
+        - name: REDIS_URL
+          valueFrom:
+            configMapKeyRef:
+              name: aia-production-config
+              key: REDIS_URL
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: aia-production-secrets
+              key: JWT_SECRET
+        - name: STRIPE_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: aia-production-secrets
+              key: STRIPE_SECRET_KEY
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: aia-production-secrets
+              key: POSTGRES_USER
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: aia-production-secrets
+              key: POSTGRES_PASSWORD
+        - name: POSTGRES_DB
+          valueFrom:
+            configMapKeyRef:
+              name: aia-production-config
+              key: POSTGRES_DB
+        envFrom:
+        - configMapRef:
+            name: aia-production-config
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 60
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-backend-service
+  namespace: analytics-production
+spec:
+  selector:
+    app: aia-backend
+  ports:
+  - name: http
+    port: 80
+    targetPort: 8000
+  - name: websocket
+    port: 8080
+    targetPort: 8080
+  type: ClusterIP
+---
+# ==============================================================================
+# ML ENGINE SERVICE
+# ==============================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-ml-engine
+  namespace: analytics-production
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: aia-ml-engine
+  template:
+    metadata:
+      labels:
+        app: aia-ml-engine
+    spec:
+      containers:
+      - name: aia-ml-engine
+        image: us-central1-docker.pkg.dev/aia-system-prod-1759055445/aia-repo/aia-ml-engine:latest
+        ports:
+        - containerPort: 8001
+        env:
+        - name: DATABASE_URL
+          value: "postgresql://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@aia-postgresql-service:5432/$(POSTGRES_DB)"
+        - name: REDIS_URL
+          valueFrom:
+            configMapKeyRef:
+              name: aia-production-config
+              key: REDIS_URL
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: aia-production-secrets
+              key: POSTGRES_USER
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: aia-production-secrets
+              key: POSTGRES_PASSWORD
+        - name: POSTGRES_DB
+          valueFrom:
+            configMapKeyRef:
+              name: aia-production-config
+              key: POSTGRES_DB
+        - name: OPENAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: aia-production-secrets
+              key: OPENAI_API_KEY
+        envFrom:
+        - configMapRef:
+            name: aia-production-config
+        volumeMounts:
+        - name: ml-models-storage
+          mountPath: /app/models
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8001
+          initialDelaySeconds: 120
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8001
+          initialDelaySeconds: 60
+          periodSeconds: 15
+      volumes:
+      - name: ml-models-storage
+        persistentVolumeClaim:
+          claimName: aia-ml-models-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-ml-engine-service
+  namespace: analytics-production
+spec:
+  selector:
+    app: aia-ml-engine
+  ports:
+  - port: 8001
+    targetPort: 8001
+  type: ClusterIP
+---
+# ==============================================================================
+# BUSINESS INTELLIGENCE SERVICE
+# ==============================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-business-intelligence
+  namespace: analytics-production
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: aia-business-intelligence
+  template:
+    metadata:
+      labels:
+        app: aia-business-intelligence
+    spec:
+      containers:
+      - name: aia-bi
+        image: us-central1-docker.pkg.dev/aia-system-prod-1759055445/aia-repo/aia-business-intelligence:latest
+        ports:
+        - containerPort: 8002
+        env:
+        - name: DATABASE_URL
+          value: "postgresql://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@aia-postgresql-service:5432/$(POSTGRES_DB)"
+        - name: REDIS_URL
+          valueFrom:
+            configMapKeyRef:
+              name: aia-production-config
+              key: REDIS_URL
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: aia-production-secrets
+              key: POSTGRES_USER
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: aia-production-secrets
+              key: POSTGRES_PASSWORD
+        - name: POSTGRES_DB
+          valueFrom:
+            configMapKeyRef:
+              name: aia-production-config
+              key: POSTGRES_DB
+        envFrom:
+        - configMapRef:
+            name: aia-production-config
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8002
+          initialDelaySeconds: 60
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8002
+          initialDelaySeconds: 30
+          periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-business-intelligence-service
+  namespace: analytics-production
+spec:
+  selector:
+    app: aia-business-intelligence
+  ports:
+  - port: 8002
+    targetPort: 8002
+  type: ClusterIP
+---
+# ==============================================================================
+# REVENUE INTELLIGENCE SERVICE
+# ==============================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-revenue-intelligence
+  namespace: analytics-production
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: aia-revenue-intelligence
+  template:
+    metadata:
+      labels:
+        app: aia-revenue-intelligence
+    spec:
+      containers:
+      - name: aia-revenue
+        image: us-central1-docker.pkg.dev/aia-system-prod-1759055445/aia-repo/aia-revenue-intelligence:latest
+        ports:
+        - containerPort: 8003
+        env:
+        - name: DATABASE_URL
+          value: "postgresql://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@aia-postgresql-service:5432/$(POSTGRES_DB)"
+        - name: REDIS_URL
+          valueFrom:
+            configMapKeyRef:
+              name: aia-production-config
+              key: REDIS_URL
+        - name: STRIPE_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: aia-production-secrets
+              key: STRIPE_SECRET_KEY
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: aia-production-secrets
+              key: POSTGRES_USER
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: aia-production-secrets
+              key: POSTGRES_PASSWORD
+        - name: POSTGRES_DB
+          valueFrom:
+            configMapKeyRef:
+              name: aia-production-config
+              key: POSTGRES_DB
+        envFrom:
+        - configMapRef:
+            name: aia-production-config
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8003
+          initialDelaySeconds: 60
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8003
+          initialDelaySeconds: 30
+          periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-revenue-intelligence-service
+  namespace: analytics-production
+spec:
+  selector:
+    app: aia-revenue-intelligence
+  ports:
+  - port: 8003
+    targetPort: 8003
+  type: ClusterIP
+---
+# ==============================================================================
+# PAYMENT PROCESSING SERVICE
+# ==============================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-payment-processor
+  namespace: analytics-production
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: aia-payment-processor
+  template:
+    metadata:
+      labels:
+        app: aia-payment-processor
+    spec:
+      containers:
+      - name: aia-payment
+        image: us-central1-docker.pkg.dev/aia-system-prod-1759055445/aia-repo/aia-payment-processor:latest
+        ports:
+        - containerPort: 8004
+        env:
+        - name: DATABASE_URL
+          value: "postgresql://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@aia-postgresql-service:5432/$(POSTGRES_DB)"
+        - name: REDIS_URL
+          valueFrom:
+            configMapKeyRef:
+              name: aia-production-config
+              key: REDIS_URL
+        - name: STRIPE_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: aia-production-secrets
+              key: STRIPE_SECRET_KEY
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: aia-production-secrets
+              key: POSTGRES_USER
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: aia-production-secrets
+              key: POSTGRES_PASSWORD
+        - name: POSTGRES_DB
+          valueFrom:
+            configMapKeyRef:
+              name: aia-production-config
+              key: POSTGRES_DB
+        envFrom:
+        - configMapRef:
+            name: aia-production-config
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8004
+          initialDelaySeconds: 60
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8004
+          initialDelaySeconds: 30
+          periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-payment-processor-service
+  namespace: analytics-production
+spec:
+  selector:
+    app: aia-payment-processor
+  ports:
+  - port: 8004
+    targetPort: 8004
+  type: ClusterIP
+---
+# ==============================================================================
+# ENTERPRISE PARTNERS SERVICE
+# ==============================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-enterprise-partners
+  namespace: analytics-production
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: aia-enterprise-partners
+  template:
+    metadata:
+      labels:
+        app: aia-enterprise-partners
+    spec:
+      containers:
+      - name: aia-enterprise
+        image: us-central1-docker.pkg.dev/aia-system-prod-1759055445/aia-repo/aia-enterprise-partners:latest
+        ports:
+        - containerPort: 8005
+        env:
+        - name: DATABASE_URL
+          value: "postgresql://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@aia-postgresql-service:5432/$(POSTGRES_DB)"
+        - name: REDIS_URL
+          valueFrom:
+            configMapKeyRef:
+              name: aia-production-config
+              key: REDIS_URL
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: aia-production-secrets
+              key: POSTGRES_USER
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: aia-production-secrets
+              key: POSTGRES_PASSWORD
+        - name: POSTGRES_DB
+          valueFrom:
+            configMapKeyRef:
+              name: aia-production-config
+              key: POSTGRES_DB
+        - name: GOOGLE_CLOUD_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: aia-production-secrets
+              key: GOOGLE_CLOUD_API_KEY
+        envFrom:
+        - configMapRef:
+            name: aia-production-config
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8005
+          initialDelaySeconds: 60
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8005
+          initialDelaySeconds: 30
+          periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-enterprise-partners-service
+  namespace: analytics-production
+spec:
+  selector:
+    app: aia-enterprise-partners
+  ports:
+  - port: 8005
+    targetPort: 8005
+  type: ClusterIP
+---
+# ==============================================================================
+# MONITORING AND PERFORMANCE SERVICE
+# ==============================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-performance-monitor
+  namespace: analytics-production
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: aia-performance-monitor
+  template:
+    metadata:
+      labels:
+        app: aia-performance-monitor
+    spec:
+      containers:
+      - name: aia-monitor
+        image: us-central1-docker.pkg.dev/aia-system-prod-1759055445/aia-repo/aia-performance-monitor:latest
+        ports:
+        - containerPort: 8006
+        env:
+        - name: DATABASE_URL
+          value: "postgresql://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@aia-postgresql-service:5432/$(POSTGRES_DB)"
+        - name: REDIS_URL
+          valueFrom:
+            configMapKeyRef:
+              name: aia-production-config
+              key: REDIS_URL
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: aia-production-secrets
+              key: POSTGRES_USER
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: aia-production-secrets
+              key: POSTGRES_PASSWORD
+        - name: POSTGRES_DB
+          valueFrom:
+            configMapKeyRef:
+              name: aia-production-config
+              key: POSTGRES_DB
+        - name: MONITORING_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: aia-production-secrets
+              key: MONITORING_TOKEN
+        envFrom:
+        - configMapRef:
+            name: aia-production-config
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8006
+          initialDelaySeconds: 60
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8006
+          initialDelaySeconds: 30
+          periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-performance-monitor-service
+  namespace: analytics-production
+spec:
+  selector:
+    app: aia-performance-monitor
+  ports:
+  - port: 8006
+    targetPort: 8006
+  type: ClusterIP
+---
+# ==============================================================================
+# WEBSOCKET SERVICE FOR REAL-TIME COMMUNICATION
+# ==============================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-websocket
+  namespace: analytics-production
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: aia-websocket
+  template:
+    metadata:
+      labels:
+        app: aia-websocket
+    spec:
+      containers:
+      - name: aia-websocket
+        image: us-central1-docker.pkg.dev/aia-system-prod-1759055445/aia-repo/aia-websocket:latest
+        ports:
+        - containerPort: 8090
+        env:
+        - name: REDIS_URL
+          valueFrom:
+            configMapKeyRef:
+              name: aia-production-config
+              key: REDIS_URL
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: aia-production-secrets
+              key: REDIS_PASSWORD
+        envFrom:
+        - configMapRef:
+            name: aia-production-config
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8090
+          initialDelaySeconds: 30
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8090
+          initialDelaySeconds: 15
+          periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-websocket-service
+  namespace: analytics-production
+spec:
+  selector:
+    app: aia-websocket
+  ports:
+  - port: 8090
+    targetPort: 8090
+  type: ClusterIP
+---
+# ==============================================================================
+# FRONTEND SERVICE
+# ==============================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-frontend
+  namespace: analytics-production
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: aia-frontend
+  template:
+    metadata:
+      labels:
+        app: aia-frontend
+    spec:
+      containers:
+      - name: aia-frontend
+        image: us-central1-docker.pkg.dev/aia-system-prod-1759055445/aia-repo/aia-frontend:latest
+        ports:
+        - containerPort: 80
+        envFrom:
+        - configMapRef:
+            name: aia-production-config
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 30
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 10
+          periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-frontend-service
+  namespace: analytics-production
+spec:
+  selector:
+    app: aia-frontend
+  ports:
+  - port: 80
+    targetPort: 80
+  type: ClusterIP
+---
+# ==============================================================================
+# MANAGED SSL CERTIFICATE
+# ==============================================================================
+apiVersion: networking.gke.io/v1
+kind: ManagedCertificate
+metadata:
+  name: aia-ssl-cert
+  namespace: analytics-production
+spec:
+  domains:
+    - 013a.tech
+    - www.013a.tech
+    - api.013a.tech
+---
+# ==============================================================================
+# INGRESS WITH SSL TERMINATION
+# ==============================================================================
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: aia-production-ingress
+  namespace: analytics-production
+  annotations:
+    kubernetes.io/ingress.global-static-ip-name: "aia-production-ip"
+    networking.gke.io/managed-certificates: "aia-ssl-cert"
+    kubernetes.io/ingress.class: "gce"
+    ingress.gcp.kubernetes.io/frontend-config: "aia-frontend-config"
+    ingress.gcp.kubernetes.io/backend-config: '{"default": "aia-backend-config"}'
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/rewrite-target: /$1
+spec:
+  rules:
+  - host: 013a.tech
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-frontend-service
+            port:
+              number: 80
+      - path: /api
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-backend-service
+            port:
+              number: 80
+      - path: /ml
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-ml-engine-service
+            port:
+              number: 8001
+      - path: /bi
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-business-intelligence-service
+            port:
+              number: 8002
+      - path: /revenue
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-revenue-intelligence-service
+            port:
+              number: 8003
+      - path: /payments
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-payment-processor-service
+            port:
+              number: 8004
+      - path: /partners
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-enterprise-partners-service
+            port:
+              number: 8005
+      - path: /monitoring
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-performance-monitor-service
+            port:
+              number: 8006
+      - path: /ws
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-websocket-service
+            port:
+              number: 8090
+  - host: www.013a.tech
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-frontend-service
+            port:
+              number: 80
+  - host: api.013a.tech
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-backend-service
+            port:
+              number: 80
+---
+# ==============================================================================
+# BACKEND CONFIG FOR LOAD BALANCER
+# ==============================================================================
+apiVersion: cloud.google.com/v1
+kind: BackendConfig
+metadata:
+  name: aia-backend-config
+  namespace: analytics-production
+spec:
+  healthCheck:
+    checkIntervalSec: 15
+    port: 8000
+    type: HTTP
+    requestPath: /health
+  sessionAffinity:
+    affinityType: "CLIENT_IP"
+  timeoutSec: 300
+  connectionDraining:
+    drainingTimeoutSec: 60
+---
+# ==============================================================================
+# FRONTEND CONFIG FOR LOAD BALANCER
+# ==============================================================================
+apiVersion: cloud.google.com/v1
+kind: FrontendConfig
+metadata:
+  name: aia-frontend-config
+  namespace: analytics-production
+spec:
+  sslPolicy: modern-ssl-policy
+  redirectToHttps:
+    enabled: true
+---
+# ==============================================================================
+# HORIZONTAL POD AUTOSCALER
+# ==============================================================================
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: aia-backend-hpa
+  namespace: analytics-production
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: aia-backend
+  minReplicas: 3
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: aia-frontend-hpa
+  namespace: analytics-production
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: aia-frontend
+  minReplicas: 3
+  maxReplicas: 8
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 60
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: aia-ml-engine-hpa
+  namespace: analytics-production
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: aia-ml-engine
+  minReplicas: 2
+  maxReplicas: 6
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 75
+---
+# ==============================================================================
+# NETWORK POLICIES
+# ==============================================================================
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: aia-production-network-policy
+  namespace: analytics-production
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: analytics-production
+    - podSelector: {}
+  - from: []
+    ports:
+    - protocol: TCP
+      port: 80
+    - protocol: TCP
+      port: 443
+  egress:
+  - {}
+---
+# ==============================================================================
+# POD DISRUPTION BUDGETS
+# ==============================================================================
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: aia-backend-pdb
+  namespace: analytics-production
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: aia-backend
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: aia-frontend-pdb
+  namespace: analytics-production
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: aia-frontend
+---
+# ==============================================================================
+# RESOURCE QUOTAS
+# ==============================================================================
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: aia-production-quota
+  namespace: analytics-production
+spec:
+  hard:
+    requests.cpu: "20"
+    requests.memory: "128Mi"
+    limits.cpu: "40"
+    limits.memory: "128Mi"
+    persistentvolumeclaims: "10"
+    services: "20"
+    secrets: "10"
+    configmaps: "10"
+    pods: "50"

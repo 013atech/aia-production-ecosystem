@@ -1,0 +1,56 @@
+# TEMPORARILY DISABLED FOR QUOTA COMPLIANCE
+# This deployment has been temporarily disabled to meet GCP quota requirements
+# Original content below (commented out):
+#
+# apiVersion: apps/v1
+# kind: Deployment
+# metadata:
+#   labels:
+#     app: aia-frontend
+#     component: frontend
+#     tier: web
+#   name: aia-comprehensive-frontend
+#   namespace: aia-system
+# spec:
+#   replicas: 3
+#   selector:
+#     matchLabels:
+#       app: aia-frontend
+#   strategy:
+#     rollingUpdate:
+#       maxSurge: 2
+#       maxUnavailable: 0
+#     type: RollingUpdate
+#   template:
+#     metadata:
+#       labels:
+#         app: aia-frontend
+#         component: frontend
+#     spec:
+#       containers:
+#       - image: gcr.io/a-467519/aia-frontend:latest
+#         imagePullPolicy: Always
+#         livenessProbe:
+#           httpGet:
+#             path: /
+#             port: 80
+#           initialDelaySeconds: 30
+#           periodSeconds: 10
+#         name: aia-frontend
+#         ports:
+#         - containerPort: 80
+#           name: http
+#         readinessProbe:
+#           httpGet:
+#             path: /
+#             port: 80
+#           initialDelaySeconds: 5
+#           periodSeconds: 5
+#         resources:
+#           limits:
+#             cpu: "100m"
+#             memory: "128Mi"
+#           requests:
+#             cpu: "100m"
+#             memory: "128Mi"
+# 

@@ -1,0 +1,154 @@
+# Working Blue-Green Strategy using existing ultimate-production as Blue
+# This leverages the working services instead of creating new problematic ones
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: aia-working-blue-green-ingress
+  namespace: aia-ultimate-production  # Use existing working namespace as Blue
+  annotations:
+    kubernetes.io/ingress.global-static-ip-name: "aia-ultimate-ip"
+    networking.gke.io/managed-certificates: "aia-ssl-certificate-working"
+    kubernetes.io/ingress.class: "gce"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    # Blue-Green switching capability
+    nginx.ingress.kubernetes.io/canary: "false"
+    nginx.ingress.kubernetes.io/canary-weight: "0"
+spec:
+  rules:
+  - host: 013a.tech
+    http:
+      paths:
+      - path: /api/*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-ultimate-backend-service  # Point to working backend
+            port:
+              number: 80
+      - path: /*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-ultimate-frontend-service  # Point to working frontend
+            port:
+              number: 80
+  - host: www.013a.tech
+    http:
+      paths:
+      - path: /*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-ultimate-frontend-service
+            port:
+              number: 80
+  - host: api.013a.tech
+    http:
+      paths:
+      - path: /*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-ultimate-backend-service
+            port:
+              number: 80
+---
+# Working SSL Certificate for ultimate production
+apiVersion: networking.gke.io/v1
+kind: ManagedCertificate
+metadata:
+  name: aia-ssl-certificate-working
+  namespace: aia-ultimate-production
+spec:
+  domains:
+  - "013a.tech"
+  - "www.013a.tech"
+  - "api.013a.tech"
+---
+# Services for the working backend and frontend
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-ultimate-backend-service
+  namespace: aia-ultimate-production
+  labels:
+    app: aia-ultimate-backend
+spec:
+  selector:
+    app: aia-ultimate-backend
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8000
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-ultimate-frontend-service
+  namespace: aia-ultimate-production
+  labels:
+    app: aia-ultimate-frontend
+spec:
+  selector:
+    app: aia-ultimate-frontend
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 3000
+  type: ClusterIP
+---
+# Green Environment - Ready for new deployments
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-green-backend-ready
+  namespace: aia-green-production
+  labels:
+    app: aia-backend
+    environment: green
+spec:
+  replicas: 0  # Start with 0, scale up for cutover
+  selector:
+    matchLabels:
+      app: aia-backend
+      environment: green
+  template:
+    metadata:
+      labels:
+        app: aia-backend
+        environment: green
+    spec:
+      containers:
+      - name: backend
+        image: gcr.io/aia-system-prod-1759055445/aia-api:latest
+        ports:
+        - containerPort: 8000
+        env:
+        - name: ENVIRONMENT
+          value: "green"
+        command:
+          - python
+          - -c
+          - 'exec("from fastapi import FastAPI\nimport uvicorn\napp = FastAPI()\n\n@app.get(\"/api/health\")\ndef health():\n    return {\"status\": \"ok\", \"service\": \"aia-backend-green\", \"environment\": \"green\"}\n\nuvicorn.run(app, host=\"0.0.0.0\", port=8000)")'
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        readinessProbe:
+          httpGet:
+            path: /api/health
+            port: 8000
+          initialDelaySeconds: 10
+          periodSeconds: 5
+        livenessProbe:
+          httpGet:
+            path: /api/health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10

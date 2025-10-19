@@ -1,0 +1,248 @@
+# Complete Production Deployment with Optimized Routing
+# Zero-downtime SSL renewal with comprehensive enterprise support
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: aia-production-final
+  namespace: aia-unified-production
+  annotations:
+    kubernetes.io/ingress.global-static-ip-name: aia-production-ip
+    ingress.gcp.kubernetes.io/managed-certificates: aia-comprehensive-ssl-certificate
+    kubernetes.io/ingress.allow-http: "false"  # Force HTTPS only
+    cloud.google.com/armor-config: |
+      {
+        "default-rule": {
+          "evaluate-preconfigured-expr": [
+            "owasp-crs-v030001-id942110-sqli",
+            "owasp-crs-v030001-id942120-sqli",
+            "owasp-crs-v030001-id941100-xss"
+          ]
+        }
+      }
+    cloud.google.com/backend-config: '{"default":"aia-frontend-config"}'
+    cloud.google.com/neg: '{"ingress": true}'
+spec:
+  rules:
+  # Main domain with API routing
+  - host: 013a.tech
+    http:
+      paths:
+      - path: /api
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-unified-backend-service
+            port:
+              number: 8000
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-unified-frontend-service
+            port:
+              number: 80
+
+  # WWW subdomain
+  - host: www.013a.tech
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-unified-frontend-service
+            port:
+              number: 80
+
+  # Dedicated API subdomain
+  - host: api.013a.tech
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-unified-backend-service
+            port:
+              number: 8000
+
+  # Founder dashboard
+  - host: founder.013a.tech
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-unified-frontend-service
+            port:
+              number: 80
+
+  # Enterprise partner subdomains
+  - host: ey.013a.tech
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-unified-frontend-service
+            port:
+              number: 80
+
+  - host: jpmorgan.013a.tech
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-unified-frontend-service
+            port:
+              number: 80
+
+  - host: gcp.013a.tech
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-unified-frontend-service
+            port:
+              number: 80
+
+  - host: apple.013a.tech
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-unified-frontend-service
+            port:
+              number: 80
+
+---
+# Frontend Backend Configuration
+apiVersion: cloud.google.com/v1
+kind: BackendConfig
+metadata:
+  name: aia-frontend-config
+  namespace: aia-unified-production
+spec:
+  timeoutSec: 30
+  connectionDraining:
+    drainingTimeoutSec: 60
+  logging:
+    enable: true
+    sampleRate: 0.5
+  healthCheck:
+    checkIntervalSec: 10
+    port: 80
+    type: HTTP
+    requestPath: /
+  cdn:
+    enabled: true
+    cachePolicy:
+      includeHost: true
+      includeProtocol: true
+      includeQueryString: false
+      negativeCache: true
+  customRequestHeaders:
+    headers:
+    - "X-Forwarded-Proto:https"
+    - "X-Real-IP:{client_ip}"
+
+---
+# API Backend Configuration
+apiVersion: cloud.google.com/v1
+kind: BackendConfig
+metadata:
+  name: aia-api-config
+  namespace: aia-unified-production
+spec:
+  timeoutSec: 60
+  connectionDraining:
+    drainingTimeoutSec: 30
+  logging:
+    enable: true
+    sampleRate: 1.0
+  healthCheck:
+    checkIntervalSec: 5
+    port: 8000
+    type: HTTP
+    requestPath: /health
+  customRequestHeaders:
+    headers:
+    - "X-Forwarded-Proto:https"
+    - "X-API-Gateway:gcp-lb"
+
+---
+# Comprehensive SSL Certificate with All Domains
+apiVersion: networking.gke.io/v1
+kind: ManagedCertificate
+metadata:
+  name: aia-ssl-enterprise-complete
+  namespace: aia-unified-production
+spec:
+  domains:
+    - "013a.tech"
+    - "www.013a.tech"
+    - "api.013a.tech"
+    - "founder.013a.tech"
+    - "ey.013a.tech"
+    - "jpmorgan.013a.tech"
+    - "gcp.013a.tech"
+    - "apple.013a.tech"
+
+---
+# Production Health Monitoring
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-health-monitor
+  namespace: aia-unified-production
+spec:
+  selector:
+    app: aia-health-monitor
+  ports:
+  - port: 8080
+    targetPort: 8080
+  type: ClusterIP
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-health-monitor
+  namespace: aia-unified-production
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: aia-health-monitor
+  template:
+    metadata:
+      labels:
+        app: aia-health-monitor
+    spec:
+      containers:
+      - name: health-monitor
+        image: nginx:alpine
+        ports:
+        - containerPort: 8080
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 30

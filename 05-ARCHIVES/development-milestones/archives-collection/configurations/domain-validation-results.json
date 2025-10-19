@@ -1,0 +1,887 @@
+{
+  "timestamp": "2025-10-07T16:18:23.329504",
+  "total_domains": 46,
+  "external_ip": "34.120.153.135",
+  "tests": {
+    "connectivity": [
+      {
+        "domain": "013a.tech",
+        "status": "success",
+        "response_time": 0.236,
+        "status_code": 200,
+        "error": null,
+        "url_tested": "http://013a.tech"
+      },
+      {
+        "domain": "enterprise.013a.tech",
+        "status": "success",
+        "response_time": 10.858,
+        "status_code": 404,
+        "error": null,
+        "url_tested": "http://34.120.153.135"
+      },
+      {
+        "domain": "get.013a.tech",
+        "status": "success",
+        "response_time": 10.806,
+        "status_code": 404,
+        "error": null,
+        "url_tested": "http://34.120.153.135"
+      },
+      {
+        "domain": "demo.013a.tech",
+        "status": "success",
+        "response_time": 10.815,
+        "status_code": 404,
+        "error": null,
+        "url_tested": "http://34.120.153.135"
+      },
+      {
+        "domain": "trial.013a.tech",
+        "status": "success",
+        "response_time": 10.815,
+        "status_code": 404,
+        "error": null,
+        "url_tested": "http://34.120.153.135"
+      },
+      {
+        "domain": "pricing.013a.tech",
+        "status": "success",
+        "response_time": 10.805,
+        "status_code": 404,
+        "error": null,
+        "url_tested": "http://34.120.153.135"
+      },
+      {
+        "domain": "finance.013a.tech",
+        "status": "success",
+        "response_time": 10.815,
+        "status_code": 404,
+        "error": null,
+        "url_tested": "http://34.120.153.135"
+      },
+      {
+        "domain": "healthcare.013a.tech",
+        "status": "success",
+        "response_time": 11.854,
+        "status_code": 404,
+        "error": null,
+        "url_tested": "http://34.120.153.135"
+      },
+      {
+        "domain": "retail.013a.tech",
+        "status": "success",
+        "response_time": 12.852,
+        "status_code": 404,
+        "error": null,
+        "url_tested": "http://34.120.153.135"
+      },
+      {
+        "domain": "manufacturing.013a.tech",
+        "status": "success",
+        "response_time": 10.815,
+        "status_code": 404,
+        "error": null,
+        "url_tested": "http://34.120.153.135"
+      },
+      {
+        "domain": "partners.013a.tech",
+        "status": "success",
+        "response_time": 10.858,
+        "status_code": 404,
+        "error": null,
+        "url_tested": "http://34.120.153.135"
+      },
+      {
+        "domain": "developers.013a.tech",
+        "status": "success",
+        "response_time": 10.815,
+        "status_code": 404,
+        "error": null,
+        "url_tested": "http://34.120.153.135"
+      },
+      {
+        "domain": "resellers.013a.tech",
+        "status": "success",
+        "response_time": 10.815,
+        "status_code": 404,
+        "error": null,
+        "url_tested": "http://34.120.153.135"
+      },
+      {
+        "domain": "integrations.013a.tech",
+        "status": "success",
+        "response_time": 10.815,
+        "status_code": 404,
+        "error": null,
+        "url_tested": "http://34.120.153.135"
+      },
+      {
+        "domain": "insights.013a.tech",
+        "status": "success",
+        "response_time": 11.849,
+        "status_code": 404,
+        "error": null,
+        "url_tested": "http://34.120.153.135"
+      },
+      {
+        "domain": "blog.013a.tech",
+        "status": "success",
+        "response_time": 10.815,
+        "status_code": 404,
+        "error": null,
+        "url_tested": "http://34.120.153.135"
+      },
+      {
+        "domain": "resources.013a.tech",
+        "status": "success",
+        "response_time": 10.815,
+        "status_code": 404,
+        "error": null,
+        "url_tested": "http://34.120.153.135"
+      },
+      {
+        "domain": "events.013a.tech",
+        "status": "success",
+        "response_time": 10.805,
+        "status_code": 404,
+        "error": null,
+        "url_tested": "http://34.120.153.135"
+      },
+      {
+        "domain": "success.013a.tech",
+        "status": "success",
+        "response_time": 10.803,
+        "status_code": 404,
+        "error": null,
+        "url_tested": "http://34.120.153.135"
+      },
+      {
+        "domain": "support.013a.tech",
+        "status": "success",
+        "response_time": 10.815,
+        "status_code": 404,
+        "error": null,
+        "url_tested": "http://34.120.153.135"
+      },
+      {
+        "domain": "training.013a.tech",
+        "status": "success",
+        "response_time": 10.815,
+        "status_code": 404,
+        "error": null,
+        "url_tested": "http://34.120.153.135"
+      },
+      {
+        "domain": "community.013a.tech",
+        "status": "success",
+        "response_time": 10.814,
+        "status_code": 404,
+        "error": null,
+        "url_tested": "http://34.120.153.135"
+      },
+      {
+        "domain": "api.013a.tech",
+        "status": "success",
+        "response_time": 2.353,
+        "status_code": 200,
+        "error": null,
+        "url_tested": "http://api.013a.tech"
+      },
+      {
+        "domain": "docs.013a.tech",
+        "status": "success",
+        "response_time": 10.815,
+        "status_code": 404,
+        "error": null,
+        "url_tested": "http://34.120.153.135"
+      },
+      {
+        "domain": "status.013a.tech",
+        "status": "success",
+        "response_time": 10.814,
+        "status_code": 404,
+        "error": null,
+        "url_tested": "http://34.120.153.135"
+      },
+      {
+        "domain": "security.013a.tech",
+        "status": "success",
+        "response_time": 10.814,
+        "status_code": 404,
+        "error": null,
+        "url_tested": "http://34.120.153.135"
+      },
+      {
+        "domain": "privacy.013a.tech",
+        "status": "success",
+        "response_time": 10.815,
+        "status_code": 404,
+        "error": null,
+        "url_tested": "http://34.120.153.135"
+      },
+      {
+        "domain": "legal.013a.tech",
+        "status": "success",
+        "response_time": 10.857,
+        "status_code": 404,
+        "error": null,
+        "url_tested": "http://34.120.153.135"
+      },
+      {
+        "domain": "careers.013a.tech",
+        "status": "success",
+        "response_time": 12.85,
+        "status_code": 404,
+        "error": null,
+        "url_tested": "http://34.120.153.135"
+      },
+      {
+        "domain": "investor.013a.tech",
+        "status": "success",
+        "response_time": 10.856,
+        "status_code": 404,
+        "error": null,
+        "url_tested": "http://34.120.153.135"
+      },
+      {
+        "domain": "media.013a.tech",
+        "status": "success",
+        "response_time": 10.814,
+        "status_code": 404,
+        "error": null,
+        "url_tested": "http://34.120.153.135"
+      },
+      {
+        "domain": "press.013a.tech",
+        "status": "success",
+        "response_time": 10.814,
+        "status_code": 404,
+        "error": null,
+        "url_tested": "http://34.120.153.135"
+      },
+      {
+        "domain": "news.013a.tech",
+        "status": "success",
+        "response_time": 12.851,
+        "status_code": 404,
+        "error": null,
+        "url_tested": "http://34.120.153.135"
+      },
+      {
+        "domain": "research.013a.tech",
+        "status": "success",
+        "response_time": 10.813,
+        "status_code": 404,
+        "error": null,
+        "url_tested": "http://34.120.153.135"
+      },
+      {
+        "domain": "innovation.013a.tech",
+        "status": "success",
+        "response_time": 10.814,
+        "status_code": 404,
+        "error": null,
+        "url_tested": "http://34.120.153.135"
+      },
+      {
+        "domain": "future.013a.tech",
+        "status": "success",
+        "response_time": 10.813,
+        "status_code": 404,
+        "error": null,
+        "url_tested": "http://34.120.153.135"
+      },
+      {
+        "domain": "ai.013a.tech",
+        "status": "success",
+        "response_time": 11.848,
+        "status_code": 404,
+        "error": null,
+        "url_tested": "http://34.120.153.135"
+      },
+      {
+        "domain": "ml.013a.tech",
+        "status": "success",
+        "response_time": 10.804,
+        "status_code": 404,
+        "error": null,
+        "url_tested": "http://34.120.153.135"
+      },
+      {
+        "domain": "data.013a.tech",
+        "status": "success",
+        "response_time": 10.813,
+        "status_code": 404,
+        "error": null,
+        "url_tested": "http://34.120.153.135"
+      },
+      {
+        "domain": "cloud.013a.tech",
+        "status": "success",
+        "response_time": 11.848,
+        "status_code": 404,
+        "error": null,
+        "url_tested": "http://34.120.153.135"
+      },
+      {
+        "domain": "platform.013a.tech",
+        "status": "success",
+        "response_time": 10.809,
+        "status_code": 404,
+        "error": null,
+        "url_tested": "http://34.120.153.135"
+      },
+      {
+        "domain": "ecosystem.013a.tech",
+        "status": "success",
+        "response_time": 10.813,
+        "status_code": 404,
+        "error": null,
+        "url_tested": "http://34.120.153.135"
+      },
+      {
+        "domain": "marketplace.013a.tech",
+        "status": "success",
+        "response_time": 10.8,
+        "status_code": 404,
+        "error": null,
+        "url_tested": "http://34.120.153.135"
+      },
+      {
+        "domain": "solutions.013a.tech",
+        "status": "success",
+        "response_time": 11.85,
+        "status_code": 404,
+        "error": null,
+        "url_tested": "http://34.120.153.135"
+      },
+      {
+        "domain": "services.013a.tech",
+        "status": "success",
+        "response_time": 10.805,
+        "status_code": 404,
+        "error": null,
+        "url_tested": "http://34.120.153.135"
+      },
+      {
+        "domain": "consulting.013a.tech",
+        "status": "success",
+        "response_time": 10.856,
+        "status_code": 404,
+        "error": null,
+        "url_tested": "http://34.120.153.135"
+      }
+    ],
+    "ssl_certificates": [
+      {
+        "domain": "013a.tech",
+        "ssl_status": "failed",
+        "ssl_error": "Cannot connect to host 013a.tech:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]"
+      },
+      {
+        "domain": "enterprise.013a.tech",
+        "ssl_status": "failed",
+        "ssl_error": "Cannot connect to host enterprise.013a.tech:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]"
+      },
+      {
+        "domain": "get.013a.tech",
+        "ssl_status": "failed",
+        "ssl_error": "Cannot connect to host get.013a.tech:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]"
+      },
+      {
+        "domain": "demo.013a.tech",
+        "ssl_status": "failed",
+        "ssl_error": "Cannot connect to host demo.013a.tech:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]"
+      },
+      {
+        "domain": "trial.013a.tech",
+        "ssl_status": "failed",
+        "ssl_error": "Cannot connect to host trial.013a.tech:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]"
+      },
+      {
+        "domain": "pricing.013a.tech",
+        "ssl_status": "failed",
+        "ssl_error": "Cannot connect to host pricing.013a.tech:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]"
+      },
+      {
+        "domain": "finance.013a.tech",
+        "ssl_status": "failed",
+        "ssl_error": "Cannot connect to host finance.013a.tech:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]"
+      },
+      {
+        "domain": "healthcare.013a.tech",
+        "ssl_status": "failed",
+        "ssl_error": "Cannot connect to host healthcare.013a.tech:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]"
+      },
+      {
+        "domain": "retail.013a.tech",
+        "ssl_status": "failed",
+        "ssl_error": "Cannot connect to host retail.013a.tech:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]"
+      },
+      {
+        "domain": "manufacturing.013a.tech",
+        "ssl_status": "failed",
+        "ssl_error": "Cannot connect to host manufacturing.013a.tech:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]"
+      },
+      {
+        "domain": "partners.013a.tech",
+        "ssl_status": "failed",
+        "ssl_error": "Cannot connect to host partners.013a.tech:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]"
+      },
+      {
+        "domain": "developers.013a.tech",
+        "ssl_status": "failed",
+        "ssl_error": "Cannot connect to host developers.013a.tech:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]"
+      },
+      {
+        "domain": "resellers.013a.tech",
+        "ssl_status": "failed",
+        "ssl_error": "Cannot connect to host resellers.013a.tech:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]"
+      },
+      {
+        "domain": "integrations.013a.tech",
+        "ssl_status": "failed",
+        "ssl_error": "Cannot connect to host integrations.013a.tech:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]"
+      },
+      {
+        "domain": "insights.013a.tech",
+        "ssl_status": "failed",
+        "ssl_error": "Cannot connect to host insights.013a.tech:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]"
+      },
+      {
+        "domain": "blog.013a.tech",
+        "ssl_status": "failed",
+        "ssl_error": "Cannot connect to host blog.013a.tech:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]"
+      },
+      {
+        "domain": "resources.013a.tech",
+        "ssl_status": "failed",
+        "ssl_error": "Cannot connect to host resources.013a.tech:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]"
+      },
+      {
+        "domain": "events.013a.tech",
+        "ssl_status": "failed",
+        "ssl_error": "Cannot connect to host events.013a.tech:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]"
+      },
+      {
+        "domain": "success.013a.tech",
+        "ssl_status": "failed",
+        "ssl_error": "Cannot connect to host success.013a.tech:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]"
+      },
+      {
+        "domain": "support.013a.tech",
+        "ssl_status": "failed",
+        "ssl_error": "Cannot connect to host support.013a.tech:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]"
+      },
+      {
+        "domain": "training.013a.tech",
+        "ssl_status": "failed",
+        "ssl_error": "Cannot connect to host training.013a.tech:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]"
+      },
+      {
+        "domain": "community.013a.tech",
+        "ssl_status": "failed",
+        "ssl_error": "Cannot connect to host community.013a.tech:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]"
+      },
+      {
+        "domain": "api.013a.tech",
+        "ssl_status": "failed",
+        "ssl_error": "Cannot connect to host api.013a.tech:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]"
+      },
+      {
+        "domain": "docs.013a.tech",
+        "ssl_status": "failed",
+        "ssl_error": "Cannot connect to host docs.013a.tech:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]"
+      },
+      {
+        "domain": "status.013a.tech",
+        "ssl_status": "failed",
+        "ssl_error": "Cannot connect to host status.013a.tech:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]"
+      },
+      {
+        "domain": "security.013a.tech",
+        "ssl_status": "failed",
+        "ssl_error": "Cannot connect to host security.013a.tech:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]"
+      },
+      {
+        "domain": "privacy.013a.tech",
+        "ssl_status": "failed",
+        "ssl_error": "Cannot connect to host privacy.013a.tech:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]"
+      },
+      {
+        "domain": "legal.013a.tech",
+        "ssl_status": "failed",
+        "ssl_error": "Cannot connect to host legal.013a.tech:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]"
+      },
+      {
+        "domain": "careers.013a.tech",
+        "ssl_status": "failed",
+        "ssl_error": "Cannot connect to host careers.013a.tech:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]"
+      },
+      {
+        "domain": "investor.013a.tech",
+        "ssl_status": "failed",
+        "ssl_error": "Cannot connect to host investor.013a.tech:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]"
+      },
+      {
+        "domain": "media.013a.tech",
+        "ssl_status": "failed",
+        "ssl_error": "Cannot connect to host media.013a.tech:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]"
+      },
+      {
+        "domain": "press.013a.tech",
+        "ssl_status": "failed",
+        "ssl_error": "Cannot connect to host press.013a.tech:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]"
+      },
+      {
+        "domain": "news.013a.tech",
+        "ssl_status": "failed",
+        "ssl_error": "Cannot connect to host news.013a.tech:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]"
+      },
+      {
+        "domain": "research.013a.tech",
+        "ssl_status": "failed",
+        "ssl_error": "Cannot connect to host research.013a.tech:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]"
+      },
+      {
+        "domain": "innovation.013a.tech",
+        "ssl_status": "failed",
+        "ssl_error": "Cannot connect to host innovation.013a.tech:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]"
+      },
+      {
+        "domain": "future.013a.tech",
+        "ssl_status": "failed",
+        "ssl_error": "Cannot connect to host future.013a.tech:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]"
+      },
+      {
+        "domain": "ai.013a.tech",
+        "ssl_status": "failed",
+        "ssl_error": "Cannot connect to host ai.013a.tech:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]"
+      },
+      {
+        "domain": "ml.013a.tech",
+        "ssl_status": "failed",
+        "ssl_error": "Cannot connect to host ml.013a.tech:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]"
+      },
+      {
+        "domain": "data.013a.tech",
+        "ssl_status": "failed",
+        "ssl_error": "Cannot connect to host data.013a.tech:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]"
+      },
+      {
+        "domain": "cloud.013a.tech",
+        "ssl_status": "failed",
+        "ssl_error": "Cannot connect to host cloud.013a.tech:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]"
+      },
+      {
+        "domain": "platform.013a.tech",
+        "ssl_status": "failed",
+        "ssl_error": "Cannot connect to host platform.013a.tech:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]"
+      },
+      {
+        "domain": "ecosystem.013a.tech",
+        "ssl_status": "failed",
+        "ssl_error": "Cannot connect to host ecosystem.013a.tech:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]"
+      },
+      {
+        "domain": "marketplace.013a.tech",
+        "ssl_status": "failed",
+        "ssl_error": "Cannot connect to host marketplace.013a.tech:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]"
+      },
+      {
+        "domain": "solutions.013a.tech",
+        "ssl_status": "failed",
+        "ssl_error": "Cannot connect to host solutions.013a.tech:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]"
+      },
+      {
+        "domain": "services.013a.tech",
+        "ssl_status": "failed",
+        "ssl_error": "Cannot connect to host services.013a.tech:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]"
+      },
+      {
+        "domain": "consulting.013a.tech",
+        "ssl_status": "failed",
+        "ssl_error": "Cannot connect to host consulting.013a.tech:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]"
+      }
+    ],
+    "load_balancer_routing": [
+      {
+        "domain": "013a.tech",
+        "routing_status": "success",
+        "routing_error": null,
+        "routing_response_code": 200
+      },
+      {
+        "domain": "enterprise.013a.tech",
+        "routing_status": "success",
+        "routing_error": null,
+        "routing_response_code": 404
+      },
+      {
+        "domain": "get.013a.tech",
+        "routing_status": "success",
+        "routing_error": null,
+        "routing_response_code": 404
+      },
+      {
+        "domain": "demo.013a.tech",
+        "routing_status": "success",
+        "routing_error": null,
+        "routing_response_code": 404
+      },
+      {
+        "domain": "trial.013a.tech",
+        "routing_status": "success",
+        "routing_error": null,
+        "routing_response_code": 404
+      },
+      {
+        "domain": "pricing.013a.tech",
+        "routing_status": "success",
+        "routing_error": null,
+        "routing_response_code": 404
+      },
+      {
+        "domain": "finance.013a.tech",
+        "routing_status": "success",
+        "routing_error": null,
+        "routing_response_code": 404
+      },
+      {
+        "domain": "healthcare.013a.tech",
+        "routing_status": "success",
+        "routing_error": null,
+        "routing_response_code": 404
+      },
+      {
+        "domain": "retail.013a.tech",
+        "routing_status": "success",
+        "routing_error": null,
+        "routing_response_code": 404
+      },
+      {
+        "domain": "manufacturing.013a.tech",
+        "routing_status": "success",
+        "routing_error": null,
+        "routing_response_code": 404
+      },
+      {
+        "domain": "partners.013a.tech",
+        "routing_status": "success",
+        "routing_error": null,
+        "routing_response_code": 404
+      },
+      {
+        "domain": "developers.013a.tech",
+        "routing_status": "success",
+        "routing_error": null,
+        "routing_response_code": 404
+      },
+      {
+        "domain": "resellers.013a.tech",
+        "routing_status": "success",
+        "routing_error": null,
+        "routing_response_code": 404
+      },
+      {
+        "domain": "integrations.013a.tech",
+        "routing_status": "success",
+        "routing_error": null,
+        "routing_response_code": 404
+      },
+      {
+        "domain": "insights.013a.tech",
+        "routing_status": "success",
+        "routing_error": null,
+        "routing_response_code": 404
+      },
+      {
+        "domain": "blog.013a.tech",
+        "routing_status": "success",
+        "routing_error": null,
+        "routing_response_code": 404
+      },
+      {
+        "domain": "resources.013a.tech",
+        "routing_status": "success",
+        "routing_error": null,
+        "routing_response_code": 404
+      },
+      {
+        "domain": "events.013a.tech",
+        "routing_status": "success",
+        "routing_error": null,
+        "routing_response_code": 404
+      },
+      {
+        "domain": "success.013a.tech",
+        "routing_status": "success",
+        "routing_error": null,
+        "routing_response_code": 404
+      },
+      {
+        "domain": "support.013a.tech",
+        "routing_status": "success",
+        "routing_error": null,
+        "routing_response_code": 404
+      },
+      {
+        "domain": "training.013a.tech",
+        "routing_status": "success",
+        "routing_error": null,
+        "routing_response_code": 404
+      },
+      {
+        "domain": "community.013a.tech",
+        "routing_status": "success",
+        "routing_error": null,
+        "routing_response_code": 404
+      },
+      {
+        "domain": "api.013a.tech",
+        "routing_status": "success",
+        "routing_error": null,
+        "routing_response_code": 200
+      },
+      {
+        "domain": "docs.013a.tech",
+        "routing_status": "success",
+        "routing_error": null,
+        "routing_response_code": 404
+      },
+      {
+        "domain": "status.013a.tech",
+        "routing_status": "success",
+        "routing_error": null,
+        "routing_response_code": 404
+      },
+      {
+        "domain": "security.013a.tech",
+        "routing_status": "success",
+        "routing_error": null,
+        "routing_response_code": 404
+      },
+      {
+        "domain": "privacy.013a.tech",
+        "routing_status": "success",
+        "routing_error": null,
+        "routing_response_code": 404
+      },
+      {
+        "domain": "legal.013a.tech",
+        "routing_status": "success",
+        "routing_error": null,
+        "routing_response_code": 404
+      },
+      {
+        "domain": "careers.013a.tech",
+        "routing_status": "success",
+        "routing_error": null,
+        "routing_response_code": 404
+      },
+      {
+        "domain": "investor.013a.tech",
+        "routing_status": "success",
+        "routing_error": null,
+        "routing_response_code": 404
+      },
+      {
+        "domain": "media.013a.tech",
+        "routing_status": "success",
+        "routing_error": null,
+        "routing_response_code": 404
+      },
+      {
+        "domain": "press.013a.tech",
+        "routing_status": "success",
+        "routing_error": null,
+        "routing_response_code": 404
+      },
+      {
+        "domain": "news.013a.tech",
+        "routing_status": "success",
+        "routing_error": null,
+        "routing_response_code": 404
+      },
+      {
+        "domain": "research.013a.tech",
+        "routing_status": "success",
+        "routing_error": null,
+        "routing_response_code": 404
+      },
+      {
+        "domain": "innovation.013a.tech",
+        "routing_status": "success",
+        "routing_error": null,
+        "routing_response_code": 404
+      },
+      {
+        "domain": "future.013a.tech",
+        "routing_status": "success",
+        "routing_error": null,
+        "routing_response_code": 404
+      },
+      {
+        "domain": "ai.013a.tech",
+        "routing_status": "success",
+        "routing_error": null,
+        "routing_response_code": 404
+      },
+      {
+        "domain": "ml.013a.tech",
+        "routing_status": "success",
+        "routing_error": null,
+        "routing_response_code": 404
+      },
+      {
+        "domain": "data.013a.tech",
+        "routing_status": "success",
+        "routing_error": null,
+        "routing_response_code": 404
+      },
+      {
+        "domain": "cloud.013a.tech",
+        "routing_status": "success",
+        "routing_error": null,
+        "routing_response_code": 404
+      },
+      {
+        "domain": "platform.013a.tech",
+        "routing_status": "success",
+        "routing_error": null,
+        "routing_response_code": 404
+      },
+      {
+        "domain": "ecosystem.013a.tech",
+        "routing_status": "success",
+        "routing_error": null,
+        "routing_response_code": 404
+      },
+      {
+        "domain": "marketplace.013a.tech",
+        "routing_status": "success",
+        "routing_error": null,
+        "routing_response_code": 404
+      },
+      {
+        "domain": "solutions.013a.tech",
+        "routing_status": "success",
+        "routing_error": null,
+        "routing_response_code": 404
+      },
+      {
+        "domain": "services.013a.tech",
+        "routing_status": "success",
+        "routing_error": null,
+        "routing_response_code": 404
+      },
+      {
+        "domain": "consulting.013a.tech",
+        "routing_status": "success",
+        "routing_error": null,
+        "routing_response_code": 404
+      }
+    ]
+  }
+}

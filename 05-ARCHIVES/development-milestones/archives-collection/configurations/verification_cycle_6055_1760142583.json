@@ -1,0 +1,39 @@
+{
+  "cycle_number": 6055,
+  "timestamp": "2025-10-11T02:29:42.115791",
+  "tests": {
+    "production_endpoints": {
+      "frontend": {
+        "status_code": 520,
+        "response_time": 0.437341,
+        "status": "unhealthy"
+      },
+      "api": {
+        "status_code": 520,
+        "response_time": 0.3938,
+        "status": "unhealthy"
+      },
+      "health": {
+        "status_code": 520,
+        "response_time": 0.501459,
+        "status": "unhealthy"
+      }
+    },
+    "knowledge_graph": {
+      "status": "error",
+      "error": "HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /knowledge-graph/query (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x10306f650>: Failed to establish a new connection: [Errno 61] Connection refused'))"
+    },
+    "gcp_infrastructure": {
+      "status": "healthy",
+      "pods_running": true,
+      "services_available": true,
+      "load_balancer": "active"
+    },
+    "monitoring": {
+      "status": "error",
+      "error": "[Errno 32] Broken pipe"
+    }
+  },
+  "cycle_duration": 1.6684420108795166,
+  "status": "completed"
+}

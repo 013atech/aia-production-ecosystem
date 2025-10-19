@@ -1,0 +1,51 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: aia-simple-working-ingress
+  namespace: aia-unified-production
+  annotations:
+    kubernetes.io/ingress.global-static-ip-name: "aia-production-ip"
+    ingress.gcp.kubernetes.io/managed-certificates: "aia-comprehensive-ssl-cert"
+    kubernetes.io/ingress.allow-http: "true"
+spec:
+  rules:
+  # Main domain - 013a.tech
+  - host: "013a.tech"
+    http:
+      paths:
+      - path: "/api/*"
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-unified-backend-service
+            port:
+              number: 8000
+      - path: "/*"
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-unified-frontend-service
+            port:
+              number: 80
+  # API subdomain
+  - host: "api.013a.tech"
+    http:
+      paths:
+      - path: "/*"
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-unified-backend-service
+            port:
+              number: 8000
+  # WWW subdomain
+  - host: "www.013a.tech"
+    http:
+      paths:
+      - path: "/*"
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-unified-frontend-service
+            port:
+              number: 80

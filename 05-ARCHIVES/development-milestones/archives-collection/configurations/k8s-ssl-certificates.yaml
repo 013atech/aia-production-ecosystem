@@ -1,0 +1,125 @@
+apiVersion: networking.gke.io/v1
+kind: ManagedCertificate
+metadata:
+  name: aia-primary-ssl
+  namespace: aia-enterprise-ecosystem
+spec:
+  domains:
+    - 013a.tech
+---
+apiVersion: networking.gke.io/v1
+kind: ManagedCertificate
+metadata:
+  name: aia-enterprise-ssl
+  namespace: aia-enterprise-ecosystem
+spec:
+  domains:
+    - enterprise.013a.tech
+---
+apiVersion: networking.gke.io/v1
+kind: ManagedCertificate
+metadata:
+  name: aia-acquisition-ssl
+  namespace: aia-enterprise-ecosystem
+spec:
+  domains:
+    - get.013a.tech
+---
+apiVersion: networking.gke.io/v1
+kind: ManagedCertificate
+metadata:
+  name: aia-demo-ssl
+  namespace: aia-enterprise-ecosystem
+spec:
+  domains:
+    - demo.013a.tech
+---
+apiVersion: networking.gke.io/v1
+kind: ManagedCertificate
+metadata:
+  name: aia-trial-ssl
+  namespace: aia-enterprise-ecosystem
+spec:
+  domains:
+    - trial.013a.tech
+---
+apiVersion: networking.gke.io/v1
+kind: ManagedCertificate
+metadata:
+  name: aia-pricing-ssl
+  namespace: aia-enterprise-ecosystem
+spec:
+  domains:
+    - pricing.013a.tech
+---
+apiVersion: networking.gke.io/v1
+kind: ManagedCertificate
+metadata:
+  name: aia-finance-ssl
+  namespace: aia-enterprise-ecosystem
+spec:
+  domains:
+    - finance.013a.tech
+---
+apiVersion: networking.gke.io/v1
+kind: ManagedCertificate
+metadata:
+  name: aia-healthcare-ssl
+  namespace: aia-enterprise-ecosystem
+spec:
+  domains:
+    - healthcare.013a.tech
+---
+apiVersion: networking.gke.io/v1
+kind: ManagedCertificate
+metadata:
+  name: aia-retail-ssl
+  namespace: aia-enterprise-ecosystem
+spec:
+  domains:
+    - retail.013a.tech
+---
+apiVersion: networking.gke.io/v1
+kind: ManagedCertificate
+metadata:
+  name: aia-manufacturing-ssl
+  namespace: aia-enterprise-ecosystem
+spec:
+  domains:
+    - manufacturing.013a.tech
+---
+apiVersion: networking.gke.io/v1
+kind: ManagedCertificate
+metadata:
+  name: aia-partners-ssl
+  namespace: aia-enterprise-ecosystem
+spec:
+  domains:
+    - partners.013a.tech
+---
+apiVersion: networking.gke.io/v1
+kind: ManagedCertificate
+metadata:
+  name: aia-developers-ssl
+  namespace: aia-enterprise-ecosystem
+spec:
+  domains:
+    - developers.013a.tech
+---
+apiVersion: networking.gke.io/v1
+kind: ManagedCertificate
+metadata:
+  name: aia-content-ssl
+  namespace: aia-enterprise-ecosystem
+spec:
+  domains:
+    - insights.013a.tech
+---
+apiVersion: networking.gke.io/v1
+kind: ManagedCertificate
+metadata:
+  name: aia-success-ssl
+  namespace: aia-enterprise-ecosystem
+spec:
+  domains:
+    - success.013a.tech

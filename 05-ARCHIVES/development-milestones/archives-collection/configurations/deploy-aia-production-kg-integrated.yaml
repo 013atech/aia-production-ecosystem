@@ -1,0 +1,805 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: aia-production-kg
+  labels:
+    app: aia-system
+    version: "20251001"
+    deployment: production-kg-integrated
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: aia-knowledge-graph
+  namespace: aia-production-kg
+data:
+  knowledge_graph.json: |
+    # This will be populated with the actual knowledge graph data
+    # For now, we'll mount it via a persistent volume
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: aia-production-config
+  namespace: aia-production-kg
+data:
+  GOOGLE_CLOUD_PROJECT: "a-467519"
+  AIA_ATOMIC_DKG_ENABLED: "true"
+  AIA_CIRCUIT_BREAKERS_ENABLED: "true"
+  AIA_KNOWLEDGE_GRAPH_PATH: "/app/knowledge/knowledge_graph.json"
+  REDIS_HOST: "redis-master"
+  LOG_LEVEL: "info"
+  ENVIRONMENT: "production"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-backend-kg
+  namespace: aia-production-kg
+  labels:
+    app: aia-backend
+    version: "kg-integrated"
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: aia-backend
+      version: "kg-integrated"
+  template:
+    metadata:
+      labels:
+        app: aia-backend
+        version: "kg-integrated"
+    spec:
+      initContainers:
+      - name: knowledge-graph-loader
+        image: busybox:1.35
+        command:
+          - sh
+          - -c
+          - |
+            echo "Loading knowledge graph..."
+            if [ -f "/source/aia_knowledge_graph_v2_1759313796.json" ]; then
+              cp /source/aia_knowledge_graph_v2_1759313796.json /app/knowledge/knowledge_graph.json
+              echo "Knowledge graph loaded successfully"
+            else
+              echo '{"metadata": {"version": "fallback"}, "knowledge_atoms": []}' > /app/knowledge/knowledge_graph.json
+              echo "Using fallback knowledge graph"
+            fi
+        volumeMounts:
+        - name: knowledge-graph-source
+          mountPath: /source
+        - name: knowledge-graph-storage
+          mountPath: /app/knowledge
+      containers:
+      - name: backend
+        image: gcr.io/a-467519/aia-api:v2.1.0
+        ports:
+        - containerPort: 8000
+        envFrom:
+        - configMapRef:
+            name: aia-production-config
+        env:
+        - name: GEMINI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: aia-secrets
+              key: gemini-api-key
+        volumeMounts:
+        - name: knowledge-graph-storage
+          mountPath: /app/knowledge
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 60
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+      volumes:
+      - name: knowledge-graph-source
+        hostPath:
+          path: /tmp
+          type: Directory
+      - name: knowledge-graph-storage
+        emptyDir: {}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-atomic-dkg-kg
+  namespace: aia-production-kg
+  labels:
+    app: aia-atomic-dkg
+    version: "kg-integrated"
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: aia-atomic-dkg
+      version: "kg-integrated"
+  template:
+    metadata:
+      labels:
+        app: aia-atomic-dkg
+        version: "kg-integrated"
+    spec:
+      initContainers:
+      - name: knowledge-graph-loader
+        image: busybox:1.35
+        command:
+          - sh
+          - -c
+          - |
+            echo "Loading knowledge graph for DKG..."
+            if [ -f "/source/aia_knowledge_graph_v2_1759313796.json" ]; then
+              cp /source/aia_knowledge_graph_v2_1759313796.json /app/knowledge/knowledge_graph.json
+              echo "Knowledge graph loaded successfully"
+            else
+              echo '{"metadata": {"version": "fallback"}, "knowledge_atoms": []}' > /app/knowledge/knowledge_graph.json
+              echo "Using fallback knowledge graph"
+            fi
+        volumeMounts:
+        - name: knowledge-graph-source
+          mountPath: /source
+        - name: knowledge-graph-storage
+          mountPath: /app/knowledge
+      containers:
+      - name: atomic-dkg
+        image: gcr.io/a-467519/aia-api:v2.1.0
+        command: ["/bin/bash", "-c"]
+        args:
+        - |
+          export PYTHONPATH=/app
+          cd /app && python -c "
+          import sys
+          sys.path.append('/app')
+          # Try to import and run the atomic DKG orchestrator
+          try:
+              from aia.orchestration.atomic_dkg_orchestrator import main
+              main()
+          except ImportError:
+              print('Atomic DKG orchestrator not found, running basic server')
+              import uvicorn
+              from aia.main import app
+              uvicorn.run(app, host='0.0.0.0', port=8001)
+          "
+        ports:
+        - containerPort: 8001
+        envFrom:
+        - configMapRef:
+            name: aia-production-config
+        env:
+        - name: GEMINI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: aia-secrets
+              key: gemini-api-key
+        volumeMounts:
+        - name: knowledge-graph-storage
+          mountPath: /app/knowledge
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+      volumes:
+      - name: knowledge-graph-source
+        hostPath:
+          path: /tmp
+          type: Directory
+      - name: knowledge-graph-storage
+        emptyDir: {}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-frontend-kg
+  namespace: aia-production-kg
+  labels:
+    app: aia-frontend
+    version: "kg-integrated"
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: aia-frontend
+      version: "kg-integrated"
+  template:
+    metadata:
+      labels:
+        app: aia-frontend
+        version: "kg-integrated"
+    spec:
+      containers:
+      - name: frontend
+        image: nginx:1.25-alpine
+        ports:
+        - containerPort: 80
+        volumeMounts:
+        - name: frontend-content
+          mountPath: /usr/share/nginx/html
+        - name: nginx-config
+          mountPath: /etc/nginx/conf.d/default.conf
+          subPath: default.conf
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 5
+          periodSeconds: 5
+      volumes:
+      - name: frontend-content
+        configMap:
+          name: aia-frontend-content-kg
+      - name: nginx-config
+        configMap:
+          name: aia-nginx-config-kg
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: aia-nginx-config-kg
+  namespace: aia-production-kg
+data:
+  default.conf: |
+    server {
+        listen 80;
+        server_name localhost;
+        root /usr/share/nginx/html;
+        index index.html;
+
+        # Enable gzip compression
+        gzip on;
+        gzip_vary on;
+        gzip_min_length 1024;
+        gzip_types text/plain text/css text/xml text/javascript application/javascript application/xml+rss application/json;
+
+        # Security headers
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-XSS-Protection "1; mode=block" always;
+
+        # Cache static assets
+        location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
+            expires 1y;
+            add_header Cache-Control "public, immutable";
+        }
+
+        # API proxy for backend
+        location /api/ {
+            proxy_pass http://aia-backend-service-kg/;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+
+        # Knowledge Graph API proxy
+        location /knowledge-graph/ {
+            proxy_pass http://aia-backend-service-kg/knowledge-graph/;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+
+        # Single Page Application routing
+        location / {
+            try_files $uri $uri/ /index.html;
+        }
+
+        # Health check endpoint
+        location /health {
+            access_log off;
+            return 200 "healthy\n";
+            add_header Content-Type text/plain;
+        }
+    }
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: aia-frontend-content-kg
+  namespace: aia-production-kg
+data:
+  index.html: |
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>013a Analytics - Knowledge Graph Integrated System</title>
+        <meta name="description" content="Advanced AI-powered analytical platform with integrated knowledge graph capabilities.">
+
+        <style>
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
+
+            body {
+                background: #1E1E1E;
+                color: #F5F5DC;
+                font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+                line-height: 1.6;
+                min-height: 100vh;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+            .app-container {
+                max-width: 1200px;
+                padding: 2rem;
+                text-align: center;
+            }
+
+            .logo {
+                background: linear-gradient(135deg, #00FFFF, #FFFF00);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                background-clip: text;
+                font-size: 4rem;
+                font-weight: 300;
+                margin-bottom: 2rem;
+            }
+
+            .tagline {
+                font-size: 1.8rem;
+                margin-bottom: 3rem;
+                opacity: 0.9;
+            }
+
+            .description {
+                font-size: 1.2rem;
+                margin-bottom: 3rem;
+                max-width: 800px;
+                margin-left: auto;
+                margin-right: auto;
+                opacity: 0.8;
+            }
+
+            .cta-button {
+                background: linear-gradient(135deg, #00FFFF, #FFFF00);
+                color: #1E1E1E;
+                padding: 1.5rem 3rem;
+                border: none;
+                border-radius: 50px;
+                font-size: 1.3rem;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                text-decoration: none;
+                display: inline-block;
+                margin: 1rem;
+            }
+
+            .cta-button:hover {
+                transform: translateY(-3px);
+                box-shadow: 0 15px 35px rgba(0, 255, 255, 0.4);
+            }
+
+            .features {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+                gap: 2rem;
+                margin-top: 4rem;
+            }
+
+            .feature-card {
+                background: rgba(255, 255, 255, 0.05);
+                backdrop-filter: blur(10px);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                border-radius: 20px;
+                padding: 2rem;
+                transition: all 0.3s ease;
+            }
+
+            .feature-card:hover {
+                transform: translateY(-5px);
+                border-color: rgba(0, 255, 255, 0.3);
+            }
+
+            .feature-icon {
+                font-size: 3rem;
+                margin-bottom: 1rem;
+            }
+
+            .status-indicator {
+                position: fixed;
+                top: 2rem;
+                right: 2rem;
+                background: rgba(0, 255, 0, 0.2);
+                border: 2px solid #00FF00;
+                border-radius: 10px;
+                padding: 1rem;
+                font-size: 0.9rem;
+            }
+
+            .kg-stats {
+                background: rgba(0, 255, 255, 0.1);
+                border: 1px solid rgba(0, 255, 255, 0.3);
+                border-radius: 10px;
+                padding: 1rem;
+                margin: 2rem 0;
+                font-size: 0.9rem;
+            }
+
+            @media (max-width: 768px) {
+                .logo {
+                    font-size: 2.5rem;
+                }
+                .features {
+                    grid-template-columns: 1fr;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="status-indicator">
+            🟢 Production KG System<br>
+            <span id="kg-status">Loading...</span>
+        </div>
+
+        <div class="app-container">
+            <h1 class="logo">013a Analytics</h1>
+            <h2 class="tagline">Knowledge Graph Integrated Platform</h2>
+
+            <p class="description">
+                Experience the next generation of AI-powered analytics with our integrated knowledge graph system.
+                Harness 2,472 knowledge atoms for unprecedented analytical depth and contextual understanding.
+            </p>
+
+            <div class="kg-stats" id="kg-stats">
+                <strong>Knowledge Graph Status:</strong> Initializing...
+            </div>
+
+            <div>
+                <a href="/app" class="cta-button">🚀 Launch Analytics</a>
+                <a href="/knowledge-graph/status" class="cta-button">🧠 View Knowledge Graph</a>
+                <a href="/demo" class="cta-button">🎯 Interactive Demo</a>
+            </div>
+
+            <div class="features">
+                <div class="feature-card">
+                    <div class="feature-icon">🧠</div>
+                    <h3>Knowledge Graph Integration</h3>
+                    <p>Advanced knowledge orchestration with 2,472 semantic atoms providing deep contextual understanding and intelligent relationship mapping.</p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">🤖</div>
+                    <h3>Multi-Agent AI System</h3>
+                    <p>Coordinated AI agents leverage the knowledge graph to deliver comprehensive analysis with unprecedented accuracy and depth.</p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">🎨</div>
+                    <h3>3D Cognitive Visualizations</h3>
+                    <p>Immersive visualizations powered by knowledge relationships, bringing your data insights to life through intelligent rendering.</p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">⚡</div>
+                    <h3>Predictive Scaling</h3>
+                    <p>Dynamic resource allocation based on cognitive load analysis and demand prediction for optimal performance.</p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">🔒</div>
+                    <h3>Enterprise Security</h3>
+                    <p>Post-quantum cryptography with knowledge graph-based security policies ensure maximum protection and compliance.</p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">🌐</div>
+                    <h3>Holistic Integration</h3>
+                    <p>Seamless integration across all system components with knowledge-driven coordination and optimization.</p>
+                </div>
+            </div>
+
+            <div style="margin-top: 4rem; opacity: 0.6;">
+                <p>Powered by Advanced Intelligence Architecture (AIA) with Knowledge Graph v2.0</p>
+                <p>Production Deployment - October 1, 2025</p>
+            </div>
+        </div>
+
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                console.log('013a Analytics - Knowledge Graph Integrated System');
+                console.log('Production Deployment: October 1, 2025');
+
+                // Load knowledge graph status
+                fetch('/knowledge-graph/status')
+                    .then(response => response.json())
+                    .then(data => {
+                        const statusElement = document.getElementById('kg-status');
+                        const statsElement = document.getElementById('kg-stats');
+
+                        if (data.status === 'loaded') {
+                            statusElement.innerHTML = `KG Active (${data.total_atoms} atoms)`;
+                            statsElement.innerHTML = `
+                                <strong>Knowledge Graph Status:</strong> Active<br>
+                                <strong>Version:</strong> ${data.version}<br>
+                                <strong>Total Atoms:</strong> ${data.total_atoms.toLocaleString()}<br>
+                                <strong>Generated:</strong> ${new Date(data.generated_at).toLocaleDateString()}
+                            `;
+                        } else {
+                            statusElement.innerHTML = 'KG Initializing';
+                            statsElement.innerHTML = '<strong>Knowledge Graph Status:</strong> Initializing...';
+                        }
+                    })
+                    .catch(error => {
+                        document.getElementById('kg-status').innerHTML = 'KG Offline';
+                        document.getElementById('kg-stats').innerHTML = '<strong>Knowledge Graph Status:</strong> Offline';
+                    });
+
+                // Add smooth animations
+                const cards = document.querySelectorAll('.feature-card');
+                cards.forEach((card, index) => {
+                    setTimeout(() => {
+                        card.style.opacity = '0';
+                        card.style.transform = 'translateY(20px)';
+                        card.style.transition = 'all 0.6s ease';
+                        card.style.opacity = '1';
+                        card.style.transform = 'translateY(0)';
+                    }, index * 200);
+                });
+
+                // Status indicator updates
+                const statusIndicator = document.querySelector('.status-indicator');
+                setInterval(() => {
+                    const now = new Date().toLocaleTimeString();
+                    const currentStatus = statusIndicator.innerHTML;
+                    if (currentStatus.includes('🟢')) {
+                        statusIndicator.innerHTML = currentStatus.replace(/\d{1,2}:\d{2}:\d{2}.*/, now);
+                    }
+                }, 1000);
+            });
+        </script>
+    </body>
+    </html>
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-backend-service-kg
+  namespace: aia-production-kg
+  labels:
+    app: aia-backend
+    version: "kg-integrated"
+spec:
+  selector:
+    app: aia-backend
+    version: "kg-integrated"
+  ports:
+  - port: 80
+    targetPort: 8000
+    protocol: TCP
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-atomic-dkg-service-kg
+  namespace: aia-production-kg
+  labels:
+    app: aia-atomic-dkg
+    version: "kg-integrated"
+spec:
+  selector:
+    app: aia-atomic-dkg
+    version: "kg-integrated"
+  ports:
+  - port: 80
+    targetPort: 8001
+    protocol: TCP
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-frontend-service-kg
+  namespace: aia-production-kg
+  labels:
+    app: aia-frontend
+    version: "kg-integrated"
+spec:
+  selector:
+    app: aia-frontend
+    version: "kg-integrated"
+  ports:
+  - port: 80
+    targetPort: 80
+    protocol: TCP
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-load-balancer-kg
+  namespace: aia-production-kg
+  labels:
+    app: aia-system
+    version: "kg-integrated"
+spec:
+  selector:
+    app: aia-frontend
+    version: "kg-integrated"
+  ports:
+  - port: 80
+    targetPort: 80
+    protocol: TCP
+    name: http
+  - port: 443
+    targetPort: 80
+    protocol: TCP
+    name: https
+  type: NodePort
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: aia-production-ingress-kg
+  namespace: aia-production-kg
+  annotations:
+    kubernetes.io/ingress.global-static-ip-name: "aia-global-ip-kg"
+    networking.gke.io/managed-certificates: "aia-ssl-cert-kg"
+    kubernetes.io/ingress.class: "gce"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+spec:
+  rules:
+  - host: 013a.tech
+    http:
+      paths:
+      - path: /api
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-backend-service-kg
+            port:
+              number: 80
+      - path: /knowledge-graph
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-backend-service-kg
+            port:
+              number: 80
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-frontend-service-kg
+            port:
+              number: 80
+  - host: www.013a.tech
+    http:
+      paths:
+      - path: /api
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-backend-service-kg
+            port:
+              number: 80
+      - path: /knowledge-graph
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-backend-service-kg
+            port:
+              number: 80
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-frontend-service-kg
+            port:
+              number: 80
+---
+apiVersion: networking.gke.io/v1
+kind: ManagedCertificate
+metadata:
+  name: aia-ssl-cert-kg
+  namespace: aia-production-kg
+spec:
+  domains:
+  - 013a.tech
+  - www.013a.tech
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: aia-secrets
+  namespace: aia-production-kg
+type: Opaque
+data:
+  # Base64 encoded Gemini API key
+  gemini-api-key: QUkuQWI4Uk42TE95SGtzUnFpQmFDcFN6VXFJTjJ5R2NyNFdOdWZXa0lBYkMzeEFYaHA3aXc=
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: knowledge-graph-pvc
+  namespace: aia-production-kg
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: aia-backend-hpa-kg
+  namespace: aia-production-kg
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: aia-backend-kg
+  minReplicas: 3
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: aia-frontend-hpa-kg
+  namespace: aia-production-kg
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: aia-frontend-kg
+  minReplicas: 3
+  maxReplicas: 8
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 60

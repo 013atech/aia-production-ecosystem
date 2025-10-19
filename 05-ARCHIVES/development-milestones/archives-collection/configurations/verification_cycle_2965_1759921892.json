@@ -1,0 +1,41 @@
+{
+  "cycle_number": 2965,
+  "timestamp": "2025-10-08T13:11:30.956123",
+  "tests": {
+    "production_endpoints": {
+      "frontend": {
+        "status_code": 200,
+        "response_time": 0.446522,
+        "status": "healthy"
+      },
+      "api": {
+        "status_code": 200,
+        "response_time": 0.465963,
+        "status": "healthy"
+      },
+      "health": {
+        "status_code": 200,
+        "response_time": 0.411331,
+        "status": "healthy"
+      }
+    },
+    "knowledge_graph": {
+      "status": "success",
+      "insights_count": 10,
+      "query_time": 0.005395
+    },
+    "gcp_infrastructure": {
+      "status": "healthy",
+      "pods_running": true,
+      "services_available": true,
+      "load_balancer": "active"
+    },
+    "monitoring": {
+      "status": "active",
+      "prometheus": "running",
+      "grafana": "accessible"
+    }
+  },
+  "cycle_duration": 1.5535650253295898,
+  "status": "completed"
+}

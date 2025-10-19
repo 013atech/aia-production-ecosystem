@@ -1,0 +1,430 @@
+# TEMPORARILY DISABLED FOR QUOTA COMPLIANCE
+# This deployment has been temporarily disabled to meet GCP quota requirements
+# Original content below (commented out):
+#
+# ---
+# apiVersion: v1
+# kind: ConfigMap
+# metadata:
+#   name: enterprise-partner-config
+#   namespace: aia-enterprise-services
+#   labels:
+#     app: aia-enterprise-partners
+#     version: "2.5.0"
+#     tier: fortune-500
+# data:
+#   # Partner Configuration
+#   EY_GLOBAL_CONFIG: |
+#     {
+#       "partner_id": "ey-global",
+#       "name": "Ernst & Young Global",
+#       "pipeline_value": 8500000,
+#       "revenue_model": {
+#         "base_fee": 500000,
+#         "usage_rates": {
+#           "obsidian_workflow": 50.0,
+#           "client_analysis": 1000.0,
+#           "presentation_generation": 2000.0
+#         }
+#       },
+#       "security_level": "enterprise",
+#       "compliance": ["SOC2", "ISO27001", "GDPR"],
+#       "endpoints": ["/ey/obsidian-workflow", "/ey/client-analysis", "/ey/presentations"],
+#       "rate_limit": "10000/hour",
+#       "authentication": "quantum_enhanced"
+#     }
+# 
+#   JPMORGAN_CONFIG: |
+#     {
+#       "partner_id": "jpmorgan-chase",
+#       "name": "JPMorgan Chase & Co.",
+#       "pipeline_value": 12000000,
+#       "revenue_model": {
+#         "base_fee": 2000000,
+#         "usage_rates": {
+#           "portfolio_optimization": 5000.0,
+#           "ri[STRIPE_KEY_PLACEHOLDER]": 1000.0,
+#           "crypto_trading": 10.0,
+#           "market_prediction": 2500.0
+#         }
+#       },
+#       "security_level": "financial_max",
+#       "compliance": ["SOX", "FINRA", "Basel_III", "GDPR"],
+#       "endpoints": ["/jpmorgan/portfolio-optimization", "/jpmorgan/crypto-trading", "/jpmorgan/risk-assessment"],
+#       "rate_limit": "50000/hour",
+#       "authentication": "financial_grade_quantum"
+#     }
+# 
+#   GOOGLE_CLOUD_CONFIG: |
+#     {
+#       "partner_id": "google-cloud",
+#       "name": "Google Cloud Platform",
+#       "pipeline_value": 3500000,
+#       "revenue_model": {
+#         "base_fee": 750000,
+#         "usage_rates": {
+#           "agent_deployment": 200.0,
+#           "knowledge_operations": 0.05,
+#           "workspace_integration": 50.0
+#         }
+#       },
+#       "security_level": "enterprise",
+#       "compliance": ["SOC2", "ISO27001", "FedRAMP", "GDPR"],
+#       "endpoints": ["/gcp/agent-deployment", "/gcp/knowledge-graph-ops", "/gcp/workspace-integration"],
+#       "rate_limit": "25000/hour",
+#       "authentication": "gcp_quantum_secured"
+#     }
+# 
+#   APPLE_CONFIG: |
+#     {
+#       "partner_id": "apple-inc",
+#       "name": "Apple Inc.",
+#       "pipeline_value": 1000000,
+#       "revenue_model": {
+#         "base_fee": 1500000,
+#         "usage_rates": {
+#           "vision_pro_apps": 100.0,
+#           "ipad_workflows": 25.0,
+#           "macos_integration": 75.0,
+#           "spatial_analytics": 150.0
+#         }
+#       },
+#       "security_level": "ecosystem_secured",
+#       "compliance": ["App_Store_Guidelines", "Privacy_Labels", "GDPR"],
+#       "endpoints": ["/apple/spatial-analytics", "/apple/vision-pro", "/apple/ipad-workflows"],
+#       "rate_limit": "30000/hour",
+#       "authentication": "apple_ecosystem_quantum"
+#     }
+# 
+# ---
+# apiVersion: apps/v1
+# kind: Deployment
+# metadata:
+#   name: aia-fortune-500-partner-api
+#   namespace: aia-enterprise-services
+#   labels:
+#     app: aia-fortune-500-partners
+#     version: "2.5.0"
+#     tier: enterprise
+#     partnership-value: "25M"
+# spec:
+#   replicas: 3
+#   strategy:
+#     type: RollingUpdate
+#     rollingUpdate:
+#       maxUnavailable: 1
+#       maxSurge: 1
+#   selector:
+#     matchLabels:
+#       app: aia-fortune-500-partners
+#   template:
+#     metadata:
+#       labels:
+#         app: aia-fortune-500-partners
+#         version: "2.5.0"
+#         tier: enterprise
+#       annotations:
+#         prometheus.io/scrape: "true"
+#         prometheus.io/port: "8080"
+#         prometheus.io/path: "/metrics"
+#     spec:
+#       securityContext:
+#         runAsNonRoot: true
+#         runAsUser: 1000
+#         fsGroup: 2000
+#       containers:
+#       - name: enterprise-partner-api
+#         image: python:3.11-slim
+#         ports:
+#         - containerPort: 8005
+#           name: http
+#           protocol: TCP
+#         env:
+#         - name: ENVIRONMENT
+#           value: "production"
+#         - name: LOG_LEVEL
+#           value: "INFO"
+#         - name: SECURITY_LEVEL
+#           value: "enterprise_max"
+#         - name: ENABLE_QUANTUM_SECURITY
+#           value: "true"
+#         - name: ENABLE_REVENUE_TRACKING
+#           value: "true"
+#         - name: PROMETHEUS_METRICS
+#           value: "true"
+#         - name: TOTAL_PIPELINE_VALUE
+#           value: "25000000"
+#         - name: EY_PIPELINE_VALUE
+#           value: "8500000"
+#         - name: JPMORGAN_PIPELINE_VALUE
+#           value: "12000000"
+#         - name: GOOGLE_CLOUD_PIPELINE_VALUE
+#           value: "3500000"
+#         - name: APPLE_PIPELINE_VALUE
+#           value: "1000000"
+#         command:
+#         - /bin/bash
+#         - -c
+#         - |
+#           pip install fastapi uvicorn pydantic httpx structlog prometheus-client aioredis asyncpg
+#           python -c "
+#           from fastapi import FastAPI
+#           from datetime import datetime
+#           import os
+# 
+#           app = FastAPI(
+#               title='AIA Fortune 500 Enterprise Partner API',
+#               description='Quantum-secured API for \$25M partnership pipeline',
+#               version='2.5.0'
+#           )
+# 
+#           @app.get('/')
+#           async def root():
+#               return {
+#                   'service': 'AIA Fortune 500 Enterprise Partner API',
+#                   'version': '2.5.0',
+#                   'partnership_program': 'Fortune 500 Enterprise Integration',
+#                   'total_pipeline_value': 25000000,
+#                   'partners': {
+#                       'ey-global': {
+#                           'name': 'Ernst & Young Global',
+#                           'tier': 'Big Four Consulting',
+#                           'pipeline_value': 8500000,
+#                           'security_level': 'enterprise'
+#                       },
+#                       'jpmorgan-chase': {
+#                           'name': 'JPMorgan Chase & Co.',
+#                           'tier': 'Global Investment Bank',
+#                           'pipeline_value': 12000000,
+#                           'security_level': 'financial_max'
+#                       },
+#                       'google-cloud': {
+#                           'name': 'Google Cloud Platform',
+#                           'tier': 'Cloud Infrastructure Provider',
+#                           'pipeline_value': 3500000,
+#                           'security_level': 'enterprise'
+#                       },
+#                       'apple-inc': {
+#                           'name': 'Apple Inc.',
+#                           'tier': 'Technology Ecosystem',
+#                           'pipeline_value': 1000000,
+#                           'security_level': 'ecosystem_secured'
+#                       }
+#                   },
+#                   'security': 'Quantum-Enhanced Enterprise Grade',
+#                   'status': 'operational',
+#                   'timestamp': datetime.now().isoformat()
+#               }
+# 
+#           @app.get('/health')
+#           async def health():
+#               return {
+#                   'status': 'healthy',
+#                   'service': 'Fortune 500 Partner API',
+#                   'pipeline_value': 25000000,
+#                   'partners_active': 4,
+#                   'timestamp': datetime.now().isoformat()
+#               }
+# 
+#           @app.get('/partners')
+#           async def get_partners():
+#               return {
+#                   'total_partners': 4,
+#                   'total_pipeline_value': 25000000,
+#                   'partners': [
+#                       {'id': 'ey-global', 'name': 'Ernst & Young Global', 'value': 8500000},
+#                       {'id': 'jpmorgan-chase', 'name': 'JPMorgan Chase & Co.', 'value': 12000000},
+#                       {'id': 'google-cloud', 'name': 'Google Cloud Platform', 'value': 3500000},
+#                       {'id': 'apple-inc', 'name': 'Apple Inc.', 'value': 1000000}
+#                   ]
+#               }
+# 
+#           @app.get('/revenue/summary')
+#           async def revenue_summary():
+#               return {
+#                   'total_pipeline_value': 25000000,
+#                   'revenue_tracking': 'active',
+#                   'partner_breakdown': {
+#                       'ey-global': {'pipeline': 8500000, 'tier': 'Big Four'},
+#                       'jpmorgan-chase': {'pipeline': 12000000, 'tier': 'Investment Bank'},
+#                       'google-cloud': {'pipeline': 3500000, 'tier': 'Cloud Provider'},
+#                       'apple-inc': {'pipeline': 1000000, 'tier': 'Tech Ecosystem'}
+#                   },
+#                   'status': 'operational'
+#               }
+# 
+#           import uvicorn
+#           uvicorn.run(app, host='0.0.0.0', port=8005)
+#           "
+#         resources:
+#           requests:
+#             cpu: "100m"
+#             memory: "128Mi"
+#           limits:
+#             cpu: "100m"
+#             memory: "128Mi"
+#         livenessProbe:
+#           httpGet:
+#             path: /health
+#             port: 8005
+#             scheme: HTTP
+#           initialDelaySeconds: 60
+#           periodSeconds: 30
+#           timeoutSeconds: 10
+#           failureThreshold: 3
+#         readinessProbe:
+#           httpGet:
+#             path: /health
+#             port: 8005
+#             scheme: HTTP
+#           initialDelaySeconds: 30
+#           periodSeconds: 10
+#           timeoutSeconds: 5
+#           failureThreshold: 3
+#         securityContext:
+#           allowPrivilegeEscalation: false
+#           readOnlyRootFilesystem: false
+#           capabilities:
+#             drop:
+#             - ALL
+# 
+# ---
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   name: aia-fortune-500-partner-service
+#   namespace: aia-enterprise-services
+#   labels:
+#     app: aia-fortune-500-partners
+#     tier: enterprise
+# spec:
+#   type: NodePort
+#   ports:
+#   - name: http
+#     port: 80
+#     targetPort: 8005
+#     protocol: TCP
+#   selector:
+#     app: aia-fortune-500-partners
+# 
+# ---
+# apiVersion: apps/v1
+# kind: Deployment
+# metadata:
+#   name: aia-revenue-tracker
+#   namespace: aia-enterprise-services
+#   labels:
+#     app: aia-revenue-tracker
+#     component: financial-analytics
+# spec:
+#   replicas: 1
+#   selector:
+#     matchLabels:
+#       app: aia-revenue-tracker
+#   template:
+#     metadata:
+#       labels:
+#         app: aia-revenue-tracker
+#     spec:
+#       containers:
+#       - name: revenue-tracker
+#         image: python:3.11-slim
+#         ports:
+#         - containerPort: 8090
+#         env:
+#         - name: TOTAL_PIPELINE_TARGET
+#           value: "25000000"
+#         - name: ENABLE_REAL_TIME_TRACKING
+#           value: "true"
+#         command:
+#         - /bin/bash
+#         - -c
+#         - |
+#           pip install fastapi uvicorn
+#           python -c "
+#           from fastapi import FastAPI
+#           from datetime import datetime
+# 
+#           app = FastAPI(title='AIA Revenue Tracker', version='1.0.0')
+# 
+#           @app.get('/')
+#           async def root():
+#               return {
+#                   'service': 'AIA Revenue Tracker',
+#                   'total_pipeline_target': 25000000,
+#                   'tracking_status': 'active',
+#                   'partners': {
+#                       'ey': 8500000,
+#                       'jpmorgan': 12000000,
+#                       'google-cloud': 3500000,
+#                       'apple': 1000000
+#                   },
+#                   'timestamp': datetime.now().isoformat()
+#               }
+# 
+#           @app.get('/health')
+#           async def health():
+#               return {'status': 'healthy', 'service': 'Revenue Tracker'}
+# 
+#           import uvicorn
+#           uvicorn.run(app, host='0.0.0.0', port=8090)
+#           "
+#         resources:
+#           requests:
+#             cpu: "100m"
+#             memory: "128Mi"
+#           limits:
+#             cpu: "100m"
+#             memory: "128Mi"
+# 
+# ---
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   name: aia-revenue-tracker-service
+#   namespace: aia-enterprise-services
+# spec:
+#   ports:
+#   - port: 8090
+#     targetPort: 8090
+#   selector:
+#     app: aia-revenue-tracker
+# 
+# ---
+# apiVersion: autoscaling/v2
+# kind: HorizontalPodAutoscaler
+# metadata:
+#   name: fortune-500-partner-hpa
+#   namespace: aia-enterprise-services
+# spec:
+#   scaleTargetRef:
+#     apiVersion: apps/v1
+#     kind: Deployment
+#     name: aia-fortune-500-partner-api
+#   minReplicas: 3
+#   maxReplicas: 10
+#   metrics:
+#   - type: Resource
+#     resource:
+#       name: cpu
+#       target:
+#         type: Utilization
+#         averageUtilization: 70
+#   - type: Resource
+#     resource:
+#       name: memory
+#       target:
+#         type: Utilization
+#         averageUtilization: 80
+# 
+# ---
+# apiVersion: policy/v1
+# kind: PodDisruptionBudget
+# metadata:
+#   name: fortune-500-partner-pdb
+#   namespace: aia-enterprise-services
+# spec:
+#   minAvailable: 2
+#   selector:
+#     matchLabels:
+#       app: aia-fortune-500-partners

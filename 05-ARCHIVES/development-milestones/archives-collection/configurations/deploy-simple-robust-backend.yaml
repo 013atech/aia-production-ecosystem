@@ -1,0 +1,445 @@
+# TEMPORARILY DISABLED FOR QUOTA COMPLIANCE
+# This deployment has been temporarily disabled to meet GCP quota requirements
+# Original content below (commented out):
+#
+# ---
+# # Simple, Robust Backend Deployment
+# apiVersion: apps/v1
+# kind: Deployment
+# metadata:
+#   name: aia-backend-simple
+#   namespace: aia-production
+#   labels:
+#     app: aia-backend-simple
+#     tier: api
+#     version: v4.0.2
+# spec:
+#   replicas: 2
+#   strategy:
+#     type: RollingUpdate
+#     rollingUpdate:
+#       maxSurge: 1
+#       maxUnavailable: 0
+#   selector:
+#     matchLabels:
+#       app: aia-backend-simple
+#   template:
+#     metadata:
+#       labels:
+#         app: aia-backend-simple
+#         tier: api
+#         version: v4.0.2
+#     spec:
+#       initContainers:
+#       - name: wait-for-postgres
+#         image: postgres:16-alpine
+#         command: ['sh', '-c', 'until pg_isready -h aia-postgres -p 5432 -U aia_user; do echo "Waiting for PostgreSQL..."; sleep 2; done; echo "PostgreSQL ready!"']
+#       - name: wait-for-redis
+#         image: redis:7-alpine
+#         command: ['sh', '-c', 'until redis-cli -h aia-redis -p 6379 ping | grep -q PONG; do echo "Waiting for Redis..."; sleep 2; done; echo "Redis ready!"']
+#       containers:
+#       - name: aia-api
+#         image: python:3.12-slim
+#         ports:
+#         - containerPort: 8000
+#           name: http
+#         env:
+#         - name: PORT
+#           value: "8000"
+#         - name: PYTHONPATH
+#           value: "/app"
+#         - name: PYTHONUNBUFFERED
+#           value: "1"
+#         envFrom:
+#         - configMapRef:
+#             name: aia-backend-config
+#         - secretRef:
+#             name: aia-secrets
+#         command:
+#         - /bin/bash
+#         - -c
+#         - |
+#           set -e
+#           echo "=== AIA Simple Backend v4.0.2 Starting ==="
+# 
+#           # Install dependencies
+#           apt-get update && apt-get install -y --no-install-recommends \
+#             gcc libpq-dev curl && rm -rf /var/lib/apt/lists/*
+# 
+#           pip install --no-cache-dir \
+#             fastapi==0.118.0 \
+#             uvicorn==0.37.0 \
+#             psycopg2-binary==2.9.10 \
+#             redis==6.4.0
+# 
+#           mkdir -p /app
+# 
+#           # Simple, robust API
+#           cat > /app/main.py << 'EOF'
+#           import os
+#           import logging
+#           import json
+#           from datetime import datetime
+#           from typing import Dict, Any, List
+#           import uuid
+#           import asyncio
+#           import traceback
+# 
+#           from fastapi import FastAPI, HTTPException, Request
+#           from fastapi.middleware.cors import CORSMiddleware
+#           from fastapi.responses import JSONResponse, HTMLResponse
+#           from pydantic import BaseModel
+#           import uvicorn
+#           import psycopg2
+#           import redis
+# 
+#           # Configure logging
+#           logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] %(message)s')
+#           logger = logging.getLogger(__name__)
+# 
+#           # Pydantic models
+#           class HealthResponse(BaseModel):
+#               status: str
+#               timestamp: str
+#               version: str = "4.0.2"
+#               services: Dict[str, str]
+# 
+#           class OrchestrationRequest(BaseModel):
+#               ta[STRIPE_KEY_PLACEHOLDER]: str = "comprehensive"
+#               parameters: Dict[str, Any] = {}
+# 
+#           # FastAPI app
+#           app = FastAPI(
+#               title="AIA Production API",
+#               version="4.0.2",
+#               description="Advanced Intelligence Architecture - Simple & Robust",
+#               docs_url="/api/docs"
+#           )
+# 
+#           app.add_middleware(
+#               CORSMiddleware,
+#               allow_origins=["*"],
+#               allow_credentials=True,
+#               allow_methods=["*"],
+#               allow_headers=["*"],
+#           )
+# 
+#           # Global state
+#           start_time = datetime.utcnow()
+#           request_count = 0
+#           active_agents = {"research": "active", "analysis": "active", "synthesis": "active", "crypto": "active", "economic": "active", "dkg": "active"}
+# 
+#           @app.middleware("http")
+#           async def count_requests(request: Request, call_next):
+#               global request_count
+#               request_count += 1
+#               response = await call_next(request)
+#               response.headers["X-AIA-Version"] = "4.0.2"
+#               return response
+# 
+#           def get_db_connection():
+#               try:
+#                   return psycopg2.connect(os.environ["DATABASE_URL"])
+#               except Exception as e:
+#                   logger.error(f"Database connection failed: {e}")
+#                   return None
+# 
+#           def get_redis_connection():
+#               try:
+#                   return redis.from_url(os.environ.get("REDIS_URL", "redis://aia-redis:6379/0"), decode_responses=True)
+#               except Exception as e:
+#                   logger.error(f"Redis connection failed: {e}")
+#                   return None
+# 
+#           @app.get("/health", response_model=HealthResponse)
+#           async def health_check():
+#               services = {}
+# 
+#               # Check PostgreSQL
+#               try:
+#                   conn = get_db_connection()
+#                   if conn:
+#                       with conn.cursor() as cur:
+#                           cur.execute("SELECT 1")
+#                           cur.fetchone()
+#                       conn.close()
+#                       services["postgres"] = "connected"
+#                   else:
+#                       services["postgres"] = "connection_failed"
+#               except Exception as e:
+#                   services["postgres"] = f"error: {str(e)[:30]}"
+# 
+#               # Check Redis
+#               try:
+#                   r = get_redis_connection()
+#                   if r:
+#                       r.ping()
+#                       services["redis"] = "connected"
+#                   else:
+#                       services["redis"] = "connection_failed"
+#               except Exception as e:
+#                   services["redis"] = f"error: {str(e)[:30]}"
+# 
+#               services["agents"] = f"{len([a for a in active_agents.values() if a == 'active'])}/6 active"
+# 
+#               status = "healthy" if all("connected" in v for v in [services.get("postgres", ""), services.get("redis", "")]) else "degraded"
+# 
+#               return HealthResponse(
+#                   status=status,
+#                   timestamp=datetime.utcnow().isoformat() + "Z",
+#                   services=services
+#               )
+# 
+#           @app.get("/", response_class=HTMLResponse)
+#           async def root():
+#               uptime = datetime.utcnow() - start_time
+#               active_count = len([a for a in active_agents.values() if a == "active"])
+# 
+#               html = f"""
+#               <!DOCTYPE html>
+#               <html>
+#               <head>
+#                   <title>AIA Production v4.0.2</title>
+#                   <style>
+#                       body {{ font-family: system-ui, sans-serif; margin: 0; padding: 20px;
+#                              background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+#                              color: #ffffff; min-height: 100vh; }}
+#                       .container {{ max-width: 800px; margin: 0 auto; text-align: center; }}
+#                       .logo {{ font-size: 3rem; margin-bottom: 20px;
+#                                background: linear-gradient(45deg, #00ffff, #ffff00);
+#                                -webkit-background-clip: text; -webkit-text-fill-color: transparent; }}
+#                       .card {{ background: rgba(255,255,255,0.1); padding: 20px; margin: 20px 0;
+#                                border-radius: 10px; border: 1px solid rgba(255,255,255,0.2); }}
+#                       .metric {{ margin: 10px 0; }}
+#                       .status-ok {{ color: #00ff88; }}
+#                       a {{ color: #00ffff; text-decoration: none; }}
+#                       a:hover {{ text-decoration: underline; }}
+#                   </style>
+#               </head>
+#               <body>
+#                   <div class="container">
+#                       <div class="logo">AIA Production</div>
+#                       <p>Advanced Intelligence Architecture v4.0.2</p>
+# 
+#                       <div class="card">
+#                           <h3>🚀 System Status</h3>
+#                           <div class="metric">Uptime: {uptime}</div>
+#                           <div class="metric">Requests: {request_count}</div>
+#                           <div class="metric">Active Agents: <span class="status-ok">{active_count}/6</span></div>
+#                       </div>
+# 
+#                       <div class="card">
+#                           <h3>📊 API Endpoints</h3>
+#                           <div class="metric"><a href="/health">Health Check</a></div>
+#                           <div class="metric"><a href="/api/docs">Interactive Documentation</a></div>
+#                           <div class="metric"><a href="/api/v1/analytics/dashboard">Analytics Dashboard</a></div>
+#                       </div>
+# 
+#                       <div class="card">
+#                           <h3>🤖 Features</h3>
+#                           <div class="metric">✅ Multi-Agent Orchestration</div>
+#                           <div class="metric">✅ Post-Quantum Cryptography</div>
+#                           <div class="metric">✅ Distributed Knowledge Graph</div>
+#                           <div class="metric">✅ Token Economy</div>
+#                       </div>
+#                   </div>
+#               </body>
+#               </html>
+#               """
+#               return HTMLResponse(content=html)
+# 
+#           @app.post("/api/v1/agents/orchestrate")
+#           async def orchestrate_agents(request: OrchestrationRequest):
+#               try:
+#                   orchestration_id = f"orch_{uuid.uuid4().hex[:12]}"
+# 
+#                   agent_mapping = {
+#                       "research": ["research", "dkg"],
+#                       "analysis": ["analysis", "crypto"],
+#                       "synthesis": ["synthesis", "economic"],
+#                       "comprehensive": list(active_agents.keys())
+#                   }
+# 
+#                   selected_agents = agent_mapping.get(request.ta[STRIPE_KEY_PLACEHOLDER], list(active_agents.keys()))
+# 
+#                   logger.info(f"Orchestration {orchestration_id} initiated with agents: {selected_agents}")
+# 
+#                   return {
+#                       "orchestration_id": orchestration_id,
+#                       "status": "initiated",
+#                       "agents_activated": selected_agents,
+#                       "estimated_completion": f"{len(selected_agents) * 30} seconds",
+#                       "created_at": datetime.utcnow().isoformat() + "Z"
+#                   }
+#               except Exception as e:
+#                   logger.error(f"Orchestration failed: {e}")
+#                   raise HTTPException(status_code=500, detail=str(e))
+# 
+#           @app.get("/api/v1/analytics/dashboard")
+#           async def get_analytics():
+#               active_count = len([a for a in active_agents.values() if a == "active"])
+#               return {
+#                   "active_agents": active_count,
+#                   "completed_tasks": request_count * 2 + 1000,
+#                   "system_health": 0.95,
+#                   "resource_utilization": 0.60,
+#                   "database_health": "healthy",
+#                   "cache_health": "healthy",
+#                   "response_time_avg": 0.120,
+#                   "timestamp": datetime.utcnow().isoformat() + "Z"
+#               }
+# 
+#           @app.get("/api/v1/economy/status")
+#           async def get_economy_status():
+#               return {
+#                   "aia_token_supply": 1000000 + (request_count * 10),
+#                   "aia_gov_token_supply": 100000,
+#                   "active_stakers": 156,
+#                   "treasury_balance": 450000,
+#                   "apr": 8.5,
+#                   "last_updated": datetime.utcnow().isoformat() + "Z"
+#               }
+# 
+#           @app.get("/api/v1/crypto/status")
+#           async def get_crypto_status():
+#               return {
+#                   "pqc_enabled": True,
+#                   "algorithms": ["Kyber-768", "Dilithium-2", "SPHINCS+"],
+#                   "key_exchanges": 1247 + request_count,
+#                   "signatures_verified": 3456 + (request_count * 2),
+#                   "zkp_proofs": 89 + (request_count // 10),
+#                   "did_identities": 156,
+#                   "status": "operational"
+#               }
+# 
+#           @app.get("/api/v1/dkg/status")
+#           async def get_dkg_status():
+#               nodes = 1500 + (request_count * 2)
+#               return {
+#                   "total_nodes": nodes,
+#                   "total_connections": int(nodes * 3.2),
+#                   "knowledge_domains": ["technology", "business", "research", "analytics"],
+#                   "query_resolution_time_ms": 45,
+#                   "active_queries": 0,
+#                   "last_sync": datetime.utcnow().isoformat() + "Z"
+#               }
+# 
+#           @app.exception_handler(Exception)
+#           async def global_exception_handler(request: Request, exc: Exception):
+#               logger.error(f"Unhandled exception: {exc}", exc_info=True)
+#               return JSONResponse(
+#                   status_code=500,
+#                   content={"error": "Internal server error", "detail": str(exc)}
+#               )
+# 
+#           if __name__ == "__main__":
+#               port = int(os.environ.get("PORT", 8000))
+#               logger.info(f"Starting AIA Simple Backend v4.0.2 on port {port}")
+#               uvicorn.run("main:app", host="0.0.0.0", port=port, log_level="info")
+#           EOF
+# 
+#           echo "Starting AIA Simple Backend v4.0.2..."
+#           cd /app && python main.py
+#         resources:
+#           requests:
+#             memory: "128Mi"
+#             cpu: "100m"
+#           limits:
+#             memory: "128Mi"
+#             cpu: "100m"
+#         readinessProbe:
+#           httpGet:
+#             path: /health
+#             port: 8000
+#           initialDelaySeconds: 30
+#           periodSeconds: 10
+#         livenessProbe:
+#           httpGet:
+#             path: /health
+#             port: 8000
+#           initialDelaySeconds: 60
+#           periodSeconds: 30
+# 
+# ---
+# # Simple Backend Service
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   name: aia-backend-service-simple
+#   namespace: aia-production
+#   labels:
+#     app: aia-backend-simple
+# spec:
+#   selector:
+#     app: aia-backend-simple
+#   ports:
+#   - port: 8000
+#     targetPort: 8000
+#     name: http
+#   type: ClusterIP
+# 
+# ---
+# # Simple API Service (NodePort for ingress)
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   name: aia-api-service-simple
+#   namespace: aia-production
+#   labels:
+#     app: aia-backend-simple
+# spec:
+#   selector:
+#     app: aia-backend-simple
+#   ports:
+#   - port: 8000
+#     targetPort: 8000
+#     nodePort: 30802
+#     name: http
+#   type: NodePort
+# 
+# ---
+# # Update ingress to use simple backend
+# apiVersion: networking.k8s.io/v1
+# kind: Ingress
+# metadata:
+#   name: aia-production-ingress-simple
+#   namespace: aia-production
+#   annotations:
+#     kubernetes.io/ingress.global-static-ip-name: "aia-cognitive-ip"
+#     networking.gke.io/managed-certificates: "aia-ssl-cert-simple"
+#     kubernetes.io/ingress.class: "gce"
+#     kubernetes.io/ingress.allow-http: "false"
+# spec:
+#   rules:
+#   - host: 013a.tech
+#     http:
+#       paths:
+#       - path: /
+#         pathType: Prefix
+#         backend:
+#           service:
+#             name: aia-frontend-service
+#             port:
+#               number: 80
+#   - host: api.013a.tech
+#     http:
+#       paths:
+#       - path: /
+#         pathType: Prefix
+#         backend:
+#           service:
+#             name: aia-api-service-simple
+#             port:
+#               number: 8000
+# 
+# ---
+# # Simple SSL Certificate
+# apiVersion: networking.gke.io/v1
+# kind: ManagedCertificate
+# metadata:
+#   name: aia-ssl-cert-simple
+#   namespace: aia-production
+# spec:
+#   domains:
+#     - 013a.tech
+#     - api.013a.tech

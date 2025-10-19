@@ -1,0 +1,33 @@
+# TEMPORARILY DISABLED FOR QUOTA COMPLIANCE
+# This deployment has been temporarily disabled to meet GCP quota requirements
+# Original content below (commented out):
+#
+# steps:
+#   # Build the production image with knowledge graph integration
+#   - name: 'gcr.io/cloud-builders/docker'
+#     args:
+#       - 'build'
+#       - '-f'
+#       - 'Dockerfile.production-kg'
+#       - '-t'
+#       - 'gcr.io/a-467519/aia-api:production-kg-${BUILD_ID}'
+#       - '-t'
+#       - 'gcr.io/a-467519/aia-api:production-kg-latest'
+#       - '.'
+# 
+#   # Push the images
+#   - name: 'gcr.io/cloud-builders/docker'
+#     args: ['push', '--all-tags', 'gcr.io/a-467519/aia-api']
+# 
+# # Configure Cloud Build options
+# options:
+#   machineType: E2_HIGHCPU_8
+#   diskSizeGb: 100
+# 
+# # Store images in GCR
+# images:
+#   - 'gcr.io/a-467519/aia-api:production-kg-${BUILD_ID}'
+#   - 'gcr.io/a-467519/aia-api:production-kg-latest'
+# 
+# # Build timeout
+# timeout: 1200s

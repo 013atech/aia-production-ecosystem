@@ -1,0 +1,322 @@
+# Automated CI/CD Pipeline for 013a Analytics
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: deployment-scripts
+  namespace: analytics-platform
+data:
+  deploy.sh: |
+    #!/bin/bash
+    set -e
+
+    echo "Starting automated deployment cycle..."
+
+    # Health check function
+    check_health() {
+      local service=$1
+      local port=$2
+      local max_attempts=30
+      local attempt=1
+
+      echo "Checking health of $service..."
+      while [ $attempt -le $max_attempts ]; do
+        if curl -f http://$service:$port/health 2>/dev/null; then
+          echo "$service is healthy"
+          return 0
+        fi
+        echo "Attempt $attempt/$max_attempts failed, waiting 10s..."
+        sleep 10
+        attempt=$((attempt + 1))
+      done
+
+      echo "ERROR: $service failed health check after $max_attempts attempts"
+      return 1
+    }
+
+    # Bug detection function
+    detect_bugs() {
+      echo "Running automated bug detection..."
+
+      # Check for common issues
+      kubectl get pods -n analytics-platform --field-selector=status.phase=Failed
+      kubectl get pods -n analytics-platform --field-selector=status.phase=Pending
+
+      # Check resource usage
+      kubectl top nodes
+      kubectl top pods -n analytics-platform
+
+      # Check logs for errors
+      kubectl logs -n analytics-platform -l app=aia-analytics-backend --tail=100 | grep -i error || true
+      kubectl logs -n analytics-platform -l app=aia-analytics-ml-engine --tail=100 | grep -i error || true
+    }
+
+    # Performance validation
+    validate_performance() {
+      echo "Validating application performance..."
+
+      # Test API endpoints
+      echo "Testing backend API..."
+      if ! curl -f -s http://aia-analytics-backend:8000/health; then
+        echo "ERROR: Backend health check failed"
+        return 1
+      fi
+
+      echo "Testing ML engine..."
+      if ! curl -f -s http://aia-analytics-ml-engine:8001/health; then
+        echo "ERROR: ML engine health check failed"
+        return 1
+      fi
+
+      echo "Testing frontend..."
+      if ! curl -f -s http://aia-analytics-frontend:3000/; then
+        echo "ERROR: Frontend health check failed"
+        return 1
+      fi
+
+      echo "All services are responding correctly"
+      return 0
+    }
+
+    # Auto-fix common issues
+    auto_fix() {
+      echo "Running automated fixes..."
+
+      # Restart failed pods
+      kubectl get pods -n analytics-platform --field-selector=status.phase=Failed -o name | xargs -r kubectl delete -n analytics-platform
+
+      # Scale up if needed
+      BACKEND_READY=$(kubectl get deployment aia-analytics-backend -n analytics-platform -o jsonpath='{.status.readyReplicas}')
+      BACKEND_DESIRED=$(kubectl get deployment aia-analytics-backend -n analytics-platform -o jsonpath='{.spec.replicas}')
+
+      if [ "$BACKEND_READY" -lt "$BACKEND_DESIRED" ]; then
+        echo "Scaling backend deployment..."
+        kubectl scale deployment aia-analytics-backend --replicas=$((BACKEND_DESIRED + 1)) -n analytics-platform
+      fi
+
+      # Clear Redis cache if memory usage is high
+      kubectl exec -n analytics-platform deployment/aia-analytics-redis -- redis-cli FLUSHDB || true
+    }
+
+    # Main execution
+    echo "=== Automated Deployment Cycle Started ==="
+
+    # Run bug detection
+    detect_bugs
+
+    # Run auto-fixes
+    auto_fix
+
+    # Wait for stabilization
+    echo "Waiting for system stabilization..."
+    sleep 30
+
+    # Validate performance
+    if validate_performance; then
+      echo "=== Deployment cycle completed successfully ==="
+      exit 0
+    else
+      echo "=== Deployment cycle completed with errors ==="
+      exit 1
+    fi
+
+  monitor.sh: |
+    #!/bin/bash
+
+    while true; do
+      echo "$(date): Running health check cycle..."
+
+      # Check pod status
+      FAILED_PODS=$(kubectl get pods -n analytics-platform --field-selector=status.phase=Failed --no-headers | wc -l)
+      PENDING_PODS=$(kubectl get pods -n analytics-platform --field-selector=status.phase=Pending --no-headers | wc -l)
+
+      if [ "$FAILED_PODS" -gt 0 ] || [ "$PENDING_PODS" -gt 3 ]; then
+        echo "WARNING: Detected $FAILED_PODS failed pods and $PENDING_PODS pending pods"
+
+        # Trigger auto-fix
+        /scripts/deploy.sh
+      fi
+
+      # Check resource usage
+      CPU_USAGE=$(kubectl top nodes --no-headers | awk '{sum+=$3} END {print sum}')
+      MEMORY_USAGE=$(kubectl top nodes --no-headers | awk '{sum+=$5} END {print sum}')
+
+      echo "Current resource usage: CPU=${CPU_USAGE}m, Memory=${MEMORY_USAGE}Mi"
+
+      sleep 300  # Check every 5 minutes
+    done
+
+---
+# Automated deployment job
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: automated-deployment-cycle
+  namespace: analytics-platform
+spec:
+  schedule: "*/15 * * * *"  # Every 15 minutes
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          serviceAccountName: deployment-automation-sa
+          containers:
+          - name: deployment-automation
+            image: bitnami/kubectl:latest
+            command: ["/bin/bash", "/scripts/deploy.sh"]
+            volumeMounts:
+            - name: deployment-scripts
+              mountPath: /scripts
+            resources:
+              requests:
+                memory: "128Mi"
+                cpu: "100m"
+              limits:
+                memory: "256Mi"
+                cpu: "200m"
+          volumes:
+          - name: deployment-scripts
+            configMap:
+              name: deployment-scripts
+              defaultMode: 0755
+          restartPolicy: OnFailure
+
+---
+# Service account for automation
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: deployment-automation-sa
+  namespace: analytics-platform
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: deployment-automation
+rules:
+- apiGroups: [""]
+  resources: ["pods", "services", "endpoints"]
+  verbs: ["get", "list", "watch", "delete"]
+- apiGroups: ["apps"]
+  resources: ["deployments", "replicasets"]
+  verbs: ["get", "list", "watch", "patch", "update"]
+- apiGroups: ["autoscaling"]
+  resources: ["horizontalpodautoscalers"]
+  verbs: ["get", "list", "watch", "patch", "update"]
+- apiGroups: ["metrics.k8s.io"]
+  resources: ["nodes", "pods"]
+  verbs: ["get", "list"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: deployment-automation
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: deployment-automation
+subjects:
+- kind: ServiceAccount
+  name: deployment-automation-sa
+  namespace: analytics-platform
+
+---
+# Continuous monitoring deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: continuous-monitor
+  namespace: analytics-platform
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: continuous-monitor
+  template:
+    metadata:
+      labels:
+        app: continuous-monitor
+    spec:
+      serviceAccountName: deployment-automation-sa
+      containers:
+      - name: monitor
+        image: bitnami/kubectl:latest
+        command: ["/bin/bash", "/scripts/monitor.sh"]
+        volumeMounts:
+        - name: deployment-scripts
+          mountPath: /scripts
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "50m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+      volumes:
+      - name: deployment-scripts
+        configMap:
+          name: deployment-scripts
+          defaultMode: 0755
+
+---
+# Performance testing job
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: performance-validation
+  namespace: analytics-platform
+spec:
+  schedule: "0 */6 * * *"  # Every 6 hours
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: performance-test
+            image: curlimages/curl:latest
+            command:
+            - /bin/sh
+            - -c
+            - |
+              echo "Starting performance validation..."
+
+              # Test backend response time
+              START_TIME=$(date +%s%N)
+              curl -f http://aia-analytics-backend.analytics-platform:8000/health
+              END_TIME=$(date +%s%N)
+              BACKEND_TIME=$(((END_TIME - START_TIME) / 1000000))
+              echo "Backend response time: ${BACKEND_TIME}ms"
+
+              # Test ML engine response time
+              START_TIME=$(date +%s%N)
+              curl -f http://aia-analytics-ml-engine.analytics-platform:8001/health
+              END_TIME=$(date +%s%N)
+              ML_TIME=$(((END_TIME - START_TIME) / 1000000))
+              echo "ML engine response time: ${ML_TIME}ms"
+
+              # Test frontend response time
+              START_TIME=$(date +%s%N)
+              curl -f http://aia-analytics-frontend.analytics-platform:3000/
+              END_TIME=$(date +%s%N)
+              FRONTEND_TIME=$(((END_TIME - START_TIME) / 1000000))
+              echo "Frontend response time: ${FRONTEND_TIME}ms"
+
+              # Validate performance thresholds
+              if [ $BACKEND_TIME -gt 5000 ]; then
+                echo "ERROR: Backend response time exceeds 5s threshold"
+                exit 1
+              fi
+
+              if [ $ML_TIME -gt 10000 ]; then
+                echo "ERROR: ML engine response time exceeds 10s threshold"
+                exit 1
+              fi
+
+              if [ $FRONTEND_TIME -gt 3000 ]; then
+                echo "ERROR: Frontend response time exceeds 3s threshold"
+                exit 1
+              fi
+
+              echo "All performance tests passed successfully"
+          restartPolicy: OnFailure

@@ -1,0 +1,82 @@
+# TEMPORARILY DISABLED FOR QUOTA COMPLIANCE
+# This deployment has been temporarily disabled to meet GCP quota requirements
+# Original content below (commented out):
+#
+# apiVersion: apps/v1
+# kind: Deployment
+# metadata:
+#   labels:
+#     app: aia-api
+#     component: backend
+#     tier: api
+#   name: aia-comprehensive-api
+#   namespace: aia-system
+# spec:
+#   replicas: 3
+#   selector:
+#     matchLabels:
+#       app: aia-api
+#   strategy:
+#     rollingUpdate:
+#       maxSurge: 1
+#       maxUnavailable: 0
+#     type: RollingUpdate
+#   template:
+#     metadata:
+#       labels:
+#         app: aia-api
+#         component: backend
+#     spec:
+#       affinity:
+#         podAntiAffinity:
+#           preferredDuringSchedulingIgnoredDuringExecution:
+#           - podAffinityTerm:
+#               labelSelector:
+#                 matchExpressions:
+#                 - key: app
+#                   operator: In
+#                   values:
+#                   - aia-api
+#               topologyKey: kubernetes.io/hostname
+#             weight: 100
+#       containers:
+#       - env:
+#         - name: ENVIRONMENT
+#           value: production
+#         - name: REDIS_HOST
+#           value: aia-redis
+#         - name: DATABASE_URL
+#           valueFrom:
+#             secretKeyRef:
+#               key: database-url
+#               name: aia-secrets
+#         image: gcr.io/a-467519/aia-api:latest
+#         imagePullPolicy: Always
+#         livenessProbe:
+#           failureThreshold: 3
+#           httpGet:
+#             path: /health
+#             port: 8000
+#           initialDelaySeconds: 30
+#           periodSeconds: 10
+#           timeoutSeconds: 5
+#         name: aia-api
+#         ports:
+#         - containerPort: 8000
+#           name: http
+#         readinessProbe:
+#           failureThreshold: 3
+#           httpGet:
+#             path: /health
+#             port: 8000
+#           initialDelaySeconds: 15
+#           periodSeconds: 5
+#           timeoutSeconds: 3
+#         resources:
+#           limits:
+#             cpu: "100m"
+#             memory: "128Mi"
+#           requests:
+#             cpu: "100m"
+#             memory: "128Mi"
+# 

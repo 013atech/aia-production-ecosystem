@@ -1,0 +1,468 @@
+# AIA PRODUCTION-OPTIMIZED DEPLOYMENT
+# Based on working comprehensive neural deployment
+# Optimized for immediate deployment with existing images
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: aia-production-final
+  labels:
+    environment: production
+    app: aia-analytics
+    optimization-level: maximum
+---
+# Redis Cache (using working image)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-redis-production
+  namespace: aia-production-final
+  labels:
+    app: aia-redis
+    component: cache
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: aia-redis
+  template:
+    metadata:
+      labels:
+        app: aia-redis
+        component: cache
+    spec:
+      containers:
+      - name: redis
+        image: redis:7-alpine
+        command:
+        - redis-server
+        - --appendonly
+        - "yes"
+        - --maxmemory
+        - "512mb"
+        - --maxmemory-policy
+        - "allkeys-lru"
+        ports:
+        - containerPort: 6379
+          name: redis
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        readinessProbe:
+          exec:
+            command: ["redis-cli", "ping"]
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        livenessProbe:
+          exec:
+            command: ["redis-cli", "ping"]
+          initialDelaySeconds: 10
+          periodSeconds: 10
+---
+# Backend API (using existing working image)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-backend-production
+  namespace: aia-production-final
+  labels:
+    app: aia-backend
+    component: api
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: aia-backend
+      component: api
+  template:
+    metadata:
+      labels:
+        app: aia-backend
+        component: api
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8000"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+      - name: aia-backend
+        image: gcr.io/aia-system-prod-1759055445/aia-api:latest
+        ports:
+        - containerPort: 8000
+          name: http
+        env:
+        - name: REDIS_URL
+          value: "redis://aia-redis-service:6379/0"
+        - name: ENVIRONMENT
+          value: "production"
+        - name: LOG_LEVEL
+          value: "INFO"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "1"
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 20
+          periodSeconds: 10
+          timeoutSeconds: 5
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 40
+          periodSeconds: 20
+          timeoutSeconds: 10
+---
+# Cognitive Processor (using existing image)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-cognitive-production
+  namespace: aia-production-final
+  labels:
+    app: aia-cognitive
+    component: processor
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: aia-cognitive
+      component: processor
+  template:
+    metadata:
+      labels:
+        app: aia-cognitive
+        component: processor
+    spec:
+      containers:
+      - name: cognitive-processor
+        image: gcr.io/aia-system-prod-1759055445/aia-cognitive-processor:latest
+        ports:
+        - containerPort: 8001
+          name: http
+        env:
+        - name: REDIS_URL
+          value: "redis://aia-redis-service:6379/1"
+        - name: ENVIRONMENT
+          value: "production"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "1.5"
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8001
+          initialDelaySeconds: 30
+          periodSeconds: 15
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8001
+          initialDelaySeconds: 60
+          periodSeconds: 30
+---
+# ML Processor (using existing image)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-ml-production
+  namespace: aia-production-final
+  labels:
+    app: aia-ml
+    component: processor
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: aia-ml
+      component: processor
+  template:
+    metadata:
+      labels:
+        app: aia-ml
+        component: processor
+    spec:
+      containers:
+      - name: ml-processor
+        image: gcr.io/aia-system-prod-1759055445/aia-ml-processor:latest
+        ports:
+        - containerPort: 8002
+          name: http
+        env:
+        - name: ENVIRONMENT
+          value: "production"
+        - name: MODEL_PATH
+          value: "/app/models"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "2"
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8002
+          initialDelaySeconds: 45
+          periodSeconds: 20
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8002
+          initialDelaySeconds: 90
+          periodSeconds: 40
+---
+# Frontend (using existing working image)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-frontend-production
+  namespace: aia-production-final
+  labels:
+    app: aia-frontend
+    component: web
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: aia-frontend
+      component: web
+  template:
+    metadata:
+      labels:
+        app: aia-frontend
+        component: web
+    spec:
+      containers:
+      - name: frontend
+        image: gcr.io/aia-system-prod-1759055445/aia-frontend:latest
+        ports:
+        - containerPort: 80
+          name: http
+        env:
+        - name: REACT_APP_API_URL
+          value: "https://api.013a.tech"
+        - name: REACT_APP_ENVIRONMENT
+          value: "production"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 10
+          periodSeconds: 20
+---
+# Services
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-redis-service
+  namespace: aia-production-final
+spec:
+  selector:
+    app: aia-redis
+  ports:
+  - name: redis
+    port: 6379
+    targetPort: 6379
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-backend-service
+  namespace: aia-production-final
+  annotations:
+    cloud.google.com/neg: '{"ingress": true}'
+spec:
+  selector:
+    app: aia-backend
+    component: api
+  ports:
+  - name: http
+    port: 80
+    targetPort: 8000
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-cognitive-service
+  namespace: aia-production-final
+spec:
+  selector:
+    app: aia-cognitive
+    component: processor
+  ports:
+  - name: http
+    port: 80
+    targetPort: 8001
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-ml-service
+  namespace: aia-production-final
+spec:
+  selector:
+    app: aia-ml
+    component: processor
+  ports:
+  - name: http
+    port: 80
+    targetPort: 8002
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-frontend-service
+  namespace: aia-production-final
+  annotations:
+    cloud.google.com/neg: '{"ingress": true}'
+spec:
+  selector:
+    app: aia-frontend
+    component: web
+  ports:
+  - name: http
+    port: 80
+    targetPort: 80
+  type: ClusterIP
+---
+# Production Load Balancer
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-production-loadbalancer
+  namespace: aia-production-final
+  annotations:
+    cloud.google.com/load-balancer-type: "External"
+    cloud.google.com/backend-config: '{"default": "aia-backend-config"}'
+spec:
+  selector:
+    app: aia-frontend
+    component: web
+  ports:
+  - name: http
+    port: 80
+    targetPort: 80
+  type: NodePort
+---
+# Backend Configuration
+apiVersion: cloud.google.com/v1
+kind: BackendConfig
+metadata:
+  name: aia-backend-config
+  namespace: aia-production-final
+spec:
+  timeoutSec: 120
+  connectionDraining:
+    drainingTimeoutSec: 60
+  healthCheck:
+    checkIntervalSec: 10
+    timeoutSec: 5
+    healthyThreshold: 1
+    unhealthyThreshold: 3
+    type: HTTP
+    requestPath: /
+    port: 80
+---
+# Horizontal Pod Autoscaler for Backend
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: aia-backend-hpa
+  namespace: aia-production-final
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: aia-backend-production
+  minReplicas: 3
+  maxReplicas: 8
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+---
+# Horizontal Pod Autoscaler for Frontend
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: aia-frontend-hpa
+  namespace: aia-production-final
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: aia-frontend-production
+  minReplicas: 3
+  maxReplicas: 6
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 60
+---
+# Pod Disruption Budget
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: aia-backend-pdb
+  namespace: aia-production-final
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: aia-backend
+      component: api

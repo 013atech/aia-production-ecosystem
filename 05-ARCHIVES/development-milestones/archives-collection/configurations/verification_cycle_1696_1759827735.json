@@ -1,0 +1,38 @@
+{
+  "cycle_number": 1696,
+  "timestamp": "2025-10-07T11:01:23.786736",
+  "tests": {
+    "production_endpoints": {
+      "frontend": {
+        "status": "error",
+        "error": "HTTPSConnectionPool(host='013a.tech', port=443): Max retries exceeded with url: / (Caused by ConnectTimeoutError(<urllib3.connection.HTTPSConnection object at 0x103082240>, 'Connection to 013a.tech timed out. (connect timeout=10)'))"
+      },
+      "api": {
+        "status": "error",
+        "error": "HTTPSConnectionPool(host='api.013a.tech', port=443): Max retries exceeded with url: / (Caused by NewConnectionError('<urllib3.connection.HTTPSConnection object at 0x103081640>: Failed to establish a new connection: [Errno 65] No route to host'))"
+      },
+      "health": {
+        "status": "error",
+        "error": "HTTPSConnectionPool(host='013a.tech', port=443): Max retries exceeded with url: /health (Caused by NewConnectionError('<urllib3.connection.HTTPSConnection object at 0x10306f2f0>: Failed to establish a new connection: [Errno 65] No route to host'))"
+      }
+    },
+    "knowledge_graph": {
+      "status": "success",
+      "insights_count": 10,
+      "query_time": 0.00583
+    },
+    "gcp_infrastructure": {
+      "status": "healthy",
+      "pods_running": true,
+      "services_available": true,
+      "load_balancer": "active"
+    },
+    "monitoring": {
+      "status": "active",
+      "prometheus": "running",
+      "grafana": "accessible"
+    }
+  },
+  "cycle_duration": 51.96946096420288,
+  "status": "completed"
+}

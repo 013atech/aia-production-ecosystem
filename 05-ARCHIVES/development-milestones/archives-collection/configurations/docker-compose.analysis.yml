@@ -1,0 +1,301 @@
+version: '3.8'
+
+# AIA Codebase Analysis System - Complete Stack
+services:
+  # Main AIA Analysis Service
+  aia-analysis:
+    build:
+      context: .
+      dockerfile: Dockerfile.analysis
+    container_name: aia-codebase-analysis
+    restart: unless-stopped
+    environment:
+      # Core Configuration
+      - AIA_LOG_LEVEL=INFO
+      - AIA_ANALYSIS_MODE=production
+
+      # LLM Integration
+      - OLLAMA_URL=http://ollama:11434
+      - WAIT_FOR_OLLAMA=true
+
+      # Web3 Integration
+      - POLKADOT_NODE=wss://rpc.polkadot.io
+
+      # Cache and Storage
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - WAIT_FOR_REDIS=true
+
+      # Database
+      - DATABASE_PATH=/app/data/aia_knowledge.db
+
+      # Monitoring
+      - ENABLE_METRICS=true
+      - METRICS_PORT=9090
+
+    volumes:
+      # Project source code (read-only)
+      - ${PROJECT_SOURCE_PATH:-./project}:/app/project:ro
+
+      # Persistent data
+      - aia_knowledge_data:/app/data
+      - aia_knowledge_notes:/app/knowledge_notes
+      - aia_logs:/app/logs
+
+      # Optional: Git repository
+      - ${HOME}/.gitconfig:/home/aia/.gitconfig:ro
+
+    ports:
+      - "8000:8000"  # Analysis API
+      - "9090:9090"  # Metrics endpoint
+
+    depends_on:
+      - ollama
+      - redis
+
+    networks:
+      - aia-network
+
+    healthcheck:
+      test: ["CMD", "/app/healthcheck.sh"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.aia-analysis.rule=Host(`analysis.aia.local`)"
+      - "traefik.http.services.aia-analysis.loadbalancer.server.port=8000"
+
+  # Ollama Local LLM Service
+  ollama:
+    image: ollama/ollama:latest
+    container_name: aia-ollama
+    restart: unless-stopped
+    environment:
+      - OLLAMA_ORIGINS=*
+      - OLLAMA_HOST=0.0.0.0
+
+    volumes:
+      - ollama_data:/root/.ollama
+      - ollama_models:/usr/share/ollama/.ollama/models
+
+    ports:
+      - "11434:11434"
+
+    networks:
+      - aia-network
+
+    # GPU support (uncomment if available)
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # Redis Cache Service
+  redis:
+    image: redis:7-alpine
+    container_name: aia-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy allkeys-lru
+
+    volumes:
+      - redis_data:/data
+
+    ports:
+      - "6379:6379"
+
+    networks:
+      - aia-network
+
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # PostgreSQL Database (Alternative to SQLite for production)
+  postgres:
+    image: postgres:15-alpine
+    container_name: aia-postgres
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=aia_knowledge
+      - POSTGRES_USER=aia
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-aia_secure_password_2024}
+
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+
+    ports:
+      - "5432:5432"
+
+    networks:
+      - aia-network
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aia -d aia_knowledge"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Prometheus Metrics Collection
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: aia-prometheus
+    restart: unless-stopped
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+
+    ports:
+      - "9091:9090"
+
+    networks:
+      - aia-network
+
+  # Grafana Dashboard
+  grafana:
+    image: grafana/grafana:latest
+    container_name: aia-grafana
+    restart: unless-stopped
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
+      - GF_INSTALL_PLUGINS=grafana-piechart-panel
+
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+      - ./grafana/dashboards:/var/lib/grafana/dashboards
+
+    ports:
+      - "3000:3000"
+
+    networks:
+      - aia-network
+
+    depends_on:
+      - prometheus
+
+  # Jupyter Notebook for Analysis
+  jupyter:
+    image: jupyter/scipy-notebook:latest
+    container_name: aia-jupyter
+    restart: unless-stopped
+    environment:
+      - JUPYTER_ENABLE_LAB=yes
+      - JUPYTER_TOKEN=${JUPYTER_TOKEN:-aia_analysis_token}
+
+    volumes:
+      - ./notebooks:/home/jovyan/work/notebooks
+      - aia_knowledge_data:/home/jovyan/work/data:ro
+      - aia_knowledge_notes:/home/jovyan/work/notes:ro
+
+    ports:
+      - "8888:8888"
+
+    networks:
+      - aia-network
+
+    user: root
+    command: start-notebook.sh --NotebookApp.token='${JUPYTER_TOKEN:-aia_analysis_token}' --NotebookApp.allow_root=True
+
+  # NGINX Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    container_name: aia-nginx
+    restart: unless-stopped
+
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - aia_knowledge_notes:/usr/share/nginx/html/notes:ro
+      - ./ssl:/etc/nginx/ssl:ro
+
+    ports:
+      - "80:80"
+      - "443:443"
+
+    networks:
+      - aia-network
+
+    depends_on:
+      - aia-analysis
+      - grafana
+      - jupyter
+
+# Persistent Volumes
+volumes:
+  # Analysis system data
+  aia_knowledge_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${DATA_PATH:-./data}
+
+  aia_knowledge_notes:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${NOTES_PATH:-./knowledge_notes}
+
+  aia_logs:
+    driver: local
+
+  # LLM data
+  ollama_data:
+    driver: local
+
+  ollama_models:
+    driver: local
+
+  # Database data
+  redis_data:
+    driver: local
+
+  postgres_data:
+    driver: local
+
+  # Monitoring data
+  prometheus_data:
+    driver: local
+
+  grafana_data:
+    driver: local
+
+# Networks
+networks:
+  aia-network:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.20.0.0/16
+
+# Additional Configuration
+x-logging: &default-logging
+  driver: "json-file"
+  options:
+    max-size: "10m"
+    max-file: "3"

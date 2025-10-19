@@ -1,0 +1,46 @@
+# TEMPORARILY DISABLED FOR QUOTA COMPLIANCE
+# This deployment has been temporarily disabled to meet GCP quota requirements
+# Original content below (commented out):
+#
+# apiVersion: networking.k8s.io/v1
+# kind: Ingress
+# metadata:
+#   name: aia-working-frontend-ingress
+#   namespace: aia-production-v2
+#   annotations:
+#     kubernetes.io/ingress.global-static-ip-name: "aia-production-ip"
+#     networking.gke.io/managed-certificates: "aia-working-ssl"
+#     ingress.gcp.kubernetes.io/load-balancer-type: "External"
+#     kubernetes.io/ingress.allow-http: "true"
+# spec:
+#   rules:
+#   - host: 013a.tech
+#     http:
+#       paths:
+#       - path: /*
+#         pathType: ImplementationSpecific
+#         backend:
+#           service:
+#             name: aia-frontend-service
+#             port:
+#               number: 80
+#   - host: www.013a.tech
+#     http:
+#       paths:
+#       - path: /*
+#         pathType: ImplementationSpecific
+#         backend:
+#           service:
+#             name: aia-frontend-service
+#             port:
+#               number: 80
+# ---
+# apiVersion: networking.gke.io/v1
+# kind: ManagedCertificate
+# metadata:
+#   name: aia-working-ssl
+#   namespace: aia-production-v2
+# spec:
+#   domains:
+#     - 013a.tech
+#     - www.013a.tech

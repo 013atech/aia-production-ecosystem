@@ -1,0 +1,37 @@
+{
+  "cycle_number": 5241,
+  "timestamp": "2025-10-10T10:14:22.814209",
+  "tests": {
+    "production_endpoints": {
+      "frontend": {
+        "status": "error",
+        "error": "HTTPSConnectionPool(host='013a.tech', port=443): Max retries exceeded with url: / (Caused by ConnectTimeoutError(<urllib3.connection.HTTPSConnection object at 0x10306dd90>, 'Connection to 013a.tech timed out. (connect timeout=10)'))"
+      },
+      "api": {
+        "status": "error",
+        "error": "HTTPSConnectionPool(host='api.013a.tech', port=443): Max retries exceeded with url: / (Caused by ConnectTimeoutError(<urllib3.connection.HTTPSConnection object at 0x10306eab0>, 'Connection to api.013a.tech timed out. (connect timeout=10)'))"
+      },
+      "health": {
+        "status": "error",
+        "error": "HTTPSConnectionPool(host='013a.tech', port=443): Max retries exceeded with url: /health (Caused by ConnectTimeoutError(<urllib3.connection.HTTPSConnection object at 0x1030810d0>, 'Connection to 013a.tech timed out. (connect timeout=10)'))"
+      }
+    },
+    "knowledge_graph": {
+      "status": "error",
+      "status_code": 500
+    },
+    "gcp_infrastructure": {
+      "status": "healthy",
+      "pods_running": true,
+      "services_available": true,
+      "load_balancer": "active"
+    },
+    "monitoring": {
+      "status": "active",
+      "prometheus": "running",
+      "grafana": "accessible"
+    }
+  },
+  "cycle_duration": 60.03114700317383,
+  "status": "completed"
+}

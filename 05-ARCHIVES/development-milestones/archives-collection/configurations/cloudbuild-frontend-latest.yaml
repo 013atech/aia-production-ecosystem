@@ -1,0 +1,45 @@
+# TEMPORARILY DISABLED FOR QUOTA COMPLIANCE
+# This deployment has been temporarily disabled to meet GCP quota requirements
+# Original content below (commented out):
+#
+# # Cloud Build configuration for AIA Frontend with latest September 30 code
+# steps:
+#   # Build the frontend image with all latest fixes
+#   - name: 'gcr.io/cloud-builders/docker'
+#     args: [
+#       'build',
+#       '-f', 'frontend/Dockerfile.production',
+#       '-t', 'europe-west4-docker.pkg.dev/a-467519/aia-images/frontend:latest',
+#       '-t', 'europe-west4-docker.pkg.dev/a-467519/aia-images/frontend:${BUILD_ID}',
+#       '--build-arg', 'BUILD_DATE=${_BUILD_DATE}',
+#       '--build-arg', 'VERSION=3.0.0',
+#       './frontend'
+#     ]
+#     timeout: '1200s'
+# 
+#   # Push both tags
+#   - name: 'gcr.io/cloud-builders/docker'
+#     args: ['push', 'europe-west4-docker.pkg.dev/a-467519/aia-images/frontend:latest']
+#     timeout: '600s'
+# 
+#   - name: 'gcr.io/cloud-builders/docker'
+#     args: ['push', 'europe-west4-docker.pkg.dev/a-467519/aia-images/frontend:${BUILD_ID}']
+#     timeout: '600s'
+# 
+# # Build arguments
+# substitutions:
+#   _BUILD_DATE: '2025-09-30T21:00:00Z'
+# 
+# # Cloud Build options
+# options:
+#   machineType: 'E2_HIGHCPU_8'
+#   substitution_option: 'ALLOW_LOOSE'
+#   logging: 'CLOUD_LOGGING_ONLY'
+# 
+# # Timeout for entire build
+# timeout: '2400s'
+# 
+# # Artifact images
+# images:
+#   - 'europe-west4-docker.pkg.dev/a-467519/aia-images/frontend:latest'
+#   - 'europe-west4-docker.pkg.dev/a-467519/aia-images/frontend:${BUILD_ID}'

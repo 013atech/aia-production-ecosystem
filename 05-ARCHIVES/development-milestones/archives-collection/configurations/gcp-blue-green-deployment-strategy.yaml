@@ -1,0 +1,500 @@
+# GCP Blue-Green Deployment Strategy for AIA Analytics
+# Enterprise-Grade Zero-Downtime Migration
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: aia-blue-production
+  labels:
+    environment: blue
+    deployment-strategy: blue-green
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: aia-green-production
+  labels:
+    environment: green
+    deployment-strategy: blue-green
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: aia-monitoring-unified
+  labels:
+    environment: shared
+    deployment-strategy: monitoring
+---
+# Blue Environment - Current Production
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-blue-backend
+  namespace: aia-blue-production
+  labels:
+    app: aia-backend
+    environment: blue
+spec:
+  replicas: 2  # Reduced from current 3+3+2=8 total replicas
+  selector:
+    matchLabels:
+      app: aia-backend
+      environment: blue
+  template:
+    metadata:
+      labels:
+        app: aia-backend
+        environment: blue
+    spec:
+      containers:
+      - name: backend
+        image: gcr.io/aia-system-prod-1759055445/aia-api:latest
+        ports:
+        - containerPort: 8000
+        env:
+        - name: ENVIRONMENT
+          value: "blue"
+        - name: DATABASE_URL
+          value: "postgresql://postgres:secure_password@aia-postgres-service:5432/aia_db"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"  # Optimized from current high usage
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 10
+          periodSeconds: 5
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-blue-frontend
+  namespace: aia-blue-production
+  labels:
+    app: aia-frontend
+    environment: blue
+spec:
+  replicas: 2  # Reduced from current fragmented deployments
+  selector:
+    matchLabels:
+      app: aia-frontend
+      environment: blue
+  template:
+    metadata:
+      labels:
+        app: aia-frontend
+        environment: blue
+    spec:
+      containers:
+      - name: frontend
+        image: gcr.io/aia-system-prod-1759055445/aia-frontend:latest
+        ports:
+        - containerPort: 3000
+        env:
+        - name: REACT_APP_API_URL
+          value: "https://api.013a.tech"
+        - name: REACT_APP_ENVIRONMENT
+          value: "blue"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 3000
+          initialDelaySeconds: 10
+          periodSeconds: 5
+---
+# Green Environment - New Deployment Target
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-green-backend
+  namespace: aia-green-production
+  labels:
+    app: aia-backend
+    environment: green
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: aia-backend
+      environment: green
+  template:
+    metadata:
+      labels:
+        app: aia-backend
+        environment: green
+    spec:
+      containers:
+      - name: backend
+        image: gcr.io/aia-system-prod-1759055445/aia-api:v2-green  # New version
+        ports:
+        - containerPort: 8000
+        env:
+        - name: ENVIRONMENT
+          value: "green"
+        - name: DATABASE_URL
+          value: "postgresql://postgres:secure_password@aia-postgres-service:5432/aia_db"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 10
+          periodSeconds: 5
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-green-frontend
+  namespace: aia-green-production
+  labels:
+    app: aia-frontend
+    environment: green
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: aia-frontend
+      environment: green
+  template:
+    metadata:
+      labels:
+        app: aia-frontend
+        environment: green
+    spec:
+      containers:
+      - name: frontend
+        image: gcr.io/aia-system-prod-1759055445/aia-frontend:v2-green  # New version
+        ports:
+        - containerPort: 3000
+        env:
+        - name: REACT_APP_API_URL
+          value: "https://api.013a.tech"
+        - name: REACT_APP_ENVIRONMENT
+          value: "green"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 3000
+          initialDelaySeconds: 10
+          periodSeconds: 5
+---
+# Shared Database with Optimized PostgreSQL
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-postgres
+  namespace: aia-blue-production  # Shared between blue/green
+  labels:
+    app: aia-postgres
+    tier: database
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: aia-postgres
+  template:
+    metadata:
+      labels:
+        app: aia-postgres
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:15-alpine
+        ports:
+        - containerPort: 5432
+        env:
+        - name: POSTGRES_DB
+          value: "aia_db"
+        - name: POSTGRES_USER
+          value: "postgres"
+        - name: POSTGRES_PASSWORD
+          value: "secure_password"
+        - name: PGDATA
+          value: /var/lib/postgresql/data/pgdata  # FIX: Subdirectory to avoid mount point issue
+        volumeMounts:
+        - name: postgres-storage
+          mountPath: /var/lib/postgresql/data
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+      volumes:
+      - name: postgres-storage
+        persistentVolumeClaim:
+          claimName: aia-postgres-pvc
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: aia-postgres-pvc
+  namespace: aia-blue-production
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+---
+# Blue Services
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-blue-backend-service
+  namespace: aia-blue-production
+  labels:
+    app: aia-backend
+    environment: blue
+spec:
+  selector:
+    app: aia-backend
+    environment: blue
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8000
+  type: ClusterIP  # Internal only, accessed via Ingress
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-blue-frontend-service
+  namespace: aia-blue-production
+  labels:
+    app: aia-frontend
+    environment: blue
+spec:
+  selector:
+    app: aia-frontend
+    environment: blue
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 3000
+  type: ClusterIP  # Internal only, accessed via Ingress
+---
+# Green Services
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-green-backend-service
+  namespace: aia-green-production
+  labels:
+    app: aia-backend
+    environment: green
+spec:
+  selector:
+    app: aia-backend
+    environment: green
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8000
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-green-frontend-service
+  namespace: aia-green-production
+  labels:
+    app: aia-frontend
+    environment: green
+spec:
+  selector:
+    app: aia-frontend
+    environment: green
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 3000
+  type: ClusterIP
+---
+# Shared Database Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-postgres-service
+  namespace: aia-blue-production
+  labels:
+    app: aia-postgres
+spec:
+  selector:
+    app: aia-postgres
+  ports:
+    - protocol: TCP
+      port: 5432
+      targetPort: 5432
+  type: ClusterIP
+---
+# Production Ingress with Blue-Green Switching Capability
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: aia-blue-green-ingress
+  namespace: aia-blue-production
+  annotations:
+    kubernetes.io/ingress.global-static-ip-name: "aia-ultimate-ip"  # Use existing allocated IP
+    networking.gke.io/managed-certificates: "aia-ssl-certificate-fixed"
+    kubernetes.io/ingress.class: "gce"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    # Blue-Green Traffic Switching Annotations
+    nginx.ingress.kubernetes.io/canary: "false"  # Start with blue (current prod)
+    nginx.ingress.kubernetes.io/canary-weight: "0"  # 0% to green initially
+spec:
+  rules:
+  - host: 013a.tech
+    http:
+      paths:
+      - path: /api/*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-blue-backend-service  # Switch to aia-green-backend-service for cutover
+            port:
+              number: 80
+      - path: /*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-blue-frontend-service  # Switch to aia-green-frontend-service for cutover
+            port:
+              number: 80
+  - host: www.013a.tech
+    http:
+      paths:
+      - path: /*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-blue-frontend-service
+            port:
+              number: 80
+  - host: api.013a.tech
+    http:
+      paths:
+      - path: /*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aia-blue-backend-service
+            port:
+              number: 80
+---
+# Fixed SSL Certificate (addressing provisioning issues)
+apiVersion: networking.gke.io/v1
+kind: ManagedCertificate
+metadata:
+  name: aia-ssl-certificate-fixed
+  namespace: aia-blue-production
+spec:
+  domains:
+  - "013a.tech"
+  - "www.013a.tech"
+  - "api.013a.tech"
+---
+# Unified Monitoring (Consolidated from multiple namespaces)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-unified-monitoring
+  namespace: aia-monitoring-unified
+  labels:
+    app: aia-monitoring
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: aia-monitoring
+  template:
+    metadata:
+      labels:
+        app: aia-monitoring
+    spec:
+      containers:
+      - name: prometheus
+        image: prom/prometheus:latest
+        ports:
+        - containerPort: 9090
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+      - name: grafana
+        image: grafana/grafana:latest
+        ports:
+        - containerPort: 3000
+        env:
+        - name: GF_SECURITY_ADMIN_PASSWORD
+          value: "admin123"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-monitoring-service
+  namespace: aia-monitoring-unified
+  labels:
+    app: aia-monitoring
+spec:
+  selector:
+    app: aia-monitoring
+  ports:
+    - name: prometheus
+      protocol: TCP
+      port: 9090
+      targetPort: 9090
+    - name: grafana
+      protocol: TCP
+      port: 3000
+      targetPort: 3000
+  type: NodePort  # Single monitoring LoadBalancer instead of multiple

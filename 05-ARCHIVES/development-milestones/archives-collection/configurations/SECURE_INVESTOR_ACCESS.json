@@ -1,0 +1,56 @@
+{
+  "portal_url": "https://investors.013a.tech",
+  "demo_environment": "https://demo.investors.013a.tech",
+  "access_tokens": {
+    "EY_Global": {
+      "token": "aia_investor_8pRmj6thsn_xdX7mlF2pLLg9w0Ql-YeHv8BEBVF6Zpo",
+      "permissions": "demo_access",
+      "expiry": "7_days",
+      "ip_restrictions": "investor_specific",
+      "audit_level": "comprehensive"
+    },
+    "JPMorgan": {
+      "token": "aia_investor_VIgYvttnbvRREyOSJb-3_wqA9t3MLEyS9VDIej8J-14",
+      "permissions": "demo_access",
+      "expiry": "7_days",
+      "ip_restrictions": "investor_specific",
+      "audit_level": "comprehensive"
+    },
+    "Google_Ventures": {
+      "token": "aia_investor_FJHp3Y0KJriGChtXZpo3H2cKqNrjfwDIptlMgWeQ9qM",
+      "permissions": "demo_access",
+      "expiry": "7_days",
+      "ip_restrictions": "investor_specific",
+      "audit_level": "comprehensive"
+    },
+    "Apple_Ventures": {
+      "token": "aia_investor_6dvv1LfwhWQe5sXUG1h5auldrmBdFlw5KmzNDNuj0Js",
+      "permissions": "demo_access",
+      "expiry": "7_days",
+      "ip_restrictions": "investor_specific",
+      "audit_level": "comprehensive"
+    },
+    "xAI": {
+      "token": "aia_investor_awZYsWHmou0xDhRwHlPW-wRfc5Yetun_mQKRDsJ4rZg",
+      "permissions": "demo_access",
+      "expiry": "7_days",
+      "ip_restrictions": "investor_specific",
+      "audit_level": "comprehensive"
+    },
+    "Andreessen_Horowitz": {
+      "token": "aia_investor_zcvwE4wo4uj7Jebsv2gvV6TfR8u7T7ynszWRksCNunI",
+      "permissions": "demo_access",
+      "expiry": "7_days",
+      "ip_restrictions": "investor_specific",
+      "audit_level": "comprehensive"
+    }
+  },
+  "security_features": [
+    "Multi-factor authentication (MFA)",
+    "IP whitelist with geographic restrictions",
+    "Session monitoring with anomaly detection",
+    "Real-time audit logging with blockchain verification",
+    "Code obfuscation and algorithm protection",
+    "Proprietary data encryption with quantum resistance"
+  ]
+}

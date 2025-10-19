@@ -1,0 +1,36 @@
+# TEMPORARILY DISABLED FOR QUOTA COMPLIANCE
+# This deployment has been temporarily disabled to meet GCP quota requirements
+# Original content below (commented out):
+#
+# steps:
+# # Build Cost Optimizer
+# - name: 'gcr.io/cloud-builders/docker'
+#   args: [
+#     'build',
+#     '-f', 'Dockerfile.cost-optimizer',
+#     '-t', 'gcr.io/aia-system-prod-1759055445/aia-cost-optimizer:latest',
+#     '.'
+#   ]
+# 
+# # Build Performance Monitor
+# - name: 'gcr.io/cloud-builders/docker'
+#   args: [
+#     'build',
+#     '-f', 'Dockerfile.performance-monitor',
+#     '-t', 'gcr.io/aia-system-prod-1759055445/aia-performance-monitor:latest',
+#     '.'
+#   ]
+# 
+# # Push Cost Optimizer
+# - name: 'gcr.io/cloud-builders/docker'
+#   args: ['push', 'gcr.io/aia-system-prod-1759055445/aia-cost-optimizer:latest']
+# 
+# # Push Performance Monitor
+# - name: 'gcr.io/cloud-builders/docker'
+#   args: ['push', 'gcr.io/aia-system-prod-1759055445/aia-performance-monitor:latest']
+# 
+# options:
+#   machineType: 'E2_HIGHCPU_8'
+#   logging: CLOUD_LOGGING_ONLY
+# 
+# timeout: '1200s'

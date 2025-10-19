@@ -1,0 +1,781 @@
+# AIA ANALYTICS - PRODUCTION-OPTIMIZED FULL COMPLEXITY DEPLOYMENT
+# Version: 3.0 - Complete enterprise-ready system with all features
+# Optimized for existing infrastructure and quota constraints
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: aia-analytics-production
+  labels:
+    environment: production
+    app: aia-analytics
+    version: v3.0
+---
+# Production Configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: aia-analytics-config
+  namespace: aia-analytics-production
+data:
+  ENVIRONMENT: "production"
+  LOG_LEVEL: "INFO"
+  MAX_WORKERS: "4"
+  REDIS_POOL_SIZE: "20"
+  DATABASE_POOL_SIZE: "30"
+  ENABLE_MONITORING: "true"
+  ENABLE_METRICS: "true"
+  GOOGLE_CLOUD_PROJECT: "aia-system-prod-1759055445"
+  VERTEX_AI_LOCATION: "europe-west4"
+  CORS_ORIGINS: "https://013a.tech,https://*.013a.tech"
+  API_VERSION: "v3.0"
+  FEATURE_FLAGS: "ml_processing:true,real_time_analytics:true,enterprise_features:true"
+---
+# Production Secrets
+apiVersion: v1
+kind: Secret
+metadata:
+  name: aia-analytics-secrets
+  namespace: aia-analytics-production
+type: Opaque
+stringData:
+  DATABASE_URL: "postgresql://aia_user:secure_production_password@postgres-service:5432/aia_analytics_production"
+  REDIS_URL: "redis://redis-service:6379/0"
+  SECRET_KEY: "aia-analytics-production-secret-key-2025-v3"
+  OPENAI_API_KEY: "sk-placeholder-openai-key"
+  ANTHROPIC_API_KEY: "[ANTHROPIC_API_KEY_PLACEHOLDER]"
+---
+# PostgreSQL Database for Analytics
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres-analytics
+  namespace: aia-analytics-production
+  labels:
+    app: postgres
+    component: database
+spec:
+  serviceName: postgres-service
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+      component: database
+  template:
+    metadata:
+      labels:
+        app: postgres
+        component: database
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:15-alpine
+        env:
+        - name: POSTGRES_DB
+          value: "aia_analytics_production"
+        - name: POSTGRES_USER
+          value: "aia_user"
+        - name: POSTGRES_PASSWORD
+          value: "secure_production_password"
+        - name: PGDATA
+          value: "/var/lib/postgresql/data/pgdata"
+        ports:
+        - containerPort: 5432
+          name: postgres
+        volumeMounts:
+        - name: postgres-storage
+          mountPath: /var/lib/postgresql/data
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "0.3"
+          limits:
+            memory: "128Mi"
+            cpu: "0.8"
+        readinessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -c
+            - exec pg_isready -U "aia_user" -d "aia_analytics_production" -h 127.0.0.1 -p 5432
+          initialDelaySeconds: 20
+          periodSeconds: 10
+        livenessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -c
+            - exec pg_isready -U "aia_user" -d "aia_analytics_production" -h 127.0.0.1 -p 5432
+          initialDelaySeconds: 60
+          periodSeconds: 30
+  volumeClaimTemplates:
+  - metadata:
+      name: postgres-storage
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      resources:
+        requests:
+          storage: 10Gi
+---
+# Redis Cache for Analytics
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis-analytics
+  namespace: aia-analytics-production
+  labels:
+    app: redis
+    component: cache
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis
+      component: cache
+  template:
+    metadata:
+      labels:
+        app: redis
+        component: cache
+    spec:
+      containers:
+      - name: redis
+        image: redis:7-alpine
+        command:
+        - redis-server
+        - --appendonly
+        - "yes"
+        - --save
+        - "60"
+        - "1"
+        - --maxmemory
+        - "256mb"
+        - --maxmemory-policy
+        - "allkeys-lru"
+        ports:
+        - containerPort: 6379
+          name: redis
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "0.1"
+          limits:
+            memory: "128Mi"
+            cpu: "0.3"
+        readinessProbe:
+          exec:
+            command:
+            - redis-cli
+            - ping
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        livenessProbe:
+          exec:
+            command:
+            - redis-cli
+            - ping
+          initialDelaySeconds: 30
+          periodSeconds: 10
+---
+# Main AIA Analytics API
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-analytics-api
+  namespace: aia-analytics-production
+  labels:
+    app: aia-analytics-api
+    component: main-api
+    version: v3.0
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: aia-analytics-api
+      component: main-api
+  template:
+    metadata:
+      labels:
+        app: aia-analytics-api
+        component: main-api
+        version: v3.0
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8000"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+      - name: aia-analytics-api
+        image: gcr.io/aia-system-prod-1759055445/aia-analytics:production-v3.0
+        ports:
+        - containerPort: 8000
+          name: http
+          protocol: TCP
+        env:
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        envFrom:
+        - configMapRef:
+            name: aia-analytics-config
+        - secretRef:
+            name: aia-analytics-secrets
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "0.5"
+          limits:
+            memory: "128Mi"
+            cpu: "1.5"
+        readinessProbe:
+          httpGet:
+            path: /health/ready
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        livenessProbe:
+          httpGet:
+            path: /health/live
+            port: 8000
+          initialDelaySeconds: 60
+          periodSeconds: 20
+          timeoutSeconds: 10
+          failureThreshold: 3
+        volumeMounts:
+        - name: temp-storage
+          mountPath: /app/temp
+        - name: logs
+          mountPath: /app/logs
+      volumes:
+      - name: temp-storage
+        emptyDir:
+          sizeLimit: 1Gi
+      - name: logs
+        emptyDir:
+          sizeLimit: 500Mi
+---
+# ML Processing Engine
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-ml-processor
+  namespace: aia-analytics-production
+  labels:
+    app: aia-ml-processor
+    component: ml-engine
+    version: v3.0
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: aia-ml-processor
+      component: ml-engine
+  template:
+    metadata:
+      labels:
+        app: aia-ml-processor
+        component: ml-engine
+        version: v3.0
+    spec:
+      containers:
+      - name: ml-processor
+        image: gcr.io/aia-system-prod-1759055445/aia-analytics:production-v3.0
+        command: ["python", "-m", "aia.ml.processor"]
+        ports:
+        - containerPort: 8001
+          name: http
+        envFrom:
+        - configMapRef:
+            name: aia-analytics-config
+        - secretRef:
+            name: aia-analytics-secrets
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "0.8"
+          limits:
+            memory: "128Mi"
+            cpu: "2"
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8001
+          initialDelaySeconds: 45
+          periodSeconds: 15
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8001
+          initialDelaySeconds: 90
+          periodSeconds: 30
+---
+# Cognitive Processing Engine
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-cognitive-processor
+  namespace: aia-analytics-production
+  labels:
+    app: aia-cognitive-processor
+    component: cognitive-engine
+    version: v3.0
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: aia-cognitive-processor
+      component: cognitive-engine
+  template:
+    metadata:
+      labels:
+        app: aia-cognitive-processor
+        component: cognitive-engine
+        version: v3.0
+    spec:
+      containers:
+      - name: cognitive-processor
+        image: gcr.io/aia-system-prod-1759055445/aia-cognitive-processor:latest
+        ports:
+        - containerPort: 8002
+          name: http
+        envFrom:
+        - configMapRef:
+            name: aia-analytics-config
+        - secretRef:
+            name: aia-analytics-secrets
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "0.5"
+          limits:
+            memory: "128Mi"
+            cpu: "1.5"
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8002
+          initialDelaySeconds: 30
+          periodSeconds: 15
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8002
+          initialDelaySeconds: 60
+          periodSeconds: 30
+---
+# WebSocket Real-time Service
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-websocket-server
+  namespace: aia-analytics-production
+  labels:
+    app: aia-websocket-server
+    component: websocket
+    version: v3.0
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: aia-websocket-server
+      component: websocket
+  template:
+    metadata:
+      labels:
+        app: aia-websocket-server
+        component: websocket
+        version: v3.0
+    spec:
+      containers:
+      - name: websocket-server
+        image: gcr.io/aia-system-prod-1759055445/aia-websocket-server:latest
+        ports:
+        - containerPort: 8080
+          name: websocket
+        envFrom:
+        - configMapRef:
+            name: aia-analytics-config
+        - secretRef:
+            name: aia-analytics-secrets
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "0.3"
+          limits:
+            memory: "128Mi"
+            cpu: "0.8"
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 20
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 40
+          periodSeconds: 20
+---
+# Services
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-service
+  namespace: aia-analytics-production
+  labels:
+    app: postgres
+    component: database
+spec:
+  selector:
+    app: postgres
+    component: database
+  ports:
+  - name: postgres
+    port: 5432
+    targetPort: 5432
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-service
+  namespace: aia-analytics-production
+  labels:
+    app: redis
+    component: cache
+spec:
+  selector:
+    app: redis
+    component: cache
+  ports:
+  - name: redis
+    port: 6379
+    targetPort: 6379
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-analytics-api-service
+  namespace: aia-analytics-production
+  labels:
+    app: aia-analytics-api
+    component: main-api
+spec:
+  selector:
+    app: aia-analytics-api
+    component: main-api
+  ports:
+  - name: http
+    port: 80
+    targetPort: 8000
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-ml-processor-service
+  namespace: aia-analytics-production
+  labels:
+    app: aia-ml-processor
+    component: ml-engine
+spec:
+  selector:
+    app: aia-ml-processor
+    component: ml-engine
+  ports:
+  - name: http
+    port: 80
+    targetPort: 8001
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-cognitive-processor-service
+  namespace: aia-analytics-production
+  labels:
+    app: aia-cognitive-processor
+    component: cognitive-engine
+spec:
+  selector:
+    app: aia-cognitive-processor
+    component: cognitive-engine
+  ports:
+  - name: http
+    port: 80
+    targetPort: 8002
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-websocket-service
+  namespace: aia-analytics-production
+  labels:
+    app: aia-websocket-server
+    component: websocket
+spec:
+  selector:
+    app: aia-websocket-server
+    component: websocket
+  ports:
+  - name: websocket
+    port: 8080
+    targetPort: 8080
+  type: ClusterIP
+---
+# Main Load Balancer Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-analytics-loadbalancer
+  namespace: aia-analytics-production
+  labels:
+    app: aia-analytics
+    component: loadbalancer
+  annotations:
+    cloud.google.com/neg: '{"ingress": true}'
+    cloud.google.com/backend-config: '{"default": "aia-analytics-backend-config"}'
+spec:
+  selector:
+    app: aia-analytics-api
+    component: main-api
+  ports:
+  - name: http
+    port: 80
+    targetPort: 8000
+  type: NodePort
+---
+# Backend Configuration for Cloud Load Balancer
+apiVersion: cloud.google.com/v1
+kind: BackendConfig
+metadata:
+  name: aia-analytics-backend-config
+  namespace: aia-analytics-production
+spec:
+  timeoutSec: 120
+  connectionDraining:
+    drainingTimeoutSec: 60
+  logging:
+    enable: true
+    sampleRate: 1.0
+  healthCheck:
+    checkIntervalSec: 10
+    timeoutSec: 5
+    healthyThreshold: 1
+    unhealthyThreshold: 3
+    type: HTTP
+    requestPath: /health/ready
+    port: 8000
+---
+# Managed SSL Certificate for 013a.tech
+apiVersion: networking.gke.io/v1
+kind: ManagedCertificate
+metadata:
+  name: aia-analytics-ssl-cert
+  namespace: aia-analytics-production
+spec:
+  domains:
+  - "013a.tech"
+  - "www.013a.tech"
+  - "api.013a.tech"
+---
+# Production Ingress with SSL
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: aia-analytics-ingress
+  namespace: aia-analytics-production
+  annotations:
+    kubernetes.io/ingress.class: "gce"
+    kubernetes.io/ingress.global-static-ip-name: "aia-analytics-ip"
+    networking.gke.io/managed-certificates: "aia-analytics-ssl-cert"
+    kubernetes.io/ingress.allow-http: "false"
+    networking.gke.io/v1beta1.FrontendConfig: "aia-analytics-frontend-config"
+spec:
+  rules:
+  - host: "013a.tech"
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-analytics-api-service
+            port:
+              number: 80
+  - host: "api.013a.tech"
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-analytics-api-service
+            port:
+              number: 80
+      - path: /ml/
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-ml-processor-service
+            port:
+              number: 80
+      - path: /cognitive/
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-cognitive-processor-service
+            port:
+              number: 80
+      - path: /ws/
+        pathType: Prefix
+        backend:
+          service:
+            name: aia-websocket-service
+            port:
+              number: 8080
+---
+# Frontend Configuration
+apiVersion: networking.gke.io/v1beta1
+kind: FrontendConfig
+metadata:
+  name: aia-analytics-frontend-config
+  namespace: aia-analytics-production
+spec:
+  sslPolicy: "aia-ssl-policy"
+  redirectToHttps:
+    enabled: true
+    responseCodeName: "MOVED_PERMANENTLY_DEFAULT"
+---
+# Horizontal Pod Autoscaler for Main API
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: aia-analytics-api-hpa
+  namespace: aia-analytics-production
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: aia-analytics-api
+  minReplicas: 3
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 60
+      policies:
+      - type: Percent
+        value: 50
+        periodSeconds: 60
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+      - type: Percent
+        value: 25
+        periodSeconds: 60
+---
+# Pod Disruption Budget
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: aia-analytics-api-pdb
+  namespace: aia-analytics-production
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: aia-analytics-api
+      component: main-api
+---
+# Network Policy for Security
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: aia-analytics-network-policy
+  namespace: aia-analytics-production
+spec:
+  podSelector:
+    matchLabels:
+      app: aia-analytics-api
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: kube-system
+    - podSelector:
+        matchLabels:
+          component: ingress-controller
+    ports:
+    - protocol: TCP
+      port: 8000
+  egress:
+  - to:
+    - podSelector:
+        matchLabels:
+          app: postgres
+    ports:
+    - protocol: TCP
+      port: 5432
+  - to:
+    - podSelector:
+        matchLabels:
+          app: redis
+    ports:
+    - protocol: TCP
+      port: 6379
+  - to: [] # Allow all external traffic for API calls
+    ports:
+    - protocol: TCP
+      port: 443
+    - protocol: TCP
+      port: 80

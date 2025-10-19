@@ -1,0 +1,157 @@
+# 🔄 TEMPORARY WORKING DEPLOYMENT - Using Available Images
+# While full complexity images are building
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: aia-temp-working
+  labels:
+    environment: temp-production
+---
+# 🚀 TEMPORARY BACKEND USING EXISTING IMAGE
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-backend-temp
+  namespace: aia-temp-working
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: aia-backend-temp
+  template:
+    metadata:
+      labels:
+        app: aia-backend-temp
+    spec:
+      containers:
+      - name: aia-backend
+        image: gcr.io/aia-system-prod-1759055445/aia-api:latest
+        ports:
+        - containerPort: 8000
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        env:
+        - name: ENVIRONMENT
+          value: "production"
+        - name: PORT
+          value: "8000"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-backend-temp-service
+  namespace: aia-temp-working
+spec:
+  selector:
+    app: aia-backend-temp
+  ports:
+  - port: 80
+    targetPort: 8000
+  type: ClusterIP
+---
+# 🎨 TEMPORARY FRONTEND USING EXISTING IMAGE
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-frontend-temp
+  namespace: aia-temp-working
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: aia-frontend-temp
+  template:
+    metadata:
+      labels:
+        app: aia-frontend-temp
+    spec:
+      containers:
+      - name: aia-frontend
+        image: gcr.io/aia-system-prod-1759055445/aia-frontend:latest
+        ports:
+        - containerPort: 80
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-frontend-temp-service
+  namespace: aia-temp-working
+spec:
+  selector:
+    app: aia-frontend-temp
+  ports:
+  - port: 80
+    targetPort: 80
+  type: ClusterIP
+---
+# 🌐 TEMPORARY LOAD BALANCER
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-temp-loadbalancer
+  namespace: aia-temp-working
+spec:
+  type: NodePort
+  selector:
+    app: aia-frontend-temp
+  ports:
+  - port: 80
+    targetPort: 80
+    name: http
+  - port: 8000
+    targetPort: 8000
+    name: api
+---
+# 🔄 WEBSOCKET SERVICE
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aia-websocket-temp
+  namespace: aia-temp-working
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: aia-websocket-temp
+  template:
+    metadata:
+      labels:
+        app: aia-websocket-temp
+    spec:
+      containers:
+      - name: aia-websocket
+        image: gcr.io/aia-system-prod-1759055445/aia-websocket-server:latest
+        ports:
+        - containerPort: 8090
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aia-websocket-temp-service
+  namespace: aia-temp-working
+spec:
+  selector:
+    app: aia-websocket-temp
+  ports:
+  - port: 8090
+    targetPort: 8090
+  type: ClusterIP

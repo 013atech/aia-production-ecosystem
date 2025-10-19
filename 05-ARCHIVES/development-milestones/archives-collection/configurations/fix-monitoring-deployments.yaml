@@ -1,0 +1,111 @@
+# TEMPORARILY DISABLED FOR QUOTA COMPLIANCE
+# This deployment has been temporarily disabled to meet GCP quota requirements
+# Original content below (commented out):
+#
+# apiVersion: apps/v1
+# kind: Deployment
+# metadata:
+#   name: aia-cost-optimizer-fixed
+#   namespace: aia-production
+# spec:
+#   replicas: 1
+#   selector:
+#     matchLabels:
+#       app: aia-cost-optimizer
+#       version: fixed
+#   template:
+#     metadata:
+#       labels:
+#         app: aia-cost-optimizer
+#         version: fixed
+#     spec:
+#       containers:
+#       - name: cost-optimizer
+#         image: python:3.12-slim
+#         command: ["/bin/bash"]
+#         args: ["-c", "cd /app && pip install redis psycopg2-binary google-cloud-monitoring kubernetes psutil schedule requests && python cost_optimizer.py"]
+#         volumeMounts:
+#         - name: cost-optimizer-script
+#           mountPath: /app
+#         env:
+#         - name: REDIS_HOST
+#           value: "aia-redis"
+#         - name: POSTGRES_HOST
+#           value: "aia-postgres"
+#         - name: POSTGRES_DB
+#           value: "aia_production"
+#         - name: POSTGRES_USER
+#           value: "aia_user"
+#         - name: POSTGRES_PASSWORD
+#           value: "aia_secure_prod_2025"
+#         - name: GOOGLE_CLOUD_PROJECT
+#           value: "aia-system-prod-1759055445"
+#         - name: KUBERNETES_NAMESPACE
+#           value: "aia-production"
+#         resources:
+#           requests:
+#             memory: "128Mi"
+#             cpu: "100m"
+#           limits:
+#             memory: "128Mi"
+#             cpu: "100m"
+#       volumes:
+#       - name: cost-optimizer-script
+#         configMap:
+#           name: cost-optimizer-script
+#       serviceAccountName: default
+# ---
+# apiVersion: apps/v1
+# kind: Deployment
+# metadata:
+#   name: aia-performance-monitor-fixed
+#   namespace: aia-production
+# spec:
+#   replicas: 1
+#   selector:
+#     matchLabels:
+#       app: aia-performance-monitor
+#       version: fixed
+#   template:
+#     metadata:
+#       labels:
+#         app: aia-performance-monitor
+#         version: fixed
+#     spec:
+#       containers:
+#       - name: performance-monitor
+#         image: python:3.12-slim
+#         command: ["/bin/bash"]
+#         args: ["-c", "cd /app && pip install redis psycopg2-binary google-cloud-monitoring kubernetes psutil schedule requests && python monitor.py"]
+#         volumeMounts:
+#         - name: performance-monitor-script
+#           mountPath: /app
+#         env:
+#         - name: REDIS_HOST
+#           value: "aia-redis"
+#         - name: POSTGRES_HOST
+#           value: "aia-postgres"
+#         - name: POSTGRES_DB
+#           value: "aia_production"
+#         - name: POSTGRES_USER
+#           value: "aia_user"
+#         - name: POSTGRES_PASSWORD
+#           value: "aia_secure_prod_2025"
+#         - name: GOOGLE_CLOUD_PROJECT
+#           value: "aia-system-prod-1759055445"
+#         - name: KUBERNETES_NAMESPACE
+#           value: "aia-production"
+#         - name: AIA_API_ENDPOINT
+#           value: "http://aia-backend-service:8000"
+#         resources:
+#           requests:
+#             memory: "128Mi"
+#             cpu: "100m"
+#           limits:
+#             memory: "128Mi"
+#             cpu: "100m"
+#       volumes:
+#       - name: performance-monitor-script
+#         configMap:
+#           name: performance-monitor-script
+#       serviceAccountName: default

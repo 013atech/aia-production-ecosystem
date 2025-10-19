@@ -1,0 +1,40 @@
+{
+  "cycle_number": 5976,
+  "timestamp": "2025-10-11T01:09:25.238165",
+  "tests": {
+    "production_endpoints": {
+      "frontend": {
+        "status_code": 520,
+        "response_time": 0.446956,
+        "status": "unhealthy"
+      },
+      "api": {
+        "status": "error",
+        "error": "[Errno 32] Broken pipe"
+      },
+      "health": {
+        "status_code": 520,
+        "response_time": 0.38846,
+        "status": "unhealthy"
+      }
+    },
+    "knowledge_graph": {
+      "status": "success",
+      "insights_count": 10,
+      "query_time": 0.006609
+    },
+    "gcp_infrastructure": {
+      "status": "healthy",
+      "pods_running": true,
+      "services_available": true,
+      "load_balancer": "active"
+    },
+    "monitoring": {
+      "status": "active",
+      "prometheus": "running",
+      "grafana": "accessible"
+    }
+  },
+  "cycle_duration": 1.6308481693267822,
+  "status": "completed"
+}

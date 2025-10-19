@@ -1,0 +1,358 @@
+{
+  "test_session_id": "validation_1760092083",
+  "timestamp": "2025-10-10T10:28:19.563265",
+  "total_tests": 15,
+  "passed_tests": 11,
+  "failed_tests": 2,
+  "warning_tests": 2,
+  "skipped_tests": 0,
+  "overall_status": "FAIL",
+  "duration": 15.673364707967266,
+  "test_results": [
+    {
+      "test_id": "SEC_001",
+      "test_name": "Authentication Required",
+      "category": "Security",
+      "status": "FAIL",
+      "duration": 0.1,
+      "message": "Protected endpoint accessible without auth: 200",
+      "details": {},
+      "timestamp": "2025-10-10T10:28:19.500242"
+    },
+    {
+      "test_id": "SEC_002",
+      "test_name": "HTTPS Enforcement",
+      "category": "Security",
+      "status": "WARNING",
+      "duration": 0.1,
+      "message": "HTTPS not enforced (development environment)",
+      "details": {},
+      "timestamp": "2025-10-10T10:28:19.500402"
+    },
+    {
+      "test_id": "SEC_003",
+      "test_name": "Security Headers",
+      "category": "Security",
+      "status": "PASS",
+      "duration": 0.1,
+      "message": "Security headers present: ['X-Content-Type-Options', 'X-Frame-Options', 'X-XSS-Protection', 'Strict-Transport-Security']",
+      "details": {
+        "headers": {
+          "date": "Fri, 10 Oct 2025 10:28:19 GMT",
+          "server": "uvicorn",
+          "content-length": "1761",
+          "content-type": "application/json",
+          "x-request-id": "9905901d1a732e20",
+          "x-response-time": "0.1ms",
+          "x-api-version": "1.0.0",
+          "x-powered-by": "AIA Professional Enterprise API",
+          "x-content-type-options": "nosniff",
+          "x-frame-options": "DENY",
+          "x-xss-protection": "1; mode=block",
+          "strict-transport-security": "max-age=31536000; includeSubDomains",
+          "content-security-policy": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'",
+          "referrer-policy": "strict-origin-when-cross-origin",
+          "permissions-policy": "geolocation=(), microphone=(), camera=()",
+          "x-security-level": "quantum-enhanced",
+          "x-processing-time": "0.29ms",
+          "x-gateway-version": "v1.0.0",
+          "x-performance-tier": "enterprise"
+        }
+      },
+      "timestamp": "2025-10-10T10:28:19.501568"
+    },
+    {
+      "test_id": "SEC_004",
+      "test_name": "Rate Limiting",
+      "category": "Security",
+      "status": "WARNING",
+      "duration": 1.0,
+      "message": "Rate limiting not triggered with rapid requests",
+      "details": {
+        "response_codes": [
+          503,
+          503,
+          503,
+          503,
+          503,
+          503,
+          503,
+          503,
+          503,
+          503,
+          503,
+          503,
+          503,
+          503,
+          503,
+          503,
+          503,
+          503,
+          503,
+          503
+        ]
+      },
+      "timestamp": "2025-10-10T10:28:19.534473"
+    },
+    {
+      "test_id": "INT_000",
+      "test_name": "EY Global Integration",
+      "category": "Integration",
+      "status": "PASS",
+      "duration": 2.928375033661723,
+      "message": "Partner endpoint responsive (HTTP 200)",
+      "details": {},
+      "timestamp": "2025-10-10T10:28:19.547499"
+    },
+    {
+      "test_id": "INT_001",
+      "test_name": "JPMorgan Chase Integration",
+      "category": "Integration",
+      "status": "PASS",
+      "duration": 1.3959999196231365,
+      "message": "Partner endpoint responsive (HTTP 200)",
+      "details": {},
+      "timestamp": "2025-10-10T10:28:19.548899"
+    },
+    {
+      "test_id": "INT_002",
+      "test_name": "Google Cloud Integration",
+      "category": "Integration",
+      "status": "PASS",
+      "duration": 1.2189170811325312,
+      "message": "Partner endpoint responsive (HTTP 200)",
+      "details": {},
+      "timestamp": "2025-10-10T10:28:19.550121"
+    },
+    {
+      "test_id": "INT_003",
+      "test_name": "Apple Vision Integration",
+      "category": "Integration",
+      "status": "PASS",
+      "duration": 1.2223338708281517,
+      "message": "Partner endpoint responsive (HTTP 200)",
+      "details": {},
+      "timestamp": "2025-10-10T10:28:19.551347"
+    },
+    {
+      "test_id": "INT_DKG_001",
+      "test_name": "DKG v3 Integration",
+      "category": "Integration",
+      "status": "PASS",
+      "duration": 2.4834577925503254,
+      "message": "DKG v3 responsive with 10 results",
+      "details": {},
+      "timestamp": "2025-10-10T10:28:19.563049"
+    },
+    {
+      "test_id": "PERF_009",
+      "test_name": "API Response Time - /api/v1/security/status",
+      "category": "Performance",
+      "status": "PASS",
+      "duration": 0.1,
+      "message": "1.27 ms (target: 30 ms)",
+      "details": {
+        "value": 1.2747441651299596,
+        "target": 30,
+        "threshold": 60,
+        "unit": "ms"
+      },
+      "timestamp": "2025-10-10T10:28:19.563116"
+    },
+    {
+      "test_id": "PERF_010",
+      "test_name": "API Response Time - /api/v1/performance/metrics",
+      "category": "Performance",
+      "status": "PASS",
+      "duration": 0.1,
+      "message": "0.88 ms (target: 100 ms)",
+      "details": {
+        "value": 0.8800816838629544,
+        "target": 100,
+        "threshold": 200,
+        "unit": "ms"
+      },
+      "timestamp": "2025-10-10T10:28:19.563118"
+    },
+    {
+      "test_id": "PERF_011",
+      "test_name": "API Response Time - /api/enterprise/partnerships/status",
+      "category": "Performance",
+      "status": "PASS",
+      "duration": 0.1,
+      "message": "1.08 ms (target: 30 ms)",
+      "details": {
+        "value": 1.0828628693707287,
+        "target": 30,
+        "threshold": 60,
+        "unit": "ms"
+      },
+      "timestamp": "2025-10-10T10:28:19.563120"
+    },
+    {
+      "test_id": "PERF_012",
+      "test_name": "System Memory Usage",
+      "category": "Performance",
+      "status": "PASS",
+      "duration": 0.1,
+      "message": "53.50 % (target: 85 %)",
+      "details": {
+        "value": 53.5,
+        "target": 85,
+        "threshold": 95,
+        "unit": "%"
+      },
+      "timestamp": "2025-10-10T10:28:19.563122"
+    },
+    {
+      "test_id": "PERF_013",
+      "test_name": "CPU Usage",
+      "category": "Performance",
+      "status": "PASS",
+      "duration": 0.1,
+      "message": "2.42 % (target: 80 %)",
+      "details": {
+        "value": 2.42,
+        "target": 80,
+        "threshold": 95,
+        "unit": "%"
+      },
+      "timestamp": "2025-10-10T10:28:19.563123"
+    },
+    {
+      "test_id": "PERF_014",
+      "test_name": "Concurrent Load Capacity",
+      "category": "Performance",
+      "status": "FAIL",
+      "duration": 0.1,
+      "message": "291.82 RPS (target: 500 RPS)",
+      "details": {
+        "value": 291.82136256980226,
+        "target": 500,
+        "threshold": 400.0,
+        "unit": "RPS"
+      },
+      "timestamp": "2025-10-10T10:28:19.563125"
+    }
+  ],
+  "performance_benchmarks": [
+    {
+      "metric_name": "API Response Time - /api/v1/security/status",
+      "value": 1.2747441651299596,
+      "unit": "ms",
+      "target": 30,
+      "threshold": 60,
+      "status": "PASS",
+      "percentile_95": 0.9990622755140066,
+      "samples": [
+        0.9299579542130232,
+        0.9090420790016651,
+        0.878040911629796,
+        1.0337920393794775,
+        0.889916904270649,
+        0.8765000384300947,
+        0.8678750600665808,
+        0.8732080459594727,
+        0.8582079317420721,
+        0.8704580832272768
+      ]
+    },
+    {
+      "metric_name": "API Response Time - /api/v1/performance/metrics",
+      "value": 0.8800816838629544,
+      "unit": "ms",
+      "target": 100,
+      "threshold": 200,
+      "status": "PASS",
+      "percentile_95": 0.9579443372786045,
+      "samples": [
+        0.8986250031739473,
+        0.8620829321444035,
+        0.9121671319007874,
+        0.8727500680834055,
+        0.8614170365035534,
+        0.958458986133337,
+        0.8555829990655184,
+        0.850750133395195,
+        0.8609169162809849,
+        0.8557080291211605
+      ]
+    },
+    {
+      "metric_name": "API Response Time - /api/enterprise/partnerships/status",
+      "value": 1.0828628693707287,
+      "unit": "ms",
+      "target": 30,
+      "threshold": 60,
+      "status": "PASS",
+      "percentile_95": 0.9938691044226289,
+      "samples": [
+        0.908625079318881,
+        0.9118749294430017,
+        0.9765410795807838,
+        0.8900000248104334,
+        0.8720001205801964,
+        0.8833750616759062,
+        0.8867077995091677,
+        0.8835829794406891,
+        0.8797079790383577,
+        0.8818330243229866
+      ]
+    },
+    {
+      "metric_name": "System Memory Usage",
+      "value": 53.5,
+      "unit": "%",
+      "target": 85,
+      "threshold": 95,
+      "status": "PASS",
+      "percentile_95": null,
+      "samples": [
+        38654705664,
+        17991843840,
+        17938563072
+      ]
+    },
+    {
+      "metric_name": "CPU Usage",
+      "value": 2.42,
+      "unit": "%",
+      "target": 80,
+      "threshold": 95,
+      "status": "PASS",
+      "percentile_95": null,
+      "samples": [
+        2.2,
+        2.4,
+        2.3,
+        2.4,
+        2.8
+      ]
+    },
+    {
+      "metric_name": "Concurrent Load Capacity",
+      "value": 291.82136256980226,
+      "unit": "RPS",
+      "target": 500,
+      "threshold": 400.0,
+      "status": "FAIL",
+      "percentile_95": null,
+      "samples": [
+        0.0,
+        2950,
+        0,
+        2950
+      ]
+    }
+  ],
+  "system_info": {
+    "python_version": "3.12.8 (v3.12.8:2dc476bcb91, Dec  3 2024, 14:43:19) [Clang 13.0.0 (clang-1300.0.29.30)]",
+    "platform": "darwin",
+    "cpu_count": 14,
+    "memory_total": 38654705664,
+    "backend_url": "http://localhost:8000",
+    "frontend_url": "http://localhost:3000"
+  },
+  "coverage_report": {},
+  "security_report": {}
+}

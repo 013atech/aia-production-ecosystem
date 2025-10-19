@@ -1,0 +1,154 @@
+# ENTERPRISE NAMESPACE CONSOLIDATION STRATEGY
+# Current: 21 namespaces → Target: 8 optimized namespaces
+# Full complexity maintained with intelligent workload distribution
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: aia-production
+  labels:
+    environment: production
+    tier: primary
+    purpose: core-services
+  annotations:
+    optimization.aia/cpu-target: "60-70%"
+    optimization.aia/consolidation-source: "aia-production,aia-live-production,aia-production-fixed,aia-working-production"
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: aia-enterprise
+  labels:
+    environment: production
+    tier: enterprise
+    purpose: fortune500-integrations
+  annotations:
+    optimization.aia/cpu-target: "65-75%"
+    optimization.aia/consolidation-source: "aia-enterprise-domains"
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: aia-analytics
+  labels:
+    environment: production
+    tier: analytics
+    purpose: ml-analytics
+  annotations:
+    optimization.aia/cpu-target: "70-80%"
+    optimization.aia/consolidation-source: "analytics-comprehensive,analytics-production"
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: aia-immersive
+  labels:
+    environment: production
+    tier: immersive
+    purpose: 3d-webxr
+  annotations:
+    optimization.aia/cpu-target: "65-75%"
+    optimization.aia/consolidation-source: "immersive-analytics"
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: aia-monitoring
+  labels:
+    environment: production
+    tier: observability
+    purpose: monitoring-logging
+  annotations:
+    optimization.aia/cpu-target: "40-50%"
+    optimization.aia/consolidation-source: "aia-monitoring,monitoring"
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: aia-staging
+  labels:
+    environment: staging
+    tier: testing
+    purpose: pre-production
+  annotations:
+    optimization.aia/cpu-target: "30-40%"
+    optimization.aia/consolidation-source: "aia-fixed-production"
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: aia-security
+  labels:
+    environment: production
+    tier: security
+    purpose: security-compliance
+  annotations:
+    optimization.aia/cpu-target: "45-55%"
+    optimization.aia/consolidation-source: "new-namespace"
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: aia-infrastructure
+  labels:
+    environment: production
+    tier: infrastructure
+    purpose: support-utilities
+  annotations:
+    optimization.aia/cpu-target: "35-45%"
+    optimization.aia/consolidation-source: "aia-recovery"
+---
+# NetworkPolicies for optimized namespace isolation
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: aia-production-network-policy
+  namespace: aia-production
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          tier: primary
+    - namespaceSelector:
+        matchLabels:
+          tier: enterprise
+    - namespaceSelector:
+        matchLabels:
+          tier: analytics
+  egress:
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          environment: production
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: aia-enterprise-network-policy
+  namespace: aia-enterprise
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          tier: primary
+    - podSelector:
+        matchLabels:
+          app: fortune500-connector
+  egress:
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          tier: primary
+    - namespaceSelector:
+        matchLabels:
+          tier: security
