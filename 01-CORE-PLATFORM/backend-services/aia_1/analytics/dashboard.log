@@ -1,0 +1,5 @@
+2025-10-09 17:33:18,886 - [INFO] - __main__ - 📊 Generating static business intelligence reports...
+2025-10-09 17:33:18,905 - [INFO] - __main__ - ✅ Static reports generated successfully:
+2025-10-09 17:33:18,905 - [INFO] - __main__ -   📄 /Users/wXy/dev/Projects/aia/aia/analytics/reports/investor_presentation.html
+2025-10-09 17:33:18,905 - [INFO] - __main__ -   📄 /Users/wXy/dev/Projects/aia/aia/analytics/reports/executive_summary.html
+2025-10-09 17:33:18,905 - [INFO] - __main__ -   📄 /Users/wXy/dev/Projects/aia/aia/analytics/reports/financial_dashboard.html
